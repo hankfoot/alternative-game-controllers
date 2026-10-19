@@ -1326,6 +1326,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .rule-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
 .rule-sentence input[type="number"] { width: 5.5em; }
 .rule-empty { margin: 12px 0 0; font-size: .9rem; color: var(--ink-faint); }
+.rule-control { color: var(--ink); }
 .rule-meter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
 .rule-live { flex: 1 1 260px; min-width: 0; max-height: none; }
 .rule-use { flex: none; padding: 6px 11px; font-size: .78rem; }

@@ -41,6 +41,30 @@ export const INPUT_CHOICES = INPUTS.flatMap((input) => {
   }));
 });
 
+// How the input dropdown is grouped: what a person reaches for first is the
+// kind of thing, not its name.
+export const INPUT_GROUPS = [
+  ['Buttons & touch', ['btna', 'btnb', 'logo']],
+  ['Pins — crocodile clips', ['p0', 'p1', 'p2']],
+  ['Tilt & direction', ['pitch', 'roll', 'heading']],
+  ['Gestures', ['shake', 'tiltleft', 'tiltright', 'logoup', 'logodown', 'faceup', 'facedown', 'freefall', 'g3', 'g6', 'g8']],
+  ['Sound, light & heat', ['loud', 'mic', 'light', 'temp']],
+];
+
+/**
+ * The input choices in their groups, as `[label, choices]`, keeping only the
+ * ones `keep` accepts and dropping a group left empty. Anything the catalogue
+ * has that no group names lands in "Other", so a new input is never lost.
+ */
+export function groupedInputChoices(keep = () => true) {
+  const named = new Set(INPUT_GROUPS.flatMap(([, ids]) => ids));
+  const groups = INPUT_GROUPS.map(([label, ids]) => [
+    label, INPUT_CHOICES.filter((choice) => ids.includes(choice.catalogue) && keep(choice)),
+  ]);
+  groups.push(['Other', INPUT_CHOICES.filter((choice) => !named.has(choice.catalogue) && keep(choice))]);
+  return groups.filter(([, choices]) => choices.length);
+}
+
 export const WHEN_CHOICES = {
   binary: [['pressed', 'is pressed'], ['held', 'is held']],
   number: [
@@ -59,6 +83,14 @@ export function actionKind(when) {
 }
 
 export const inputChoice = (id) => INPUT_CHOICES.find((choice) => choice.id === id) ?? null;
+
+/** The `when` choices for an input family that drive a control of this kind. */
+export function whenChoicesFor(family, kind) {
+  return (WHEN_CHOICES[family] ?? []).filter(([when]) => actionKind(when) === kind);
+}
+
+/** Whether an input can say anything at all about a control of this kind. */
+export const canDrive = (choice, kind) => whenChoicesFor(choice.family, kind).length > 0;
 
 /** The controls a sentence with this `when` may end with, for the scheme's targets. */
 export function controlChoices(targets, when) {
@@ -90,6 +122,38 @@ export function normalizeRule(rule, targets) {
     }
   }
   return normalized;
+}
+
+// --- The sentences a scheme needs ------------------------------------------------
+
+// Where a sentence starts before anybody has touched it: something that works
+// with no wiring at all, so a fresh controller flies from the first download.
+function starter(control, index) {
+  if (control.kind === 'press') return { input: 'btna', when: 'pressed' };
+  if (control.kind === 'hold') return { input: index % 2 ? 'btnb' : 'btna', when: 'held' };
+  return { input: 'pitch', when: 'between', low: -40, high: 40 };
+}
+
+/**
+ * One sentence per control the scheme steers with, in the scheme's order.
+ *
+ * The controls are fixed — a scheme needs exactly these — and only how each
+ * is triggered is chosen. A saved sentence for a control is kept when it
+ * still makes sense; otherwise the control gets a starter that needs no
+ * wiring. Each sentence's id is the control's own "node.port".
+ */
+export function sentencesFor(game, stored = []) {
+  if (!game) return [];
+  const controls = controlsFor(game.targets);
+  const keys = (game.steering ?? []).flatMap((control) => control.keys);
+  return keys.map((key, index) => {
+    const control = controls.find((c) => `${c.node}.${c.port}` === key);
+    if (!control) return null;
+    const saved = stored.find((rule) => rule?.control === control.name && actionKind(rule.when) === control.kind);
+    const rule = (saved && normalizeRule(saved, game.targets))
+      ?? normalizeRule({ ...starter(control, index), control: control.name }, game.targets);
+    return rule ? { ...rule, id: key } : null;
+  }).filter(Boolean);
 }
 
 // --- The program ----------------------------------------------------------------

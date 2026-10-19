@@ -1,18 +1,21 @@
 // The Controls screen: sentences, in dropdowns.
 //
-// "When [Button A] [is pressed], [flap]." Each sentence is a row of selects
-// and, for a reading, the number it has to cross or the range it steers
-// across — with that reading drawn live underneath against the line, so the
-// number can be set by looking rather than guessing. The rows make a program
-// (js/controls-codegen.js), shown below them to copy into MakeCode.
+// "When [Button A] [is pressed], flap." The scheme decides which sentences
+// there are — one per control it steers with, already filled in with
+// something that needs no wiring — and the person decides how each one is
+// triggered. For a reading, the sentence also carries the number it has to
+// cross or the range it steers across, drawn live underneath against the
+// line, so the number is set by looking rather than guessing. The sentences
+// make a program (js/controls-codegen.js) to copy into MakeCode.
 //
 // Thin on purpose: what a sentence means and what it compiles to is the
 // generator's, tested without a DOM. This file only moves choices between the
 // selects and the stored rules, and keeps the code block current.
 
 import {
-  INPUT_CHOICES, WHEN_CHOICES, actionKind, controlChoices, inputChoice, normalizeRule, rulesCode, rulesParts,
+  canDrive, groupedInputChoices, inputChoice, normalizeRule, rulesCode, rulesParts, sentencesFor, whenChoicesFor,
 } from './controls-codegen.js';
+import { controlsFor } from './game-facade.js';
 import { describeLoad, streamLoad } from './builder.js';
 import { channelInfo } from './channels.js';
 import { loadRules, saveRules } from './rules-store.js';
@@ -25,13 +28,28 @@ function el(tag, className, text) {
   return node;
 }
 
+function option(value, label, selected) {
+  const node = el('option', null, label);
+  node.value = value;
+  node.selected = value === selected;
+  return node;
+}
+
 function select(choices, value, onPick) {
   const node = el('select');
-  for (const [optionValue, label] of choices) {
-    const option = el('option', null, label);
-    option.value = optionValue;
-    option.selected = optionValue === value;
-    node.appendChild(option);
+  for (const [optionValue, label] of choices) node.appendChild(option(optionValue, label, value));
+  node.addEventListener('change', () => onPick(node.value));
+  return node;
+}
+
+/** A select whose choices sit under headings: `[[label, [[value, text], …]], …]`. */
+function groupedSelect(groups, value, onPick) {
+  const node = el('select');
+  for (const [label, choices] of groups) {
+    const group = el('optgroup');
+    group.label = label;
+    for (const [optionValue, text] of choices) group.appendChild(option(optionValue, text, value));
+    node.appendChild(group);
   }
   node.addEventListener('change', () => onPick(node.value));
   return node;
@@ -46,20 +64,27 @@ function numberInput(value, onCommit) {
   return node;
 }
 
-// How a control reads at the end of a sentence. `advance` is the one whose
-// name says nothing: what it does is start the round.
-const controlLabel = (control) => (control.name === 'advance' ? 'start the game' : control.name);
-
-let nextId = 1;
-const newId = () => `rule-${Date.now().toString(36)}-${nextId++}`;
+// How a control reads at the end of a sentence: what it does to the craft,
+// in the scheme's own words where it has them.
+const PHRASES = {
+  flap: 'flap',
+  thrust: 'thrust',
+  up: 'move up',
+  down: 'move down',
+  paddle: 'sets how high the craft flies',
+  shift: 'shift the speed',
+  advance: 'start the game',
+};
+const controlPhrase = (rule) => PHRASES[rule.control] ?? rule.control;
 
 export function initControlsUI({ elements, gameHost, signalStore, storage }) {
-  const { list, add, code, warn, tips } = elements;
-  if (!list || !add || !code || !gameHost || !signalStore) return null;
+  const { list, code, warn, tips } = elements;
+  if (!list || !code || !gameHost || !signalStore) return null;
 
   const listeners = new Set();
   let gameId = gameHost.activeGame()?.id ?? '';
-  let rules = loadRules(storage, gameId);
+  // One per control the scheme steers with — never more, never fewer.
+  let rules = sentencesFor(gameHost.activeGame(), loadRules(storage, gameId));
   let views = [];
 
   const targets = () => gameHost.activeGame()?.targets ?? [];
@@ -82,28 +107,36 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
 
   // --- The sentences --------------------------------------------------------
 
-  /** The inputs a rule may pick: every one, minus the other ways of reading a pin another rule already uses. */
-  function inputChoicesFor(rule) {
+  /** The kind of control a sentence ends with: press, hold or level. */
+  const kindOf = (rule) => controlsFor(targets()).find((c) => c.name === rule.control)?.kind ?? 'press';
+
+  /**
+   * The inputs a sentence may start with, in their groups: the ones that can
+   * drive its control, minus the other ways of reading a pin another sentence
+   * already reads.
+   */
+  function inputGroupsFor(rule) {
+    const kind = kindOf(rule);
     const taken = new Map();
     for (const other of rules) {
       const choice = inputChoice(other.input);
       if (other !== rule && choice?.pin && !taken.has(choice.pin)) taken.set(choice.pin, choice.mode);
     }
-    return INPUT_CHOICES.filter((choice) => !choice.pin || !taken.has(choice.pin) || taken.get(choice.pin) === choice.mode);
+    return groupedInputChoices((choice) => canDrive(choice, kind)
+      && (!choice.pin || !taken.has(choice.pin) || taken.get(choice.pin) === choice.mode))
+      .map(([label, choices]) => [label, choices.map((choice) => [choice.id, choice.label])]);
   }
 
   function setInput(rule, inputId) {
     const choice = inputChoice(inputId);
     rule.input = inputId;
-    const whens = WHEN_CHOICES[choice.family].map(([id]) => id);
-    if (!whens.includes(rule.when)) rule.when = whens[0];
-    setWhen(rule, rule.when);
+    const whens = whenChoicesFor(choice.family, kindOf(rule)).map(([id]) => id);
+    setWhen(rule, whens.includes(rule.when) ? rule.when : whens[0]);
   }
 
   function setWhen(rule, when) {
     rule.when = when;
-    const controls = controlChoices(targets(), when);
-    if (!controls.some((control) => control.name === rule.control)) rule.control = controls[0]?.name ?? '';
+    // Fill in the numbers a reading's sentence needs, keeping any that fit.
     const normalized = normalizeRule(rule, targets());
     if (normalized) Object.assign(rule, normalized, { id: rule.id });
   }
@@ -113,18 +146,29 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     row.dataset.id = rule.id;
     const choice = inputChoice(rule.input);
     const line = el('p', 'wiring-sentence rule-sentence');
-    line.append('When ');
-    line.appendChild(select(inputChoicesFor(rule).map((c) => [c.id, c.label]), rule.input, (value) => {
+    // A steer reads "Pitch, from -40 to 40 °, sets how high the craft flies";
+    // everything else reads "When Button A is pressed, flap."
+    const steering = kindOf(rule) === 'level';
+    if (!steering) line.append('When ');
+    line.appendChild(groupedSelect(inputGroupsFor(rule), rule.input, (value) => {
       setInput(rule, value);
       persist();
       render();
     }));
-    line.append(' ');
-    line.appendChild(select(WHEN_CHOICES[choice.family], rule.when, (value) => {
-      setWhen(rule, value);
-      persist();
-      render();
-    }));
+    line.append(steering ? ', from' : ' ');
+    const whens = whenChoicesFor(choice.family, kindOf(rule));
+    // A choice of one is not a choice; it reads as words instead.
+    if (steering) {
+      // nothing: "from … to …" says it
+    } else if (whens.length > 1) {
+      line.appendChild(select(whens, rule.when, (value) => {
+        setWhen(rule, value);
+        persist();
+        render();
+      }));
+    } else {
+      line.append(whens[0]?.[1] ?? '');
+    }
 
     const channel = choice.catalogue;
     let marker = () => null;
@@ -134,7 +178,7 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
       if (rule.when === 'between') {
         const low = numberInput(rule.low, (value) => { rule.low = Number(value); persist(); });
         const high = numberInput(rule.high, (value) => { rule.high = Number(value); persist(); });
-        line.append(' ', low, ` and `, high, unit);
+        line.append(' ', low, ' to ', high, unit);
         marker = () => ({ low: rule.low, high: rule.high });
       } else {
         const threshold = numberInput(rule.threshold, (value) => { rule.threshold = Number(value); persist(); });
@@ -144,23 +188,8 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     }
 
     line.append(', ');
-    const controls = controlChoices(targets(), rule.when);
-    line.appendChild(select(controls.map((c) => [c.name, controlLabel(c)]), rule.control, (value) => {
-      rule.control = value;
-      persist();
-    }));
-    line.append(actionKind(rule.when) === 'hold' ? ' while it lasts.' : '.');
-
-    const remove = el('button', 'btn btn-soft wiring-remove', '✕');
-    remove.type = 'button';
-    remove.title = 'Remove this sentence';
-    remove.setAttribute('aria-label', 'Remove this sentence');
-    remove.addEventListener('click', () => {
-      rules = rules.filter((other) => other !== rule);
-      persist();
-      render();
-    });
-    line.appendChild(remove);
+    line.appendChild(el('strong', 'rule-control', controlPhrase(rule)));
+    line.append(kindOf(rule) === 'hold' ? ' for as long as it lasts.' : '.');
     row.appendChild(line);
 
     // The reading, live, with the line it has to cross drawn on it. Only a
@@ -196,7 +225,7 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     views = [];
     list.textContent = '';
     if (!rules.length) {
-      list.appendChild(el('p', 'rule-empty', 'No sentences yet. Add one, and the code for your board appears below.'));
+      list.appendChild(el('p', 'rule-empty', 'This scheme has nothing to steer.'));
     }
     for (const rule of rules) list.appendChild(renderRule(rule));
   }
@@ -230,19 +259,10 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     }
   }
 
-  add.addEventListener('click', () => {
-    const rule = { id: newId(), input: 'btna', when: 'pressed', control: '' };
-    setWhen(rule, 'pressed');
-    rules.push(rule);
-    persist();
-    render();
-    list.querySelector(`[data-id="${rule.id}"] select`)?.focus();
-  });
-
   // A new scheme means new controls, and its own sentences.
   gameHost.onGameChange((game) => {
     gameId = game?.id ?? '';
-    rules = loadRules(storage, gameId);
+    rules = sentencesFor(game, loadRules(storage, gameId));
     persist();
     render();
   });
@@ -259,7 +279,7 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     },
     /** Re-reads the store, for when an imported bundle has rewritten it. */
     reload() {
-      rules = loadRules(storage, gameId);
+      rules = sentencesFor(gameHost.activeGame(), loadRules(storage, gameId));
       persist();
       render();
     },

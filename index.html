@@ -303,7 +303,7 @@ basic.forever(function () {
       <section class="block" id="controls-board">
         <div class="block-head"><h2>Build your controller</h2></div>
         <p class="lead">
-          Pick how the craft moves, then write what your controller does in plain sentences —
+          Pick how the craft moves, then choose what triggers each control —
           <em>when Button A is pressed, flap</em>. The code for your board is written for you
           underneath; copy it into MakeCode and download.
         </p>
@@ -325,14 +325,13 @@ basic.forever(function () {
           <li class="step">
             <span class="step-num">2</span>
             <div class="step-body">
-              <div class="step-head">
-                <h3>Say what it does</h3>
-                <button class="btn" id="rule-add" type="button">+ Add a sentence</button>
-              </div>
+              <h3>Choose what triggers each control</h3>
               <p>
-                Each sentence starts with something your board can sense and ends with something
-                the game can do. A reading shows up live under its sentence once the board is
-                connected, with the line it has to cross drawn on it — so set the number by looking.
+                These are the sentences this movement needs, already filled in with the buttons on
+                the board so it works straight away. Change what starts each one — a pin you've
+                clipped foil to, a tilt, a clap. A reading shows up live under its sentence once
+                the board is connected, with the line it has to cross drawn on it, so set the
+                number by looking.
               </p>
               <div class="rule-list" id="rule-list"><!-- written by js/controls-ui.js --></div>
             </div>

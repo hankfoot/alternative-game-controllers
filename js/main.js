@@ -82,7 +82,6 @@ const controls = gameHost
   ? initControlsUI({
     elements: {
       list: document.getElementById('rule-list'),
-      add: document.getElementById('rule-add'),
       code: document.getElementById('controls-code'),
       warn: document.getElementById('controls-warning'),
       tips: document.getElementById('controls-tips'),

@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  INPUT_CHOICES, WHEN_CHOICES, actionKind, controlChoices, normalizeRule, ownedHandlers, rulesCode, rulesParts,
+  INPUT_CHOICES, WHEN_CHOICES, actionKind, canDrive, controlChoices, groupedInputChoices, normalizeRule, ownedHandlers,
+  rulesCode, rulesParts, sentencesFor, whenChoicesFor,
 } from '../js/controls-codegen.js';
 import { streamLoad } from '../js/builder.js';
 import { findGame } from '../js/games/index.js';
@@ -151,4 +152,43 @@ test('sentences are kept per scheme and come back whole', () => {
   assert.deepEqual(loadRules(storage, 'jetpack'), [{ id: 'b', input: 'btna', when: 'held', control: 'thrust' }]);
   assert.deepEqual(Object.keys(loadAllRules(storage)), ['flappy', 'jetpack']);
   assert.deepEqual(loadRules(storage, 'spaceship'), []);
+});
+
+// --- The sentences a scheme needs ------------------------------------------------
+
+// A scheme needs exactly the controls it steers with, already filled in with
+// something that works with no wiring, so a fresh controller flies at once.
+test('each scheme comes with its sentences, one per control, ready to fly', () => {
+  const ids = (id) => sentencesFor(findGame(id)).map((r) => `${r.control}:${r.input}:${r.when}`);
+  assert.deepEqual(ids('flappy'), ['flap:btna:pressed']);
+  assert.deepEqual(ids('jetpack'), ['thrust:btna:held']);
+  assert.deepEqual(ids('spaceship'), ['up:btna:held', 'down:btnb:held']);
+  assert.deepEqual(ids('brickbreaker'), ['paddle:pitch:between']);
+  for (const id of ['flappy', 'jetpack', 'spaceship', 'brickbreaker']) {
+    const game = findGame(id);
+    const rules = sentencesFor(game);
+    assert.ok(rulesCode(rules, game.targets).includes('game'), `${id} makes a program`);
+  }
+});
+
+test('a saved sentence is kept when it fits, and a stray one is not added', () => {
+  const game = findGame('spaceship');
+  const rules = sentencesFor(game, [
+    { input: 'p0:touch', when: 'held', control: 'down' },
+    { input: 'loud', when: 'happens', control: 'advance' },
+    { input: 'light', when: 'pressed', control: 'up' },
+  ]);
+  assert.deepEqual(rules.map((r) => `${r.id}=${r.control}:${r.input}`), ['slide.up=up:btna', 'slide.down=down:p0:touch']);
+});
+
+test('the input list comes in groups, holding only what can drive the control', () => {
+  const groups = groupedInputChoices();
+  assert.deepEqual(groups.map(([label]) => label),
+    ['Buttons & touch', 'Pins — crocodile clips', 'Tilt & direction', 'Gestures', 'Sound, light & heat']);
+  assert.equal(groups.flatMap(([, c]) => c).length, INPUT_CHOICES.length, 'every input is in a group');
+  const forLevel = groupedInputChoices((choice) => canDrive(choice, 'level'));
+  assert.ok(!forLevel.some(([label]) => label === 'Gestures' || label === 'Buttons & touch'), 'a steer needs a number');
+  assert.ok(forLevel.flatMap(([, c]) => c).every((c) => c.family === 'number'));
+  assert.deepEqual(whenChoicesFor('binary', 'hold').map(([id]) => id), ['held']);
+  assert.deepEqual(whenChoicesFor('number', 'press').map(([id]) => id), ['above', 'below']);
 });
