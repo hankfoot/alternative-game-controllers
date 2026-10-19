@@ -1,15 +1,19 @@
-// The controller code builder (Starters screen).
+// The catalogue of inputs a micro:bit program can read, and the assembler that
+// turns a set of them into a complete MakeCode program.
 //
-// Attendees check the inputs they want (and pick a mode for each pin), and this
-// generates the complete MakeCode JavaScript to paste into the template project
-// (see Set up), plus wiring / build ideas for each selection. The generated code
-// speaks the wire protocol: one "<channel>:<number>" line per reading.
+// Two screens build programs from this. Sensing's lessons each take a few
+// inputs and make a snippet to try (js/lessons.js); Controls takes the inputs
+// its sentences use and adds the sentences' own code (js/controls-codegen.js).
+// Both go through `assemble`, which is the only place the scaffold — the
+// radio, `send`, the game helpers, the connect report — is written, so the
+// pin fixes that cost a workshop live in exactly one place. The generated code
+// speaks the wire protocol: one "<channel>:<number>" line per reading, and
+// "game:…" lines for the game.
 //
 // Generated code is written block-style (if/else, no ternaries) so MakeCode can
 // decompile it back to blocks for attendees who'd rather edit visually.
 
 import { channelInfo } from './channels.js';
-import { key } from './storage-keys.js';
 
 // --- Code fragments ---------------------------------------------------------
 
@@ -299,6 +303,19 @@ function pinInput(n) {
           `Make a switch: clip a wire from 3V to one piece of foil, and another from P${n} to a second piece. ` +
           `When the foils touch, the circuit closes and sends 1. Great for jaws, doors, stomp pads.`,
       },
+      analog: {
+        label: 'Analog',
+        kind: 'number', form: 'analog',
+        channels: [ch],
+        // A voltage, read as 0–1023, ten times a second. A strip of pencil
+        // graphite between 3V and GND, with the pin on a clip you slide along
+        // it, makes a potentiometer out of a drawing.
+        loop: number(ch, `pins.analogReadPin(AnalogPin.P${n})`),
+        build:
+          `Read a voltage on P${n} as a number from 0 to 1023. Draw a thick pencil line, clip 3V to one end and GND ` +
+          `to the other, and P${n} to a third clip you slide along it: the reading follows the clip. A bent wire ` +
+          `dipped in a cup of water, or a strip of foil with a weight pressing on it, work the same way.`,
+      },
     },
   };
 }
@@ -489,15 +506,14 @@ function variantOf(input, pinModes) {
  *
  * `weight` is the two put on one scale, which is what the warning is graded on.
  */
-export function streamLoad(selected, pinModes) {
+export function streamLoad(parts) {
   let streamed = 0;
   let pressed = 0;
-  for (const input of INPUTS) {
-    if (!selected.has(input.id)) continue;
-    const v = variantOf(input, pinModes);
-    if (v.kind === 'event') continue;
-    if (v.loop) streamed += v.channels.length;
-    else if (v.handlers || v.scan) pressed += v.channels.length;
+  for (const v of parts) {
+    if (!v || v.kind === 'event') continue;
+    const n = v.channels?.length ?? 0;
+    if (v.loop) streamed += n;
+    else if (v.handlers || v.scan) pressed += n;
   }
   // A contact worked as hard as a person can work one is worth roughly a third
   // of a reading polled ten times a second. Rounded up, so a controller made
@@ -505,7 +521,31 @@ export function streamLoad(selected, pinModes) {
   return { streamed, pressed, weight: streamed + Math.ceil(pressed / 3) };
 }
 
-export function generateCode(selected, pinModes) {
+/** The input with this id, or null. */
+export function inputById(id) {
+  return INPUTS.find((input) => input.id === id) ?? null;
+}
+
+/**
+ * The variant of an input that `assemble` wants: for a pin, the chosen mode;
+ * for anything else, the input itself. Null when the pin has no such mode.
+ */
+export function variantFor(id, mode = null) {
+  const input = inputById(id);
+  if (!input) return null;
+  if (!input.modes) return input;
+  return input.modes[mode] ?? null;
+}
+
+/**
+ * A complete program from a list of parts.
+ *
+ * Each part is an input variant (see the field list above `describe`), or
+ * anything with the same fields: the sentences on Controls contribute parts
+ * too, with their own `state`, `handlers` and `loop` lines. `extra` is lines
+ * appended after everything else — code somebody wrote by hand.
+ */
+export function assemble(parts, { extra = [] } = {}) {
   const handlers = [];
   const setup = [];
   const loop = [];
@@ -513,9 +553,8 @@ export function generateCode(selected, pinModes) {
   const state = [];
   const prime = [];
   const report = [];
-  for (const input of INPUTS) {
-    if (!selected.has(input.id)) continue;
-    const v = variantOf(input, pinModes);
+  for (const v of parts) {
+    if (!v) continue;
     if (v.handlers) handlers.push(...v.handlers);
     if (v.setup) setup.push(...v.setup);
     if (v.loop) loop.push(...v.loop);
@@ -556,10 +595,16 @@ export function generateCode(selected, pinModes) {
     ...loop.map((l) => '    ' + l),
     '    basic.pause(100)',
     '})',
+    ...extra,
   ].join('\n');
 }
 
-// --- UI ---------------------------------------------------------------------
+/** The program for a set of input ids, with a mode per pin. */
+export function generateCode(selected, pinModes = {}) {
+  return assemble(INPUTS.filter((input) => selected.has(input.id)).map((input) => variantOf(input, pinModes)));
+}
+
+// --- Radio budget --------------------------------------------------------------
 
 // Soft caps on `streamLoad().weight` before the BLE UART starts to lag.
 //
@@ -567,236 +612,20 @@ export function generateCode(selected, pinModes) {
 // confirm each one before the next goes out (MicroBitUARTService::send), so the
 // radio moves roughly one line per connection interval — somewhere between
 // thirty and sixty lines a second depending on the laptop. Five readings polled
-// ten times a second is that whole budget with nothing left for a press, which
-// is where the old caps sat. These are set low enough to warn before anybody
-// notices rather than after; tune them down if a build inside them still feels
-// late.
-const STREAM_BUSY = 3; // gentle heads-up
-const STREAM_HEAVY = 5; // stronger warning
+// ten times a second is that whole budget with nothing left for a press. These
+// are set low enough to warn before anybody notices rather than after; tune
+// them down if a build inside them still feels late.
+export const STREAM_BUSY = 3; // gentle heads-up
+export const STREAM_HEAVY = 5; // stronger warning
 
-// Which inputs you picked is the shape of the physical thing you built, so it
-// has to outlast a refresh — the wiring on the Game screen is keyed to these
-// channels and looks gutted without them.
-const STORAGE_KEY = key('builder');
-
-const DEFAULT_PIN_MODES = { p0: 'touch', p1: 'touch', p2: 'touch' };
-
-function loadSelection() {
-  let saved = null;
-  try {
-    saved = JSON.parse(globalThis.localStorage?.getItem(STORAGE_KEY) ?? 'null');
-  } catch {
-    saved = null;
-  }
-  const ids = new Set(INPUTS.map((input) => input.id));
-  const selected = new Set(
-    (Array.isArray(saved?.selected) ? saved.selected : []).filter((id) => ids.has(id)),
-  );
-  const pinModes = { ...DEFAULT_PIN_MODES };
-  for (const [pin, mode] of Object.entries(saved?.pinModes ?? {})) {
-    // A mode only survives if this build still offers it.
-    if (INPUTS.find((input) => input.id === pin)?.modes?.[mode]) pinModes[pin] = mode;
-  }
-  return { selected, pinModes };
-}
-
-/**
- * The inputs somebody picked, for an exported bundle to carry. Read straight off
- * storage rather than through a running builder, so exporting does not depend on
- * which screen is open.
- */
-export function loadBuilderSelection() {
-  const { selected, pinModes } = loadSelection();
-  return { selected: [...selected], pinModes };
-}
-
-export function saveBuilderSelection(value) {
-  try {
-    const ids = new Set(INPUTS.map((input) => input.id));
-    globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify({
-      selected: (Array.isArray(value?.selected) ? value.selected : []).filter((id) => ids.has(id)),
-      pinModes: { ...DEFAULT_PIN_MODES, ...(value?.pinModes ?? {}) },
-    }));
-  } catch {
-    // Persistence may be blocked; the import still applies for this session.
-  }
-}
-
-export function initBuilder({
-  grid, codeEl, stepsEl, warnEl, clearBtn, onChange = () => {},
-}) {
-  const { selected, pinModes } = loadSelection();
-
-  function persist() {
-    try {
-      globalThis.localStorage?.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ selected: [...selected], pinModes }),
-      );
-    } catch {
-      // Persistence may be blocked; the picker still works for this session.
-    }
-  }
-
-  function makeTile(input) {
-    const tile = document.createElement('button');
-    tile.type = 'button';
-    tile.className = 'tile tile-pick';
-    tile.setAttribute('aria-pressed', String(selected.has(input.id)));
-    tile.dataset.id = input.id;
-
-    const v = variantOf(input, pinModes);
-    const tags = v.channels.map((c) => `<span class="tag">${c}</span>`).join('');
-    const modePicker = input.modes
-      ? `<label class="tile-mode">as
-           <select data-pin="${input.id}">
-             ${Object.entries(input.modes)
-               .map(([id, m]) =>
-                 `<option value="${id}"${id === pinModes[input.id] ? ' selected' : ''}>${m.label}</option>`)
-               .join('')}
-           </select>
-         </label>`
-      : '';
-    // A tile combining several channels (Tilt: pitch + roll) gets one line per
-    // channel rather than the two sentences run together — each already reads
-    // fine alone, but back to back they blur into a single hard paragraph.
-    const descLines = describe(v.channels).map((d) => `<p>${d}</p>`).join('');
-
-    tile.innerHTML = `
-      <span class="tile-check" aria-hidden="true"></span>
-      <span class="tile-emoji">${input.emoji}</span>
-      <h3>${input.name}</h3>
-      ${descLines}
-      ${modePicker}
-      <div class="tags">${tags}</div>
-    `;
-    return tile;
-  }
-
-  function renderGrid() {
-    grid.innerHTML = '';
-    for (const section of SECTIONS) {
-      const sec = document.createElement('div');
-      sec.className = 'pick-section';
-      sec.innerHTML = `<div class="pick-head"><h3>${section.title}</h3><p>${section.desc}</p></div>`;
-      const tiles = document.createElement('div');
-      tiles.className = 'tiles';
-      for (const input of section.inputs) tiles.appendChild(makeTile(input));
-      sec.appendChild(tiles);
-      grid.appendChild(sec);
-    }
-  }
-
-  function renderWarning() {
-    if (!warnEl) return;
-    const { streamed, pressed, weight } = streamLoad(selected, pinModes);
-    if (weight < STREAM_BUSY) {
-      warnEl.hidden = true;
-      return;
-    }
-
-    // What is actually loading the radio, so the advice lands on the right
-    // inputs: unchecking a button is no help when it is five live readings.
-    const parts = [];
-    if (streamed) {
-      parts.push(`<strong>${streamed} live reading${streamed > 1 ? 's' : ''}</strong>`
-        + ' streaming ten times a second');
-    }
-    if (pressed) {
-      parts.push(`<strong>${pressed} on/off input${pressed > 1 ? 's' : ''}</strong>`
-        + ' reporting every press and release');
-    }
-    const load = parts.join(' and ');
-
-    warnEl.hidden = false;
-    warnEl.dataset.level = weight >= STREAM_HEAVY ? 'heavy' : 'busy';
-    warnEl.innerHTML = weight >= STREAM_HEAVY
-      ? `⚡ You have ${load}. That's more than the micro:bit's <strong>Bluetooth</strong> can carry —
-         expect the game to feel laggy or jerky, and presses to arrive late. Uncheck what you
-         aren't using; <strong>gestures are free</strong> (shake, tilt-left, free fall… they only
-         send when they happen).`
-      : `⚡ You have ${load}. Fine so far — but stacking on many more will start to lag over
-         Bluetooth. <strong>Gestures are free</strong> — they only send the moment they fire, so
-         they never add to this.`;
-  }
-
-  function renderOutput() {
-    persist();
-    if (clearBtn) clearBtn.disabled = selected.size === 0;
-    codeEl.textContent = generateCode(selected, pinModes);
-    renderWarning();
-
-    const notes = [];
-    for (const input of INPUTS) {
-      if (!selected.has(input.id)) continue;
-      const v = variantOf(input, pinModes);
-      const name = input.modes ? `${input.name} · ${v.label}` : input.name;
-      notes.push(`<li><strong>${input.emoji} ${name}:</strong> ${v.build}</li>`);
-    }
-
-    stepsEl.innerHTML = selected.size === 0
-      ? `<p class="build-empty">Check some inputs in step 1 and each one's build tips will appear here.</p>`
-      : `<ul class="build-list">${notes.join('')}</ul>`;
-
-    const channels = [];
-    for (const input of INPUTS) {
-      if (!selected.has(input.id)) continue;
-      const variant = variantOf(input, pinModes);
-      // A pin is wired up differently depending on the mode it was set to here,
-      // so the mode travels with the channel — the wiring screen can then say
-      // which one this pin is, rather than leaving you to remember.
-      const mode = input.modes ? variant.label : null;
-      // What the thing physically is, so the wiring screen can say "the pad is
-      // touched" or "the switch is connected" rather than one wording for all.
-      const { form } = variant;
-      variant.channels.forEach((channel) => channels.push({ channel, kind: variant.kind, mode, form }));
-    }
-    onChange({ channels });
-  }
-
-  grid.addEventListener('click', (e) => {
-    if (e.target.closest('select, .tile-mode')) return; // mode picker, not a toggle
-    const tile = e.target.closest('.tile-pick');
-    if (!tile) return;
-    const id = tile.dataset.id;
-    selected.has(id) ? selected.delete(id) : selected.add(id);
-    tile.setAttribute('aria-pressed', String(selected.has(id)));
-    renderOutput();
-  });
-
-  grid.addEventListener('change', (e) => {
-    const pin = e.target.dataset?.pin;
-    if (!pin) return;
-    pinModes[pin] = e.target.value;
-    selected.add(pin); // choosing a mode implies you want the pin
-    renderGrid();
-    renderOutput();
-  });
-
-  if (clearBtn) {
-    clearBtn.disabled = selected.size === 0;
-    clearBtn.addEventListener('click', () => {
-      if (!selected.size) return;
-      if (!window.confirm('Uncheck every enabled input?')) return;
-      selected.clear();
-      Object.assign(pinModes, DEFAULT_PIN_MODES);
-      renderGrid();
-      renderOutput();
-    });
-  }
-
-  renderGrid();
-  renderOutput();
-
-  return {
-    /** Re-reads the record, for when an imported bundle has rewritten it. */
-    reload() {
-      const fresh = loadSelection();
-      selected.clear();
-      for (const id of fresh.selected) selected.add(id);
-      Object.assign(pinModes, fresh.pinModes);
-      renderGrid();
-      renderOutput();
-    },
-  };
+/** The words for a load, for a warning on whichever screen is building a program. */
+export function describeLoad({ streamed, pressed, weight }) {
+  if (weight < STREAM_BUSY) return null;
+  const parts = [];
+  if (streamed) parts.push(`${streamed} live reading${streamed > 1 ? 's' : ''} streaming ten times a second`);
+  if (pressed) parts.push(`${pressed} on/off input${pressed > 1 ? 's' : ''} reporting every press and release`);
+  const load = parts.join(' and ');
+  return weight >= STREAM_HEAVY
+    ? { level: 'heavy', text: `You have ${load}. That's more than the micro:bit's Bluetooth can carry — expect the game to feel laggy or jerky, and presses to arrive late. Drop what you aren't using; gestures and loud sounds are free.` }
+    : { level: 'busy', text: `You have ${load}. Fine so far — but stacking on many more will start to lag over Bluetooth. Gestures and loud sounds are free.` };
 }

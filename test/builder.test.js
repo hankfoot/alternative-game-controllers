@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { CONNECT_SETTLE_MS, INPUTS, SCAN_MS, generateCode, streamLoad } from '../js/builder.js';
-
 const MODES = { p0: 'touch', p1: 'touch', p2: 'touch' };
+
+import { CONNECT_SETTLE_MS, INPUTS, SCAN_MS, assemble, generateCode, streamLoad, variantFor } from '../js/builder.js';
+
+const load = (ids, modes = MODES) => streamLoad(ids.map((id) => variantFor(id, modes[id])));
+
 const code = (ids, modes = MODES) => generateCode(new Set(ids), modes);
 const count = (text, needle) => text.split(needle).length - 1;
 
@@ -196,7 +199,7 @@ test('a loud sound is reported as an event off the board, not read off the mic',
   assert.ok(program.includes('input.onSound(DetectedSound.Loud, function () {'));
   assert.ok(program.includes('send("loud:1")'));
   assert.ok(!program.includes('soundLevel'), 'and streams nothing for it');
-  const load = streamLoad(new Set(['loud']), MODES);
+  const load = streamLoad([variantFor('loud')]);
   assert.deepEqual({ streamed: load.streamed, pressed: load.pressed }, { streamed: 0, pressed: 0 });
 });
 
@@ -209,13 +212,34 @@ test('a build of nothing but gestures still reports them', () => {
 // --- What the load warning is grading ---------------------------------------
 
 test('load counts polled readings apart from contacts, and gestures not at all', () => {
-  const quiet = streamLoad(new Set(['shake', 'g8', 'freefall']), MODES);
+  const quiet = load(['shake', 'g8', 'freefall']);
   assert.deepEqual({ streamed: quiet.streamed, pressed: quiet.pressed }, { streamed: 0, pressed: 0 },
     'gestures are free — they only send when they happen');
 
-  const busy = streamLoad(new Set(['pitch', 'roll', 'light', 'btna', 'btnb']), MODES);
+  const busy = load(['pitch', 'roll', 'light', 'btna', 'btnb']);
   assert.equal(busy.streamed, 3, 'three live readings');
   assert.equal(busy.pressed, 2, 'two contacts reporting edges');
   assert.ok(busy.weight > busy.streamed, 'and contacts do count for something');
   assert.ok(busy.weight < busy.streamed + busy.pressed, 'but for less than a live reading');
+});
+
+// --- The assembler ------------------------------------------------------------------
+
+test('an analog pin streams a voltage and is left unpulled', () => {
+  const program = code(['p2'], { p2: 'analog' });
+  assert.ok(program.includes('send("p2:" + pins.analogReadPin(AnalogPin.P2))'));
+  assert.ok(!program.includes('setPull'));
+  assert.equal(load(['p2'], { p2: 'analog' }).streamed, 1);
+});
+
+// The sentences on Controls, and anything typed by hand, ride on the same
+// scaffold as the inputs — a part with its own lines, and lines at the end.
+test('assemble takes parts of its own, and lines to append', () => {
+  const part = { kind: 'binary', channels: [], state: ['let taps = 0'], handlers: ['input.onGesture(Gesture.Shake, function () {', '    taps += 1', '})'] };
+  const program = assemble([variantFor('btna'), part], { extra: ['// by hand', 'gameStart()'] });
+  assert.ok(program.indexOf('let taps = 0') < program.indexOf('function send'), 'state is declared up top');
+  assert.ok(program.includes('    taps += 1'));
+  assert.ok(program.endsWith('// by hand\ngameStart()'), 'hand-written lines come last');
+  assert.equal(variantFor('p0', 'nonsense'), null);
+  assert.equal(variantFor('nothing'), null);
 });

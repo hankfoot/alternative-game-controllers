@@ -640,7 +640,12 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 
 .step-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
 .step-head h3 { margin: 0; }
-.builder-clear { flex: none; padding: 6px 13px; font-size: .8rem; }
+
+/* ---------- Sensing lessons ---------- */
+.lesson-wiring { font-size: .88rem; color: var(--ink-soft); }
+.lesson-watch { margin-top: 14px; font-size: .86rem; color: var(--ink-soft); }
+.lesson-live { max-width: 720px; max-height: none; }
+.shot-slot { min-height: 120px; max-width: 620px; border: 1px dashed var(--line); border-radius: 10px; }
 
 .wiring-nothing {
   padding: 30px 22px; text-align: center;

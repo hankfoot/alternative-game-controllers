@@ -141,6 +141,28 @@
           <li class="step">
             <span class="step-num">2</span>
             <div class="step-body">
+              <h3>Prepare your clips and foil</h3>
+              <p>
+                Everything you build is foil and crocodile clips. Tear off a few
+                <strong>5&nbsp;cm squares of foil</strong> and one <strong>long strip</strong>, and
+                take <strong>four clips</strong>. A clip grabs the gold pads along the bottom of the
+                board: <strong>P0</strong>, <strong>P1</strong> and <strong>P2</strong> are the
+                inputs, <strong>3V</strong> is power and <strong>GND</strong> is ground.
+              </p>
+              <p>
+                Two rules. Never let a clip on <strong>3V</strong> touch one on <strong>GND</strong>
+                — the board resets. And clip the foil on <em>before</em> you connect to the game,
+                so a touch pad can learn what untouched feels like.
+              </p>
+              <figure class="shot shot-slot" aria-label="Photo of foil squares and crocodile clips">
+                <!-- image slot: assets/setup-clips.jpg -->
+              </figure>
+            </div>
+          </li>
+
+          <li class="step">
+            <span class="step-num">3</span>
+            <div class="step-body">
               <h3>Set up MakeCode</h3>
               <p>
                 Open the <a href="https://makecode.microbit.org/_JguX2x325Wva" target="_blank" rel="noopener">
@@ -153,7 +175,7 @@
           </li>
 
           <li class="step">
-            <span class="step-num">3</span>
+            <span class="step-num">4</span>
             <div class="step-body">
               <h3>Copy the starter code</h3>
               <p>
@@ -181,7 +203,7 @@ basic.forever(function () {
           </li>
 
           <li class="step">
-            <span class="step-num">4</span>
+            <span class="step-num">5</span>
             <div class="step-body">
               <h3>Flash code to your micro:bit</h3>
               <p>
@@ -214,7 +236,7 @@ basic.forever(function () {
           </li>
 
           <li class="step">
-            <span class="step-num">5</span>
+            <span class="step-num">6</span>
             <div class="step-body">
               <h3>Find your micro:bit's name</h3>
               <p>
@@ -240,90 +262,34 @@ basic.forever(function () {
 
     <!-- SCREEN: Starters -->
     <div class="panel screen" role="tabpanel" id="panel-sensing" aria-labelledby="tab-sensing" hidden>
-      <section class="block" id="builder">
-        <div class="block-head"><h2>Design your controller</h2></div>
+      <section class="block" id="lessons">
+        <div class="block-head"><h2>Sense the world</h2></div>
         <p class="lead">
-          Pick the inputs your controller will use, copy the code it generates into MakeCode,
-          then build your object around them. No coding required.
+          Four small programs, one idea each. Paste one into MakeCode, download it, press
+          <strong>Connect</strong> up top, and watch the reading arrive underneath. By the end you
+          will have made a touch pad, a switch, a dial, and a clap detector.
         </p>
 
-        <ol class="steps">
-          <li class="step">
-            <span class="step-num">1</span>
-            <div class="step-body">
-              <div class="step-head">
-                <h3>Enable inputs</h3>
-                <button class="btn btn-soft builder-clear" id="builder-clear" type="button">Reset connections</button>
-              </div>
-              <p>
-                Check every input your controller will use — pins also pick <em>how</em> they're
-                wired. The code and build tips below update as you go.
-              </p>
-              <div id="builder-grid"><!-- populated by js/builder.js --></div>
-              <p class="builder-warn" id="builder-warning" role="status" hidden></p>
-            </div>
-          </li>
+        <details class="how">
+          <summary>Connecting to your board</summary>
+          <div class="how-body">
+            <p>
+              Press <strong>Connect</strong>. In the browser's Bluetooth list, choose the
+              <code>BBC micro:bit [·····]</code> that matches the five letters your board
+              scrolled. It will show a checkmark, and the top bar will swap Connect for your
+              board's name.
+            </p>
+            <p>
+              Your board needs its own power for this — a battery pack, or the USB cable just
+              for the electricity. <strong>Refreshing this page means pairing again.</strong>
+            </p>
+            <figure class="shot">
+              <img src="assets/setup-chooser.png" alt="The browser's Bluetooth chooser listing BBC micro:bit devices" />
+            </figure>
+          </div>
+        </details>
 
-          <li class="step">
-            <span class="step-num">2</span>
-            <div class="step-body">
-              <h3>Copy your code</h3>
-              <p>
-                Paste this over <em>everything</em> in the <strong>JavaScript</strong> tab of your
-                MakeCode project (Setup, step&nbsp;3), then <strong>Download</strong> to flash it.
-                You can switch to Blocks view anytime to see and tweak it visually.
-              </p>
-              <div class="code-block code-block-wide">
-                <button class="code-copy" type="button">Copy</button>
-                <pre><code id="builder-code"></code></pre>
-              </div>
-            </div>
-          </li>
-
-          <li class="step">
-            <span class="step-num">3</span>
-            <div class="step-body">
-              <h3>Build your controller</h3>
-              <p>
-                Wire up each input and turn your object into a controller.
-              </p>
-              <div id="builder-steps"><!-- populated by js/builder.js --></div>
-            </div>
-          </li>
-
-          <li class="step">
-            <span class="step-num">4</span>
-            <div class="step-body">
-              <h3>Connect your board</h3>
-              <p>
-                Hit <strong>Connect</strong> in the top bar and pick how you want to connect. Then
-                click your board's name up there to watch every input come in live.
-              </p>
-              <!-- Written by js/builder.js when the picked inputs are ones the
-                   radio struggles with. -->
-
-              <details class="how">
-                <summary>Connecting to your board</summary>
-                <div class="how-body">
-                  <p>
-                    Press <strong>Connect</strong>. In the browser's Bluetooth list, choose the
-                    <code>BBC micro:bit [·····]</code> that matches the five letters your board
-                    scrolled. It will show a checkmark, and the top bar will swap Connect for your
-                    board's name.
-                  </p>
-                  <p>
-                    Your board needs its own power for this — a battery pack, or the USB cable just
-                    for the electricity. <strong>Refreshing this page means pairing again.</strong>
-                  </p>
-                  <figure class="shot">
-                    <img src="assets/setup-chooser.png" alt="The browser's Bluetooth chooser listing BBC micro:bit devices" />
-                  </figure>
-                </div>
-              </details>
-
-            </div>
-          </li>
-        </ol>
+        <ol class="steps" id="lesson-list"><!-- populated by js/lessons.js --></ol>
       </section>
 
       <nav class="pager">

@@ -694,7 +694,6 @@ test('a bundle carries the look, the sounds, the course, the wiring and the inpu
     options: { jetpack: { 'world.obstacles': { gap: 'tight' } } },
     wiring: { jetpack: [{ id: 'w1', source: 'btna', sourceKind: 'binary',
       target: { node: 'lift', port: 'thrust' }, transform: { type: 'hold', invert: false } }] },
-    inputs: { selected: ['btna', 'pitch'], pinModes: { p0: 'switch' } },
   };
 
   const back = readBundle(JSON.parse(JSON.stringify(await exportBundle({ theme, assets, game }))));
@@ -715,6 +714,4 @@ test('a bundle carries the look, the sounds, the course, the wiring and the inpu
   assert.equal(back.game.selected, 'jetpack');
   assert.deepEqual(back.game.options, game.options, 'the course');
   assert.deepEqual(back.game.wiring, game.wiring, 'the wiring');
-  assert.deepEqual(back.game.inputs.selected, ['btna', 'pitch'], 'the picked inputs');
-  assert.deepEqual(back.game.inputs.pinModes, { p0: 'switch' }, 'and how each pin is read');
 });

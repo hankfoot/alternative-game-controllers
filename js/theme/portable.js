@@ -33,7 +33,6 @@ const ACCEPTED_KINDS = Object.freeze([BUNDLE_KIND, 'experimental-game-controller
  *   selected  — the control scheme they picked
  *   options   — the per-game course settings, from wiring-storage
  *   wiring    — every game's connections, from wiring-storage
- *   inputs    — the sensors they checked on the Sensing page
  *
  * The last two used to be left out, which made a bundle a strange half-gift: it
  * carried the drawings and the course but not the controller, so opening one
@@ -56,7 +55,6 @@ export async function exportBundle({ theme, assets, game }) {
       selected: typeof game?.selected === 'string' ? game.selected : null,
       options: asRecord(game?.options),
       wiring: asRecord(game?.wiring),
-      inputs: asRecord(game?.inputs),
     },
   };
 }
@@ -101,13 +99,6 @@ export function readBundle(value) {
       selected: typeof game.selected === 'string' ? game.selected : null,
       options: asRecord(game.options),
       wiring: asRecord(game.wiring),
-      // Loosely checked on purpose: the builder validates every id against what
-      // this build actually offers when it stores them, so a file naming an
-      // input that no longer exists loses that input rather than the import.
-      inputs: {
-        selected: Array.isArray(game.inputs?.selected) ? game.inputs.selected : [],
-        pinModes: asRecord(game.inputs?.pinModes),
-      },
     },
   };
 }

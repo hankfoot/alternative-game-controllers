@@ -82,16 +82,20 @@ export function createChannelView(host, { signalStore, channels = null, markers 
   }
 
   // Rows for the channels asked for, before anything arrives: a lesson
-  // waiting for its first reading should show what it is waiting for.
-  for (const name of channels ?? []) {
+  // waiting for its first reading should show what it is waiting for. An
+  // entry may say what kind to expect, for a pin the registry cannot know.
+  const wanted = channels
+    ? channels.map((entry) => (typeof entry === 'string' ? { channel: entry, kind: null } : entry))
+    : null;
+  for (const { channel: name, kind } of wanted ?? []) {
     const known = signalStore.get(name);
-    makeRow(name, known?.kind ?? channelInfo(name).kind ?? 'binary');
+    makeRow(name, known?.kind ?? kind ?? channelInfo(name).kind ?? 'binary');
   }
 
   const unsubscribe = signalStore.subscribe(({ type, signal }) => {
     if (type !== 'value') return;
     const { channel, value, kind } = signal;
-    if (channels && !channels.includes(channel)) return;
+    if (wanted && !wanted.some((entry) => entry.channel === channel)) return;
     let row = rows.get(channel);
     if (!row) row = makeRow(channel, kind);
 

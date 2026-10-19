@@ -3,7 +3,7 @@
 import { onStatus, onInput } from './bus.js';
 import { activeVia, connect, disconnect, isSupported } from './connection.js';
 import { initVisualizer } from './visualizer.js';
-import { initBuilder } from './builder.js';
+import { initLessons } from './lessons.js';
 import { initGame } from './game.js';
 import { initGameWarning } from './game-warning.js';
 import { createSignalStore } from './signal-store.js';
@@ -79,15 +79,9 @@ const bridge = gameHost ? createCommandBridge({ gameHost }) : null;
 // a board in hand.
 if (bridge) window.workshop = { game: bridge.game };
 
-// --- Controller code builder ------------------------------------------------
-const builder = initBuilder({
-  grid: document.getElementById('builder-grid'),
-  codeEl: document.getElementById('builder-code'),
-  stepsEl: document.getElementById('builder-steps'),
-  warnEl: document.getElementById('builder-warning'),
-  clearBtn: document.getElementById('builder-clear'),
-  onChange: ({ channels }) => signalStore.setPlannedChannels(channels),
-});
+// --- Sensing lessons ---------------------------------------------------------
+// Rendered before the copy buttons below are bound, since each lesson has one.
+initLessons({ host: document.getElementById('lesson-list'), signalStore });
 
 // --- Consumers -------------------------------------------------------------
 initVisualizer(signalStore);
@@ -143,12 +137,8 @@ if (wiringEngine) {
     // every frame. This is for the music, which has to be told to change.
     onThemeApplied: () => gameHost.syncMusic(),
     onOptionsImported: () => wiringEngine.reloadOptions(),
-    // An imported bundle rewrites the picked inputs and the wiring underneath
-    // both of the things holding them, so both are told to look again.
-    onInputsImported: () => {
-      builder?.reload();
-      wiringEngine.reloadWiring();
-    },
+    // An imported bundle rewrites the wiring underneath the engine holding it.
+    onInputsImported: () => wiringEngine.reloadWiring(),
   });
   drawingsReady.then(() => design?.refreshPreviews());
 }
