@@ -606,6 +606,10 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
   font-family: var(--mono); font-weight: 600; font-size: .8rem; color: var(--ink);
   min-width: 44px; text-align: right;
 }
+/* A row that is waiting for its first reading — a lesson's channel before the
+   board sends it — sits back until it has something to show. */
+.chan[data-heard="false"] { opacity: .55; }
+.chan[data-heard="false"] .chan-num { color: var(--ink-faint); }
 
 /* ---------- Pager ---------- */
 .pager {
