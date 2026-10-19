@@ -10,8 +10,8 @@ import { createSignalStore } from './signal-store.js';
 import { initTabs } from './tabs.js';
 import { createWiringEngine } from './wiring-engine.js';
 import { initWiringUI } from './wiring-ui.js';
-import { createScriptRunner } from './script-runner.js';
-import { initScriptUI } from './script-ui.js';
+import { createCommandBridge } from './game-commands.js';
+import { initCodeUI } from './code-ui.js';
 import { initDesign } from './design.js';
 import { createThemeStore, browserStorage } from './theme/theme-store.js';
 import { createAssetStore } from './theme/assets.js';
@@ -69,14 +69,15 @@ const wiringEngine = gameHost
 // Each game keeps its own independent wiring, so the board swaps with the game.
 if (wiringEngine) gameHost.onGameChange((game) => wiringEngine.setGame(game));
 
-// --- Scripts ----------------------------------------------------------------
-// Pasted code runs against the same store and the same game actions the patch
-// bay uses, beside the wiring rather than instead of it.
-const runner = gameHost ? createScriptRunner({ signalStore, gameHost }) : null;
+// --- Game commands from the board ------------------------------------------
+// A board can steer the game directly, with "game:…" lines its program writes
+// through the helpers the builder emits. Beside the wiring, not instead of it.
+const bridge = gameHost ? createCommandBridge({ gameHost }) : null;
 // The one deliberate global. Everything else in this app is module-local, and
-// stays so; this is the same `inputs` and `game` a pasted script receives, put
-// where somebody with the console open can try a call before writing one.
-if (runner) window.workshop = runner.api();
+// stays so; this is the same facade the board's commands go through, put where
+// somebody with the console open can try `workshop.game.press('flap')` without
+// a board in hand.
+if (bridge) window.workshop = { game: bridge.game };
 
 // --- Controller code builder ------------------------------------------------
 const builder = initBuilder({
@@ -91,32 +92,28 @@ const builder = initBuilder({
 // --- Consumers -------------------------------------------------------------
 initVisualizer(signalStore);
 if (wiringEngine) initWiringUI({ signalStore, engine: wiringEngine });
-const scriptUi = runner
-  ? initScriptUI({
+if (bridge) {
+  initCodeUI({
     elements: {
-      prompt: document.getElementById('script-prompt'),
-      request: document.getElementById('script-request'),
-      copy: document.getElementById('script-copy'),
-      source: document.getElementById('script-source'),
-      run: document.getElementById('script-run'),
-      stop: document.getElementById('script-stop'),
-      clear: document.getElementById('script-clear'),
-      status: document.getElementById('script-status'),
-      log: document.getElementById('script-log'),
+      prompt: document.getElementById('code-prompt'),
+      request: document.getElementById('code-request'),
+      copy: document.getElementById('code-copy'),
+      status: document.getElementById('code-status'),
+      log: document.getElementById('code-log'),
     },
-    runner,
+    bridge,
     signalStore,
     gameHost,
     storage,
-  })
-  : null;
+  });
+}
 if (wiringEngine) {
   initGameWarning({
     element: document.getElementById('game-warning'),
     signalStore,
     engine: wiringEngine,
     host: gameHost,
-    runner,
+    bridge,
   });
 }
 if (wiringEngine) {
@@ -152,9 +149,6 @@ if (wiringEngine) {
       builder?.reload();
       wiringEngine.reloadWiring();
     },
-    // The box is holding whatever was typed before the import; the file's
-    // script replaces it, stopped.
-    onScriptImported: () => scriptUi?.reload(),
   });
   drawingsReady.then(() => design?.refreshPreviews());
 }

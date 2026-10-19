@@ -130,18 +130,18 @@ function describe(found) {
   ];
 }
 
-export function initGameWarning({ element, signalStore, engine, host, runner = null }) {
+export function initGameWarning({ element, signalStore, engine, host, bridge = null }) {
   if (!element || !signalStore || !engine || !host) return null;
 
   function render() {
-    // A running script answers for the controls itself: it may be driving a
-    // port nothing is wired to, and the check cannot see inside it to know
-    // which. So while one runs the diagnosis stands down, and says so.
-    if (runner?.running()) {
+    // A board sending game commands answers for the controls itself: it may
+    // be driving a port nothing is wired to, and the check cannot see inside
+    // its program to know which. So the diagnosis stands down, and says so.
+    if (bridge?.driven()) {
       element.hidden = false;
       element.dataset.level = 'script';
       element.replaceChildren(
-        'A script is driving the game — see Code it, on ',
+        'Your board is driving the game directly — see Code it, on ',
         controlsLink(),
         '. The keys under the game work either way.',
       );
@@ -176,8 +176,8 @@ export function initGameWarning({ element, signalStore, engine, host, runner = n
   engine.subscribe(render);
   signalStore.subscribe(render);
   host.onGameChange(render);
-  runner?.subscribe((event) => {
-    if (event.type === 'status') render();
+  bridge?.subscribe((event) => {
+    if (event.type === 'driven') render();
   });
   render();
   return { render };

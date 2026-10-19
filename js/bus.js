@@ -26,6 +26,26 @@ export function onInput(handler) {
   return () => bus.removeEventListener('input', listener);
 }
 
+/**
+ * A game command from the board — "game:press:flap", "game:hold:thrust:1",
+ * "game:set:paddle:0.5", "game:start" — parsed by js/line-protocol.js and
+ * acted on by js/game-commands.js. Not an input: nothing is read from it, it
+ * is the board telling the game what to do.
+ * @typedef {{ verb: 'press'|'hold'|'set'|'start', control?: string, value?: number, raw: string }} CommandMsg
+ */
+
+/** @param {CommandMsg} command */
+export function emitCommand(command) {
+  bus.dispatchEvent(new CustomEvent('command', { detail: command }));
+}
+
+/** @param {(command: CommandMsg) => void} handler */
+export function onCommand(handler) {
+  const listener = (e) => handler(e.detail);
+  bus.addEventListener('command', listener);
+  return () => bus.removeEventListener('command', listener);
+}
+
 // Connection status is broadcast the same way so the UI can react.
 /** @typedef {{ state: 'disconnected'|'connecting'|'connected', message?: string }} StatusMsg */
 

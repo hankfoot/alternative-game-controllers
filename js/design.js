@@ -28,7 +28,6 @@ import {
   loadAllPortOptions, saveAllPortOptions, loadAllConnections, saveAllConnections,
 } from './wiring-storage.js';
 import { loadBuilderSelection, saveBuilderSelection } from './builder.js';
-import { loadScript, saveScript } from './script-storage.js';
 import { RULES, courseFrom } from './games/sidescroller.js';
 import { GAMES } from './games/index.js';
 
@@ -134,7 +133,7 @@ const at = (theme, path) => path.split('.').reduce((value, key) => value?.[key],
 
 export function initDesign({
   hosts, engine, theme, assets, images, audio,
-  onGameChange, onThemeApplied, onOptionsImported, onInputsImported, onScriptImported, storage,
+  onGameChange, onThemeApplied, onOptionsImported, onInputsImported, storage,
 }) {
   if (!hosts?.settings || !engine) return null;
   let uploads = [];
@@ -812,7 +811,6 @@ export function initDesign({
           options: loadAllPortOptions(storage),
           wiring: loadAllConnections(storage),
           inputs: loadBuilderSelection(),
-          script: loadScript(storage),
         },
       });
       downloadBundle(bundle, 'game-theme.json');
@@ -846,10 +844,6 @@ export function initDesign({
       saveAllPortOptions(storage, bundle.game.options);
       saveAllConnections(storage, bundle.game.wiring);
       saveBuilderSelection(bundle.game.inputs);
-      if (bundle.game.script) {
-        saveScript(storage, bundle.game.script);
-        onScriptImported?.();
-      }
       // The builder is holding the old picks and the engine the old wiring, so
       // both have to be told to re-read before any of this is on screen.
       onInputsImported?.();

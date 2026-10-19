@@ -382,12 +382,12 @@ basic.forever(function () {
         </section>
       </section>
 
-      <section class="block" id="controls-script">
+      <section class="block" id="controls-code">
         <div class="block-head"><h2>Code it</h2></div>
         <p class="lead">
           Want something the wires can't say — every third clap, the height of a chair, two readings
-          combined? Describe it to an AI, paste what it writes here, and it runs right on this page
-          against your inputs. No reflashing.
+          combined? Describe it to an AI, paste what it writes into your MakeCode program, and your
+          board drives the game directly. Nothing runs in this page; the code runs on the micro:bit.
         </p>
 
         <ol class="steps">
@@ -397,44 +397,42 @@ basic.forever(function () {
               <h3>Say what you want, and copy it for your AI</h3>
               <p>
                 Describe the interaction in a sentence. The copy comes with everything the AI
-                needs to know — your inputs and the game's controls, by their real names — so
-                paste it into any chat and it writes the script.
+                needs to know — the game's controls by name, the functions your program already
+                has, and what it already reads — so paste it into any chat and it writes the code.
               </p>
-              <div class="script-request">
-                <input id="script-request" type="text" autocomplete="off" spellcheck="false"
+              <div class="code-request">
+                <input id="code-request" type="text" autocomplete="off" spellcheck="false"
                   placeholder="flap every third clap" aria-label="What you want the controller to do" />
-                <button class="btn" id="script-copy" type="button">Copy for your AI</button>
+                <button class="btn" id="code-copy" type="button">Copy for your AI</button>
               </div>
-              <details class="script-details">
+              <details class="code-details">
                 <summary>What gets copied</summary>
-                <pre class="script-prompt"><code id="script-prompt"></code></pre>
+                <pre class="code-prompt"><code id="code-prompt"></code></pre>
               </details>
             </div>
           </li>
           <li class="step">
             <span class="step-num">2</span>
             <div class="step-body">
-              <h3>Paste what it wrote, and run it</h3>
-              <textarea id="script-source" class="script-source" aria-label="Script" spellcheck="false"
-                autocomplete="off" autocapitalize="off" placeholder="// Paste the script here, then press Run (or Ctrl+Enter)"></textarea>
-              <div class="script-actions">
-                <button class="btn" id="script-run" type="button">Run</button>
-                <button class="btn btn-soft" id="script-stop" type="button" disabled>Stop</button>
-                <button class="btn btn-soft" id="script-clear" type="button">Clear</button>
-                <span class="script-status" id="script-status" role="status"></span>
-              </div>
+              <h3>Paste what it wrote into MakeCode</h3>
+              <p>
+                Open your project in MakeCode, switch to the <strong>JavaScript</strong> tab, and
+                paste the code at the very bottom, below the code you copied from Sensing. Then
+                <strong>Download</strong> to the board as before. If MakeCode underlines something
+                in red, paste the error back to your AI.
+              </p>
             </div>
           </li>
           <li class="step">
             <span class="step-num">3</span>
             <div class="step-body">
-              <h3>Play</h3>
+              <h3>Connect and play</h3>
               <p>
-                The script keeps running while you switch to Game, and comes back when you refresh
-                this page. Anything it prints, and anything it gets wrong, shows up here. Stop undoes
-                everything it set up.
+                Press <strong>Connect</strong> at the top. Every command your board sends shows up
+                here, and the game follows them — no wiring needed for these.
               </p>
-              <pre class="script-log" id="script-log" role="log" aria-live="polite"></pre>
+              <p class="code-status" id="code-status" role="status"></p>
+              <pre class="code-log" id="code-log" role="log" aria-live="polite"></pre>
             </div>
           </li>
         </ol>

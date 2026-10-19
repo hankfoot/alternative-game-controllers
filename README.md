@@ -11,7 +11,7 @@ and turn everyday objects into controllers for a browser game.
 2. Flash that code to a micro:bit using the walkthrough on the **Setup** page.
 3. Open the site in desktop or Android Chrome/Edge and click **Connect**.
 4. Open the Live-input control to test each signal.
-5. Wire signals to controls on the **Controls** page, or paste a script there, and play on **Game**.
+5. Wire signals to controls on the **Controls** page, or have the board drive the game itself, and play on **Game**.
 
 ## Input protocol
 
@@ -68,25 +68,26 @@ browser storage and survives a refresh.
 On wide screens the wiring workbench and game sit side-by-side so changes can be tested
 immediately. When that pair cannot fit comfortably, the game stacks beneath the workbench.
 
-## Scripting an input ("Code it")
+## Driving the game from the board ("Code it")
 
-Below the patch bay, the Controls page has a box for a short JavaScript script, meant to be
-written by an LLM from a description like "flap every third clap" or "the height of my chair
-steers the craft". The page generates a copy-pasteable instructions block for the LLM, listing
-the inputs actually enabled and the controls of the selected scheme by name. The script is run
-in the page with two objects:
+Below the patch bay, the Controls page has a box for a sentence — "flap every third clap",
+"the height of my chair steers the craft" — and a button that copies it together with
+instructions for an LLM. The LLM writes MakeCode code; the person pastes it at the bottom of
+their MakeCode program and downloads it. Nothing pasted is ever run in the browser.
 
-- `inputs` — `on(channel, fn)`, `onPress(channel, fn)`, `value(channel)`, `list()`, and
-  `publish(channel, value, { kind })`, which puts a reading the script computed onto the bus so
-  it appears on the patch bay as a normal source.
-- `game` — `press(name)`, `hold(name, on)`, `set(name, 0..1)`, `start()`, `phase()`,
-  `controls()`. Names are the scheme's ports by friendly name: `flap`, `thrust`, `up`/`down`,
-  `paddle`, `shift`, `advance`.
+The generated program always carries four helpers, which are the game's API on the wire:
 
-The same two objects sit on `window.workshop` for use from the devtools console. Stop undoes
-everything a script set up (timers, listeners, held controls, published channels). The script
-is saved as it is typed, travels in the Save/Load bundle, and restarts on reload if it was
-running; a script from an imported bundle never auto-runs. See `js/script-runner.js`.
+| Helper | Line sent | Effect |
+| --- | --- | --- |
+| `gamePress("flap")` | `game:press:flap` | fires a press control |
+| `gameHold("thrust", true)` | `game:hold:thrust:1` | holds a hold control (`:0` lets go) |
+| `gameSet("paddle", 0.5)` | `game:set:paddle:0.5` | sets a level control, 0 to 1 |
+| `gameStart()` | `game:start` | starts a round, or retries after a crash |
+
+Control names are the scheme's ports by friendly name (`flap`, `thrust`, `up`/`down`, `paddle`,
+`shift`, `advance`). The browser routes commands straight to the game ([js/game-commands.js](js/game-commands.js)),
+shows them in a log, and lets go of every held control when the board disconnects. The same
+facade sits on `window.workshop.game` for trying a control from the devtools console.
 
 ## Code structure
 
@@ -102,8 +103,9 @@ running; a script from an imported bundle never auto-runs. See `js/script-runner
   the game and its control schemes, and `index.js` is the registry the rest of the app reads.
 - `js/game.js` connects those rules to the DOM/canvas; `js/game-warning.js` works out what is still
   missing between a controller and a playable game.
-- `js/script-runner.js` runs a pasted script against the inputs and the game; `js/script-prompt.js`
-  writes the instructions for an LLM; `js/script-storage.js` and `js/script-ui.js` persist and bind it.
+- `js/game-facade.js` names the game's ports for code; `js/game-commands.js` routes the board's
+  `game:` lines through it; `js/code-prompt.js` writes the instructions for an LLM; `js/code-ui.js`
+  binds the Code it section.
 - `js/design.js` is the Design screen — course settings plus the look and sound of the game.
 - `js/theme/` is that look-and-sound layer: drawing, sound, storage, and scene rendering.
 - `js/bluetooth.js`, `js/bus.js`, and `js/visualizer.js` handle the input pipeline.

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { parseLine, createLineBuffer } from '../js/line-protocol.js';
-import { onInput } from '../js/bus.js';
+import { parseLine, parseCommand, createLineBuffer } from '../js/line-protocol.js';
+import { onInput, onCommand } from '../js/bus.js';
 
 /** Collects everything that reaches the bus while `work` runs. */
 function heard(work) {
@@ -123,4 +123,36 @@ test('a stream that starts clean keeps its first line', () => {
   const buffer = createLineBuffer();
   const messages = heard(() => buffer.push(bytes('btna:1\n')));
   assert.deepEqual(messages.map((m) => m.channel), ['btna']);
+});
+
+// --- Game commands -------------------------------------------------------------
+
+test('a game: line is a command, parsed by verb, and never a reading', () => {
+  assert.deepEqual(parseCommand('game:press:flap'), { verb: 'press', control: 'flap', raw: 'game:press:flap' });
+  assert.deepEqual(parseCommand(' Game:Hold:Thrust:1 '), { verb: 'hold', control: 'thrust', value: 1, raw: ' Game:Hold:Thrust:1 ' });
+  assert.deepEqual(parseCommand('game:hold:thrust'), { verb: 'hold', control: 'thrust', value: 1, raw: 'game:hold:thrust' },
+    'a hold with no value is down');
+  assert.deepEqual(parseCommand('game:hold:thrust:0'), { verb: 'hold', control: 'thrust', value: 0, raw: 'game:hold:thrust:0' });
+  assert.deepEqual(parseCommand('game:set:paddle:0.42'), { verb: 'set', control: 'paddle', value: 0.42, raw: 'game:set:paddle:0.42' });
+  assert.deepEqual(parseCommand('game:start'), { verb: 'start', raw: 'game:start' });
+
+  assert.equal(parseCommand('game:set:paddle'), null, 'a set needs a value');
+  assert.equal(parseCommand('game:set:paddle:high'), null);
+  assert.equal(parseCommand('game:press:'), null, 'a press needs a control');
+  assert.equal(parseCommand('game:press:fl ap'), null);
+  assert.equal(parseCommand('game:jump:flap'), null, 'no such verb');
+  assert.equal(parseCommand('pitch:12'), null, 'a reading is not a command');
+});
+
+test('commands go to the command listeners and readings to the input ones, never crossed', () => {
+  const commands = [];
+  const stop = onCommand((command) => commands.push(command));
+  const readings = heard(() => {
+    parseLine('game:press:flap');
+    parseLine('game:nonsense');
+    parseLine('pitch:12');
+  });
+  stop();
+  assert.deepEqual(readings.map((m) => m.channel), ['pitch']);
+  assert.deepEqual(commands.map((c) => c.raw), ['game:press:flap']);
 });

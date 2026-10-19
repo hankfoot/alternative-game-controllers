@@ -63,6 +63,29 @@ function scaffoldTop({ state, prime, report }) {
     '        bluetooth.uartWriteLine(line)',
     '    }',
     '}',
+    // The game's API, as four calls. Code somebody adds below the generated
+    // program — usually code an LLM wrote from the Code it instructions on
+    // the Controls page — drives the game through these, and never has to
+    // know what goes on the wire. The browser reads the lines they write (see
+    // js/game-commands.js); nothing it receives is ever executed. Always
+    // emitted, even when nothing uses them: the instructions promise they are
+    // there, and a promise with a condition on it is a bug report waiting.
+    'function gamePress (control: string) {',
+    '    send("game:press:" + control)',
+    '}',
+    'function gameHold (control: string, on: boolean) {',
+    '    if (on) {',
+    '        send("game:hold:" + control + ":1")',
+    '    } else {',
+    '        send("game:hold:" + control + ":0")',
+    '    }',
+    '}',
+    'function gameSet (control: string, value: number) {',
+    '    send("game:set:" + control + ":" + value)',
+    '}',
+    'function gameStart () {',
+    '    send("game:start")',
+    '}',
     'bluetooth.onBluetoothConnected(function () {',
     '    connected = true',
     // Drawn here, on the edge, rather than every time round the loop. Redrawing

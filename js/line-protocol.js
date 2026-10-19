@@ -10,7 +10,7 @@
 // neither of them sent, which is the sort of fault that shows up as one
 // impossible reading an hour into a workshop.
 
-import { emitInput } from './bus.js';
+import { emitInput, emitCommand } from './bus.js';
 
 /**
  * Collects bytes and calls `onLine` for each complete line in them.
@@ -74,12 +74,49 @@ export function createLineBuffer({ onLine = parseLine, midStream = false } = {})
   };
 }
 
+// The prefix that makes a line a command rather than a reading. A reading is
+// "<channel>:<number>"; a command starts with this and could never be mistaken
+// for one, since nothing after it is a number.
+const COMMAND_PREFIX = 'game:';
+
+const CONTROL_NAME = /^[a-z0-9_-]+$/;
+
 /**
- * Parse one protocol line ("<channel>:<number>") into a message and push it
- * onto the bus. Any channel name is valid; malformed lines are ignored so a
- * noisy starter can't crash the page.
+ * Parse one game command — "game:press:flap", "game:hold:thrust:1",
+ * "game:set:paddle:0.5", "game:start" — or null if the line is not one, or
+ * is one with something missing. Pure.
  */
-export function parseLine(raw, emit = emitInput) {
+export function parseCommand(raw) {
+  const line = raw.trim().toLowerCase();
+  if (!line.startsWith(COMMAND_PREFIX)) return null;
+  const [verb, control = '', value = ''] = line.slice(COMMAND_PREFIX.length).split(':').map((part) => part.trim());
+  if (verb === 'start') return { verb, raw };
+  if (!CONTROL_NAME.test(control)) return null;
+  if (verb === 'press') return { verb, control, raw };
+  if (verb === 'hold') {
+    // "game:hold:thrust" alone means down; the explicit 0 is the release.
+    const number = value === '' ? 1 : Number(value);
+    return Number.isFinite(number) ? { verb, control, value: number, raw } : null;
+  }
+  if (verb === 'set') {
+    const number = Number(value);
+    return value !== '' && Number.isFinite(number) ? { verb, control, value: number, raw } : null;
+  }
+  return null;
+}
+
+/**
+ * Parse one protocol line into a message and push it onto the bus: a game
+ * command to `command`, a "<channel>:<number>" reading to `emit`. Any channel
+ * name is valid; malformed lines are ignored so a noisy starter can't crash
+ * the page.
+ */
+export function parseLine(raw, emit = emitInput, command = emitCommand) {
+  if (raw.trim().toLowerCase().startsWith(COMMAND_PREFIX)) {
+    const parsed = parseCommand(raw);
+    if (parsed) command(parsed);
+    return;
+  }
   const sep = raw.indexOf(':');
   if (sep <= 0) return; // no channel name — not part of the protocol
   const channel = raw.slice(0, sep).trim().toLowerCase();

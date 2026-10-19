@@ -47,10 +47,6 @@ export function createSignalStore({ subscribeInput = onInput, now = () => perfor
       live: false,
       planned: false,
       wired: false,
-      // Invented by a running script (see js/script-runner.js) rather than
-      // by the board. Declared before its first reading so it exists with the
-      // right kind, and held for as long as the script runs.
-      published: false,
       // How this input was set up, when that was a choice — a pin read as a
       // touch pad and the same pin read as a switch are wired differently.
       mode: null,
@@ -125,7 +121,7 @@ export function createSignalStore({ subscribeInput = onInput, now = () => perfor
       }
     }
     for (const [channel, signal] of signals) {
-      if (!signal.live && !signal.planned && !signal.wired && !signal.published) signals.delete(channel);
+      if (!signal.live && !signal.planned && !signal.wired) signals.delete(channel);
     }
     notify('catalog');
   }
@@ -143,9 +139,6 @@ export function createSignalStore({ subscribeInput = onInput, now = () => perfor
     },
     setWiredChannels(descriptors) {
       reconcileFlag('wired', descriptors);
-    },
-    setPublishedChannels(descriptors) {
-      reconcileFlag('published', descriptors);
     },
     destroy() {
       unsubscribeInput();

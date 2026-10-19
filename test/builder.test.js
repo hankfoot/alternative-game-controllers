@@ -170,6 +170,24 @@ test('a touch pin senses capacitively, so no GND wire is needed', () => {
   assert.ok(!program.includes('TouchTargetMode.Resistive'));
 });
 
+// Code somebody adds below the program — usually written by an LLM from the
+// Code it instructions — drives the game through four helpers. They are
+// promised by those instructions, so they are there whether or not anything
+// uses them, and they write the exact lines js/game-commands.js reads.
+test('the four game helpers are always there, and speak the command lines', () => {
+  const program = code(['pitch']);
+  assert.ok(program.includes('function gamePress (control: string) {'));
+  assert.ok(program.includes('send("game:press:" + control)'));
+  assert.ok(program.includes('function gameHold (control: string, on: boolean) {'));
+  assert.ok(program.includes('send("game:hold:" + control + ":1")'));
+  assert.ok(program.includes('send("game:hold:" + control + ":0")'));
+  assert.ok(program.includes('function gameSet (control: string, value: number) {'));
+  assert.ok(program.includes('send("game:set:" + control + ":" + value)'));
+  assert.ok(program.includes('function gameStart () {'));
+  assert.ok(program.includes('send("game:start")'));
+  assert.equal(count(program, 'bluetooth.uartWriteLine('), 1, 'and all through the one send');
+});
+
 // A clap is over in less than the 100 ms between two samples of the streamed
 // sound level, so counting claps off `mic` lost most of them. The board's own
 // loud-sound event fires once per clap and costs the radio nothing between.
