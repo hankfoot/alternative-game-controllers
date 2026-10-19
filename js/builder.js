@@ -117,13 +117,14 @@ function binary(channel, expr) {
 }
 
 /**
- * A top-level event handler.
+ * A top-level event handler. Exported for the sentences on Controls, which
+ * add their own lines to the same handlers the inputs report through.
  *
  * This used to wrap every body in `if (connected)` as well. Whether the radio is
  * listening is `send`'s business, asked once there rather than at every call
  * site, which is what keeps a handler to the reading it reports.
  */
-function handler(open, body) {
+export function handler(open, body) {
   return [open, ...body.map((l) => '    ' + l), '})'];
 }
 
@@ -148,12 +149,22 @@ function edges(channel, { down, up }) {
   return [...handler(down, report(1)), ...handler(up, report(0))];
 }
 
-/** DOWN/UP off the event bus, for anything the DAL treats as a button. */
-function buttonEdges(channel, source) {
+/** The DOWN and UP handler openers for anything the DAL treats as a button. */
+export function buttonEvents(source) {
   const on = (event) =>
     `control.onEvent(EventBusSource.${source}, EventBusValue.MICROBIT_BUTTON_EVT_${event}, function () {`;
-  return edges(channel, { down: on('DOWN'), up: on('UP') });
+  return { down: on('DOWN'), up: on('UP') };
 }
+
+/** DOWN/UP off the event bus, for anything the DAL treats as a button. */
+function buttonEdges(channel, source) {
+  return edges(channel, buttonEvents(source));
+}
+
+const LOGO_EVENTS = {
+  down: 'input.onLogoEvent(TouchButtonEvent.Touched, function () {',
+  up: 'input.onLogoEvent(TouchButtonEvent.Released, function () {',
+};
 
 // How often a switch pin is read. Fifty times a second: a close is seen within
 // a frame, and the radio can never be asked for more lines than this.
@@ -183,7 +194,7 @@ export const SCAN_MS = 20;
  * longer than a switch bounces — which costs the release a frame or two and the
  * radio nothing.
  */
-function switchScan(channel, n) {
+export function switchScan(channel, n, { onClose = [], onOpen = [] } = {}) {
   const sent = `${channel}Sent`;
   const openFor = `${channel}OpenFor`;
   return [
@@ -192,12 +203,14 @@ function switchScan(channel, n) {
     `    if (${sent} == 0) {`,
     `        ${sent} = 1`,
     `        send("${channel}:1")`,
+    ...onClose.map((l) => '        ' + l),
     `    }`,
     `} else {`,
     `    ${openFor} += 1`,
     `    if (${sent} == 1 && ${openFor} >= 2) {`,
     `        ${sent} = 0`,
     `        send("${channel}:0")`,
+    ...onOpen.map((l) => '        ' + l),
     `    }`,
     `}`,
   ];
@@ -212,7 +225,11 @@ function number(channel, expr) {
 
 /**
  * Each input contributes:
- *   channels — wire channel names it emits (shown as chips on the tile)
+ *   channels — wire channel names it emits
+ *   events   — for an on/off input, the DOWN and UP handler openers; `event`
+ *              for a one-off; `read` for a number, the expression that reads
+ *              it; `pin` for a scanned switch. The sentences on Controls build
+ *              their own handlers and loop from these.
  *   loop     — lines run every tick inside the forever loop
  *   scan     — lines run every SCAN_MS inside the fast loop (see `switchScan`)
  *   handlers — top-level event handlers (outside the loop)
@@ -266,6 +283,7 @@ function pinInput(n) {
         // and comes back by itself, and recalibrating under a hand that is
         // holding the pad would teach it that touched is the baseline.
         prime: [`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Capacitive)`],
+        events: buttonEvents(`MICROBIT_ID_IO_P${n}`),
         handlers: buttonEdges(ch, `MICROBIT_ID_IO_P${n}`),
         connect: binary(ch, `input.pinIsPressed(TouchPin.P${n})`),
         build:
@@ -285,6 +303,9 @@ function pinInput(n) {
         // only 1 is the foils actually meeting.
         setup: [`pins.setPull(DigitalPin.P${n}, PinPullMode.PullDown)`],
         state: [`let ${ch}Sent = 0`, `let ${ch}OpenFor = 0`],
+        // The pin number, for the sentences on Controls to rebuild the scan
+        // with their own lines inside it.
+        pin: n,
         scan: switchScan(ch, n),
         // The report also resets the scan's memory of what was last sent, so a
         // browser that attaches mid-hold is not told "closed" here and then
@@ -310,6 +331,7 @@ function pinInput(n) {
         // A voltage, read as 0–1023, ten times a second. A strip of pencil
         // graphite between 3V and GND, with the pin on a clip you slide along
         // it, makes a potentiometer out of a drawing.
+        read: `pins.analogReadPin(AnalogPin.P${n})`,
         loop: number(ch, `pins.analogReadPin(AnalogPin.P${n})`),
         build:
           `Read a voltage on P${n} as a number from 0 to 1023. Draw a thick pencil line, clip 3V to one end and GND ` +
@@ -326,6 +348,7 @@ function gesture(id, name, gestureName, emoji, build) {
     id, emoji, name,
     kind: 'event',
     channels: [id],
+    event: `input.onGesture(Gesture.${gestureName}, function () {`,
     handlers: handler(`input.onGesture(Gesture.${gestureName}, function () {`,
       [`send("${id}:1")`]),
     build,
@@ -343,6 +366,7 @@ const SECTIONS = [
         id: 'btna', emoji: '🔘', name: 'Button A',
         kind: 'binary', form: 'button',
         channels: ['btna'],
+        events: buttonEvents('MICROBIT_ID_BUTTON_A'),
         handlers: buttonEdges('btna', 'MICROBIT_ID_BUTTON_A'),
         connect: binary('btna', 'input.buttonIsPressed(Button.A)'),
         build: 'No wiring. To press it with an object, tape something onto the button or build a little lever that pushes it.',
@@ -351,6 +375,7 @@ const SECTIONS = [
         id: 'btnb', emoji: '🔘', name: 'Button B',
         kind: 'binary', form: 'button',
         channels: ['btnb'],
+        events: buttonEvents('MICROBIT_ID_BUTTON_B'),
         handlers: buttonEdges('btnb', 'MICROBIT_ID_BUTTON_B'),
         connect: binary('btnb', 'input.buttonIsPressed(Button.B)'),
         build: 'No wiring. Same tricks as Button A — two buttons means two separate channels.',
@@ -362,10 +387,8 @@ const SECTIONS = [
         // `Touched` is the down event; the one named `Pressed` is the click,
         // and so lands on release. The names are the wrong way round from what
         // you would guess, which is exactly why this is worth spelling out.
-        handlers: edges('logo', {
-          down: 'input.onLogoEvent(TouchButtonEvent.Touched, function () {',
-          up: 'input.onLogoEvent(TouchButtonEvent.Released, function () {',
-        }),
+        events: LOGO_EVENTS,
+        handlers: edges('logo', LOGO_EVENTS),
         connect: binary('logo', 'input.logoIsPressed()'),
         build: 'No wiring. Touch the gold logo on the front — it even works through a thin strip of foil taped over it.',
       },
@@ -383,6 +406,7 @@ const SECTIONS = [
         id: 'pitch', emoji: '📐', name: 'Pitch',
         kind: 'number',
         channels: ['pitch'],
+        read: 'input.rotation(Rotation.Pitch)',
         loop: number('pitch', 'input.rotation(Rotation.Pitch)'),
         build: 'No wiring — strap the whole micro:bit (plus battery pack) to your object and tip it forward or back. Arrives in degrees. Great for steering.',
       },
@@ -390,6 +414,7 @@ const SECTIONS = [
         id: 'roll', emoji: '📐', name: 'Roll',
         kind: 'number',
         channels: ['roll'],
+        read: 'input.rotation(Rotation.Roll)',
         loop: number('roll', 'input.rotation(Rotation.Roll)'),
         build: 'No wiring — strap the whole micro:bit (plus battery pack) to your object and tip it left or right. Arrives in degrees. Great for steering.',
       },
@@ -408,6 +433,7 @@ const SECTIONS = [
         // alone as a statement is not a shape MakeCode can turn back into
         // blocks — it compiles, but it drops the whole program to JavaScript.
         setup: ['let calibrated = input.compassHeading()'],
+        read: 'input.compassHeading()',
         loop: number('heading', 'input.compassHeading()'),
         build: 'No wiring — spin your object like a dial. On power-up it asks you to calibrate: tilt the board to fill the LED grid. Calibrate with the finished object assembled, battery and all — the reading is thrown off by whatever is attached, so a bare board calibrated on the bench will be wrong once it is inside your build. Expect to redo it after each download, and test in the room you will play in: laptops, speaker magnets and steel tables all pull it about. On the Controls page you pick which direction to watch for, and whether it fires on arrival or holds while pointing that way.',
       },
@@ -448,6 +474,7 @@ const SECTIONS = [
         id: 'loud', emoji: '👏', name: 'Loud sound',
         kind: 'event',
         channels: ['loud'],
+        event: 'input.onSound(DetectedSound.Loud, function () {',
         handlers: handler('input.onSound(DetectedSound.Loud, function () {', ['send("loud:1")']),
         build: 'No wiring. Fires once per clap, shout or bang — the mic is next to the touch logo. Count them in a script (see Code it on Controls) to make every third clap do something.',
       },
@@ -462,6 +489,7 @@ const SECTIONS = [
         id: 'light', emoji: '💡', name: 'Light',
         kind: 'number',
         channels: ['light'],
+        read: 'input.lightLevel()',
         loop: number('light', 'input.lightLevel()'),
         build: 'No wiring. Cover and uncover the LED grid with your hand, or shine a flashlight on it. Sends 0–255.',
       },
@@ -469,6 +497,7 @@ const SECTIONS = [
         id: 'temp', emoji: '🌡️', name: 'Temperature',
         kind: 'number',
         channels: ['temp'],
+        read: 'input.temperature()',
         loop: number('temp', 'input.temperature()'),
         build: 'No wiring. Warm the processor with your thumbs — it responds slowly, which makes for hilarious controls.',
       },
@@ -476,6 +505,7 @@ const SECTIONS = [
         id: 'mic', emoji: '🎤', name: 'Sound',
         kind: 'number',
         channels: ['mic'],
+        read: 'input.soundLevel()',
         loop: number('mic', 'input.soundLevel()'),
         build: 'No wiring. Clap, yell, blow, sing — loudness arrives as 0–255. The mic is next to the touch logo.',
       },
