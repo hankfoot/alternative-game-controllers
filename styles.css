@@ -626,17 +626,9 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .pager-next { background: var(--accent); border-color: var(--accent); color: #fff; }
 .pager-next:hover { background: var(--accent); filter: brightness(1.06); }
 
-/* ---------- Controller-to-game patch bay ---------- */
-.wiring-panel {
-  margin: 0 0 28px; padding: 18px;
-  border: 1px solid var(--line); border-radius: 16px; background: var(--bg-soft);
-}
-.wiring-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
-.wiring-head h3 { margin: 0; font-size: 1.08rem; }
+/* ---------- Controls: sentences and settings ---------- */
 /* Held to a readable measure — the panel is wide for the board's sake, not the
    prose's, so the intro shouldn't run the full width as one thin ribbon. */
-.wiring-head p { margin: 3px 0 0; max-width: 64ch; color: var(--ink-soft); font-size: .86rem; }
-.wiring-clear { flex: none; padding: 6px 13px; font-size: .8rem; }
 
 .step-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
 .step-head h3 { margin: 0; }
@@ -647,38 +639,12 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .lesson-live { max-width: 720px; max-height: none; }
 .shot-slot { min-height: 120px; max-width: 620px; border: 1px dashed var(--line); border-radius: 10px; }
 
-.wiring-nothing {
-  padding: 30px 22px; text-align: center;
-  background: var(--bg-soft); border: 1px dashed var(--line); border-radius: var(--radius);
-}
-.wiring-nothing[hidden], .wiring-board[hidden], .wiring-clear[hidden] { display: none; }
-.wiring-nothing p { margin: 0; color: var(--ink-soft); font-size: .9rem; }
-.wiring-nothing .placeholder-title { margin-bottom: 6px; color: var(--ink); font-weight: 600; }
 
-.wiring-board {
-  position: relative; display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
-  gap: clamp(52px, 7vw, 104px); margin-top: 20px;
-}
-.wiring-column { position: relative; z-index: 2; min-width: 0; }
-.wiring-column > h4 {
-  margin: 0 0 8px; font-size: .7rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .07em; color: var(--ink-soft);
-}
-.wiring-sources { display: flex; flex-direction: column; gap: 10px; }
 /* Cards keep one comfortable size whatever the scheme asks for: a scheme with a
    single control gets one card, not one card stretched across the column. */
 /* Cards fill the column rather than stopping short of it: the jack now sits
    inside each box and takes its width off the near edge, so the sentences need
    the room back. Two controls would drop to their own rows rather than halve. */
-.wiring-targets {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 10px; align-items: start;
-}
-.wiring-source-empty {
-  margin: 0; padding: 14px; color: var(--ink-faint); font-size: .83rem;
-  background: var(--bg); border: 1px dashed var(--line); border-radius: 10px;
-}
 /* The Controls screen's own colour — the fourth face button, after Set up's red, Sensing's
    yellow and Game's green. It marks everything the board highlights: the jacks,
    the cables between them, and the words that name either. Green is left to
@@ -708,59 +674,24 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
   --wire: var(--screen); --wire-soft: var(--screen-soft); --wire-ink: var(--screen-ink);
 }
 /* A cable only exists where there's a connection, so it is always in use. */
-.wiring-cables { --wire: var(--screen); }
-.wiring-map.active {
-  --wire: var(--green); --wire-soft: var(--green-soft); --wire-ink: var(--green-ink);
-}
-.wiring-term { color: var(--ink); font-weight: 700; }
 
 /* Source node: identity across the top, its outputs listed beneath and pushed
    against the right edge where the cables leave — so each output keeps its own
    line for a cable to meet, with room to say what it does. */
-.wiring-source {
-  position: relative; display: flex; flex-direction: column;
-  padding: 11px 12px 12px; color: var(--ink);
-  background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
-}
-.wiring-source[data-live="false"] { border-style: dashed; }
 /* Name and channel share a line: the channel is a qualifier on the name, not a
    second fact, and stacking them left the identity two lines tall for nothing. */
-.wiring-source-id { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-.wiring-source-emoji { font-size: 1.15rem; flex: none; line-height: 1; }
-.wiring-source-lines {
-  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; flex: 1;
-}
-.wiring-source-id strong { font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wiring-source-id code { font-size: .65rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 /* Which way this input was set up, when that was a choice. Quiet running text
    beside the name rather than a badge on it — it qualifies the input, and a
    chip would give it the same weight as the channel it sits next to. */
-.wiring-source-mode { flex: none; font-size: .74rem; color: var(--ink-faint); }
 /* What the input reads, its own line spanning the full card — flush with the
    emoji rather than indented under the name, so it reads as a caption on the
    whole row instead of a continuation of the title. */
-.wiring-source-desc {
-  margin: 4px 0 0;
-  font-size: .74rem; line-height: 1.35; color: var(--ink-faint);
-}
-.wiring-source-reading {
-  flex: none; font-family: var(--mono); font-size: .72rem; color: var(--ink-soft);
-  max-width: 66px; overflow: hidden; text-overflow: ellipsis;
-}
 
-.wiring-outs {
-  display: flex; flex-direction: column; gap: 15px; align-items: stretch;
-  margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--line);
-}
 /* A connector's name is set one way wherever it appears, on either side of the
    board: the TRIGGER an output offers and the TRIGGER a port accepts are the
    same word about the same thing, so they are the same piece of type. It stays
    quiet whatever happens beneath it — the label only ever names the block, and
    it's the block that shows whether anything is going on. */
-.wiring-out, .wiring-port {
-  font-size: .7rem; font-weight: 700; letter-spacing: .04em;
-  text-transform: uppercase; color: var(--gray-ink);
-}
 :is(.wiring-out-group, .wiring-port-group):has(.wiring-map.active) :is(.wiring-out, .wiring-port) {
   color: var(--green-ink);
 }
@@ -774,11 +705,6 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
    level — so which ends fit is legible before a cable is in the air. */
 /* No halo: the jack sits inside a box whose fill changes with its state, so a
    ring in any one colour would be wrong against the others. */
-.wiring-jack {
-  display: block; flex: none; width: 12px; height: 12px; border-radius: 50%;
-  background: var(--bg); border: 3px solid var(--wire);
-  transition: background .15s, border-color .15s, border-radius .15s;
-}
 :is(.wiring-out-row, .wiring-port-row)[data-type="trigger"] .wiring-jack {
   border-radius: 2px; rotate: 45deg;
 }
@@ -816,15 +742,8 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
    wall, the mirror of an output's jack on its box's right wall, since this is
    the edge a cable arrives at rather than leaves from. */
 /* The rule under the identity, and the same rhythm the outputs keep. */
-.wiring-ports {
-  display: flex; flex-direction: column; gap: 15px; align-items: stretch;
-  margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--line);
-}
 /* A control is one block holding what it does, with its connector's name on the
    group above it — the mirror of an output and its group. */
-.wiring-port-group { display: flex; flex-direction: column; gap: 5px; }
-.wiring-port-row { display: flex; flex-direction: column; }
-.wiring-port-maps { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
 /* While a cable is in the air, whatever end it cannot land on steps back — the
    whole node, name and jack together, since it is the node that's unreachable
    rather than any one part of it. A cable can be drawn from either column, so
@@ -836,45 +755,24 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
    jack bows past whatever row sits between, and a card's opaque background
    was cutting the curve off right where it passed behind. Non-interactive, so
    sitting on top never steals a click from the jacks and ports underneath. */
-.wiring-cables {
-  position: absolute; z-index: 3; inset: 0; width: 100%; height: 100%;
-  overflow: visible; pointer-events: none;
-}
-.wiring-cables path {
-  fill: none; stroke: var(--wire, var(--gray));
-  stroke-width: 3; stroke-linecap: round; opacity: .6;
-  transition: stroke-width .1s, opacity .1s;
-}
 /* Cables carry the type as a dash pattern, matching the jacks they join:
    a level runs continuous, a trigger is a series of instants. */
 /* Dotted fires at instants, dashed stays on in stretches, solid is continuous —
    the cable carries the same distinction its two jacks do. */
-.wiring-cables path[data-type="trigger"] { stroke-dasharray: 1 7; }
-.wiring-cables path[data-type="hold"] { stroke-dasharray: 7 5; }
-.wiring-cables path.active { --wire: var(--green); stroke-width: 6; opacity: 1; }
-.wiring-cables .wiring-cable-drag { stroke-dasharray: 7 7; opacity: .55; }
 
 /* A group is one connector type: its name, then every jack of that type. The
    gap inside a group is smaller than the one between groups, so two holds read
    as two ends of the same thing rather than as two unrelated blocks. */
-.wiring-out-group { display: flex; flex-direction: column; gap: 5px; }
 /* An output is one block: a box, full width, wired or not, holding what it
    does. Its name lives on the group above it. */
-.wiring-out-row { display: flex; flex-direction: column; }
-.wiring-out-maps { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
 /* The jack sits inside its own box, held off the outer wall by the same air it
    has above and below on a single-line box: the box's padding plus this margin
    equals half the space a centred jack leaves top and bottom. Taller boxes keep
    the jack centred, so the inset stays put while the box grows around it. */
-.wiring-map .wiring-jack { align-self: center; }
 /* An output's jack has the ✕ between it and the sentence, so the box's own gap
    is already enough air. A control's jack sits straight against the words, so
    it gets the same clearance inward as it has out to the wall — otherwise it
    reads as leaning on the sentence. */
-.wiring-out-row .wiring-map .wiring-jack { margin-right: 7px; }
-.wiring-port-row .wiring-map .wiring-jack { margin: 0 10px 0 7px; }
-.wiring-jack { cursor: grab; touch-action: none; }
-.wiring-jack:active { cursor: grabbing; }
 /* Every option gets its own box, wired or not — the boundary is what makes one
    HOLD/TRIGGER/LEVEL block readable as a separate thing from the next. An
    unwired box stays dashed and unfilled, a statement of intent rather than a
@@ -883,30 +781,12 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
    live reading and the way to cut the wire ride alongside the first line of
    settings rather than taking a row above them, which keeps a wired box the
    same height as the unwired one it replaced. */
-.wiring-map {
-  display: flex; flex-direction: row-reverse; align-items: flex-start; gap: 8px;
-  padding: 9px 11px;
-  background: var(--bg-soft); border: 1px solid var(--line); border-radius: 9px;
-  transition: border-color .1s, background .1s;
-}
 /* An empty block is a dashed outline; one with a wire in it fills with the
    screen's colour, so a glance down the column picks out what's actually doing
    something; one that is firing right now goes green. */
-.wiring-map-draft { background: none; border-style: dashed; }
 /* A setting is not a socket. Nothing is ever going to be patched into it, so it
    is stated rather than left open: a solid, filled box, since the dashed one
    means "waiting for a cable" everywhere else on this board. */
-.wiring-port-row[data-type="setting"] .wiring-map {
-  background: var(--bg-soft); border-style: solid;
-}
-.wiring-map:not(.wiring-map-draft) {
-  background: var(--screen-soft);
-  border-color: color-mix(in srgb, var(--screen) 22%, transparent);
-}
-.wiring-map.active { background: var(--green-soft); border-color: var(--green); }
-.wiring-map-header { flex: none; display: flex; align-items: center; gap: 8px; min-height: 28px; }
-.wiring-map-value { font-family: var(--mono); font-size: .72rem; color: var(--wire-ink); font-variant-numeric: tabular-nums; }
-.wiring-map-settings { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: start; gap: 6px; }
 /* A setting that is one decision reads as one sentence: the controls sit in the
    line of text rather than under labels, so it states what the wire does. */
 .wiring-sentence {
@@ -928,12 +808,10 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 /* A setting that can't do its job says so in words as well as colour, since the
    colour alone would be invisible to anyone who can't pick it out. */
 .wiring-sentence[data-warn="true"] input { border-color: var(--yellow); }
-.wiring-note { color: var(--yellow-ink); font-size: .74rem; font-style: normal; }
 /* Focus is the screen's colour, not green: green already means a wire is
    firing right now, and a focus ring in the same colour would read as one. */
 .wiring-sentence :is(select, input):focus-visible { outline: 2px solid var(--screen); outline-offset: 1px; }
 .wiring-remove { flex: none; }
-.wiring-calibrate { padding: 5px 9px; font-size: .7rem; }
 
 /* ---------- Game ---------- */
 /* The scheme picker (Controls screen) is the first control card's identity line,
@@ -1001,11 +879,8 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 720px) {
-  .wiring-board { grid-template-columns: 1fr; gap: 22px; }
   /* Nothing to run between the columns once they stack, so the jacks are just
      type markers sitting in their boxes. */
-  .wiring-cables { display: none; }
-  .wiring-targets { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 }
 @media (max-width: 560px) {
   /* The board name has to stay readable here — the chip's row is its own, and the
@@ -1017,11 +892,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
   .topbar-right { gap: 8px; }
   .topbar-right .btn { padding: 8px 12px; }
   .viz-pop { top: auto; bottom: 12px; left: 12px; right: 12px; width: auto; }
-  .wiring-panel { padding: 14px; margin-inline: -8px; }
-  .wiring-targets { grid-template-columns: 1fr; }
   /* The description carries the matching rule, so it stacks rather than hides. */
-  .wiring-head { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .wiring-head p { font-size: .82rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1440,3 +1311,17 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 
 /* Listed in the face it names, so the choice is made by looking. */
 .font-picker, .font-picker option { font-size: .84rem; }
+
+/* ---------- Controls: the sentences ---------- */
+.mode-switch { max-width: 560px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-soft); }
+.rule-list { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; max-width: 720px; }
+.rule { padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.rule-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
+.rule-sentence input[type="number"] { width: 5.5em; }
+.rule-empty { margin: 12px 0 0; font-size: .9rem; color: var(--ink-faint); }
+.rule-meter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+.rule-live { flex: 1 1 260px; min-width: 0; max-height: none; }
+.rule-use { flex: none; padding: 6px 11px; font-size: .78rem; }
+.rule-note { font-size: .78rem; color: var(--ink-faint); }
+.rule-note[hidden] { display: none; }
+#controls-warning { margin-top: 12px; }

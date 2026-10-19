@@ -1,5 +1,6 @@
-// Stateful catalog for controller channels. It merges planned, persisted, and
-// live inputs and reports kind changes so existing wires can migrate safely.
+// Stateful catalog for controller channels. It merges the channels a program
+// plans to send with the ones the board actually does, and reports kind
+// changes so the live views can adapt.
 
 import { onInput } from './bus.js';
 import { channelInfo, channelKind, isBinaryValue } from './channels.js';
@@ -46,7 +47,6 @@ export function createSignalStore({ subscribeInput = onInput, now = () => perfor
       observedMax: null,
       live: false,
       planned: false,
-      wired: false,
       // How this input was set up, when that was a choice — a pin read as a
       // touch pad and the same pin read as a switch are wired differently.
       mode: null,
@@ -121,7 +121,7 @@ export function createSignalStore({ subscribeInput = onInput, now = () => perfor
       }
     }
     for (const [channel, signal] of signals) {
-      if (!signal.live && !signal.planned && !signal.wired) signals.delete(channel);
+      if (!signal.live && !signal.planned) signals.delete(channel);
     }
     notify('catalog');
   }
@@ -136,9 +136,6 @@ export function createSignalStore({ subscribeInput = onInput, now = () => perfor
     },
     setPlannedChannels(descriptors) {
       reconcileFlag('planned', descriptors, { ordered: true });
-    },
-    setWiredChannels(descriptors) {
-      reconcileFlag('wired', descriptors);
     },
     destroy() {
       unsubscribeInput();

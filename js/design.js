@@ -24,7 +24,7 @@ import { FONTS, fontStack, cardPalette } from './theme/theme-store.js';
 import { createColourPicker } from './theme/colour-picker.js';
 import { newAssetId } from './theme/assets.js';
 import { exportBundle, readBundle, downloadBundle } from './theme/portable.js';
-import { loadAllConnections, saveAllConnections } from './wiring-storage.js';
+import { loadAllRules, saveAllRules } from './rules-store.js';
 import { RULES, courseFrom } from './games/sidescroller.js';
 import { GAMES } from './games/index.js';
 
@@ -130,7 +130,7 @@ const at = (theme, path) => path.split('.').reduce((value, key) => value?.[key],
 
 export function initDesign({
   hosts, options, theme, assets, images, audio,
-  onGameChange, onThemeApplied, onInputsImported, storage,
+  onGameChange, onThemeApplied, onRulesImported, onGameSelected, storage,
 }) {
   if (!hosts?.settings || !options) return null;
   let uploads = [];
@@ -820,13 +820,10 @@ export function initDesign({
       const bundle = await exportBundle({
         theme: theme.get(),
         assets,
-        // Reaching for the option record directly rather than through the
-        // engine: export wants every game's settings, and the engine only ever
-        // holds one.
         game: {
           selected: options.gameId,
           options: options.exportAll(),
-          wiring: loadAllConnections(storage),
+          rules: loadAllRules(storage),
         },
       });
       downloadBundle(bundle, 'game-theme.json');
@@ -857,11 +854,11 @@ export function initDesign({
       for (const asset of bundle.assets) {
         if (!await assets.put(asset)) refused += 1;
       }
+      saveAllRules(storage, bundle.game.rules);
+      // The scheme first: the options and sentences being applied belong to it.
+      if (bundle.game.selected) onGameSelected?.(bundle.game.selected);
       options.importAll(bundle.game.options);
-      saveAllConnections(storage, bundle.game.wiring);
-      // The builder is holding the old picks and the engine the old wiring, so
-      // both have to be told to re-read before any of this is on screen.
-      onInputsImported?.();
+      onRulesImported?.();
       theme.replace(bundle.theme);
       await refreshUploads();
       await applied();

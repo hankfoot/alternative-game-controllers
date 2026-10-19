@@ -301,51 +301,61 @@ basic.forever(function () {
     <!-- SCREEN: Controls -->
     <div class="panel screen" role="tabpanel" id="panel-controls" aria-labelledby="tab-controls" hidden>
       <section class="block" id="controls-board">
-        <div class="block-head"><h2>Wire up your controls</h2></div>
+        <div class="block-head"><h2>Build your controller</h2></div>
         <p class="lead">
-          One sidescroller, four ways to fly it — tap to rise, hold to rise, hold to slide,
-          or steer directly. Pick a scheme, and its controls are what your inputs get wired to.
-          Each scheme keeps its own wiring, and the keys and on-screen buttons always remain available.
+          Pick how the craft moves, then write what your controller does in plain sentences —
+          <em>when Button A is pressed, flap</em>. The code for your board is written for you
+          underneath; copy it into MakeCode and download.
         </p>
 
-        <section class="wiring-panel" aria-labelledby="wiring-title">
-          <div class="wiring-head">
-            <div>
-              <h3 id="wiring-title">Wire your controller</h3>
-              <p>
-                Each input lists what it can do. A <b class="wiring-term">Level</b>
-                port takes a whole range; a <b class="wiring-term">Hold</b> port takes
-                an on/off that stays on while something is true; a
-                <b class="wiring-term">Trigger</b> port fires at an instant.
-              </p>
-            </div>
-            <button class="btn btn-soft wiring-clear" id="wiring-clear" type="button">Clear wiring</button>
-          </div>
-
-          <!-- Shown in place of the whole board when nothing has been picked to
-               wire. Written by js/wiring-ui.js. -->
-          <div class="wiring-nothing" id="wiring-nothing" hidden></div>
-
-          <div class="wiring-board" id="wiring-board">
-            <div class="wiring-column wiring-column-sources">
-              <h4>Your inputs</h4>
-              <div class="wiring-sources" id="wiring-sources"></div>
-            </div>
-            <svg class="wiring-cables" id="wiring-cables" aria-hidden="true"></svg>
-            <div class="wiring-column wiring-column-targets">
-              <h4>Game controls</h4>
-              <!-- The scheme decides what these controls are, so choosing one
-                   is a setting of the first control rather than a thing beside
-                   it: the wiring board moves this block into that card. -->
-              <div class="game-picker" id="game-picker-block">
+        <ol class="steps">
+          <li class="step">
+            <span class="step-num">1</span>
+            <div class="step-body">
+              <h3>Choose how it moves</h3>
+              <!-- #game-picker and #game-tagline are filled by js/game.js. -->
+              <div class="game-picker mode-switch" id="game-picker-block">
                 <label class="game-picker-label" for="game-picker">Movement</label>
                 <select id="game-picker"></select>
                 <p class="game-tagline" id="game-tagline"></p>
               </div>
-              <div class="wiring-targets" id="wiring-targets"></div>
             </div>
-          </div>
-        </section>
+          </li>
+
+          <li class="step">
+            <span class="step-num">2</span>
+            <div class="step-body">
+              <div class="step-head">
+                <h3>Say what it does</h3>
+                <button class="btn" id="rule-add" type="button">+ Add a sentence</button>
+              </div>
+              <p>
+                Each sentence starts with something your board can sense and ends with something
+                the game can do. A reading shows up live under its sentence once the board is
+                connected, with the line it has to cross drawn on it — so set the number by looking.
+              </p>
+              <div class="rule-list" id="rule-list"><!-- written by js/controls-ui.js --></div>
+            </div>
+          </li>
+
+          <li class="step">
+            <span class="step-num">3</span>
+            <div class="step-body">
+              <h3>Copy the code to your board</h3>
+              <p>
+                Paste this over <em>everything</em> in the <strong>JavaScript</strong> tab of your
+                MakeCode project, then <strong>Download</strong>. Changed a sentence or a number?
+                Copy and download again.
+              </p>
+              <div class="code-block code-block-wide">
+                <button class="code-copy" type="button">Copy</button>
+                <pre><code id="controls-code"></code></pre>
+              </div>
+              <p class="builder-warn" id="controls-warning" role="status" hidden></p>
+              <div id="controls-tips"><!-- build tips, written by js/controls-ui.js --></div>
+            </div>
+          </li>
+        </ol>
       </section>
 
       <section class="block" id="controls-code">
@@ -383,7 +393,7 @@ basic.forever(function () {
               <h3>Paste what it wrote into MakeCode</h3>
               <p>
                 Open your project in MakeCode, switch to the <strong>JavaScript</strong> tab, and
-                paste the code at the very bottom, below the code you copied from Sensing. Then
+                paste the code at the very bottom, below the code you copied in step 3 above. Then
                 <strong>Download</strong> to the board as before. If MakeCode underlines something
                 in red, paste the error back to your AI.
               </p>

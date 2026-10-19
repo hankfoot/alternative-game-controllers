@@ -20,14 +20,14 @@ const COPIED_MS = 1400;
 // How many commands the log shows.
 const LOG_LINES = 50;
 
-export function initCodeUI({ elements, bridge, signalStore, gameHost, storage }) {
+export function initCodeUI({ elements, bridge, controls, gameHost, storage }) {
   const { prompt, request, copy, log, status } = elements;
-  if (!request || !copy || !bridge || !signalStore || !gameHost) return null;
+  if (!request || !copy || !bridge || !controls || !gameHost) return null;
 
   function promptText() {
     const game = gameHost.activeGame();
     return buildPrompt({
-      inputs: describeInputs(signalStore.all()),
+      inputs: describeInputs(controls.parts()),
       controls: controlsFor(game?.targets),
       schemeName: game?.label ?? '',
       schemeTagline: game?.tagline ?? '',
@@ -115,11 +115,8 @@ export function initCodeUI({ elements, bridge, signalStore, gameHost, storage })
     renderStatus();
   });
 
-  // The instructions change when the inputs do or the scheme does — not on
-  // every reading, which would rewrite a few kilobytes ten times a second.
-  signalStore.subscribe(({ type }) => {
-    if (type !== 'value') renderPrompt();
-  });
+  // The instructions change when the sentences do or the scheme does.
+  controls.subscribe(renderPrompt);
   gameHost.onGameChange(renderPrompt);
 
   try {

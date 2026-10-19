@@ -8,8 +8,7 @@ import { initGame } from './game.js';
 import { initGameWarning } from './game-warning.js';
 import { createSignalStore } from './signal-store.js';
 import { initTabs } from './tabs.js';
-import { createWiringEngine } from './wiring-engine.js';
-import { initWiringUI } from './wiring-ui.js';
+import { initControlsUI } from './controls-ui.js';
 import { createCommandBridge } from './game-commands.js';
 import { initCodeUI } from './code-ui.js';
 import { initDesign } from './design.js';
@@ -60,22 +59,12 @@ const gameHost = initGame({
   musicWhen: () => document.visibilityState === 'visible'
     && !document.getElementById('panel-game')?.hidden,
 });
-const wiringEngine = gameHost
-  ? createWiringEngine({
-    signalStore,
-    actions: gameHost.actions,
-    game: gameHost.activeGame(),
-  })
-  : null;
-// Each game keeps its own independent wiring, so the board swaps with the game.
-if (wiringEngine) gameHost.onGameChange((game) => wiringEngine.setGame(game));
-
 // --- What the controls and the course are set to -----------------------------
 const gameOptions = gameHost ? createGameOptions({ gameHost, storage }) : null;
 
 // --- Game commands from the board ------------------------------------------
-// A board can steer the game directly, with "game:…" lines its program writes
-// through the helpers the builder emits. Beside the wiring, not instead of it.
+// The board steers the game with "game:…" lines its program writes through the
+// helpers the builder emits — the sentences on Controls, or code by hand.
 const bridge = gameHost ? createCommandBridge({ gameHost }) : null;
 // The one deliberate global. Everything else in this app is module-local, and
 // stays so; this is the same facade the board's commands go through, put where
@@ -89,8 +78,21 @@ initLessons({ host: document.getElementById('lesson-list'), signalStore });
 
 // --- Consumers -------------------------------------------------------------
 initVisualizer(signalStore);
-if (wiringEngine) initWiringUI({ signalStore, engine: wiringEngine });
-if (bridge) {
+const controls = gameHost
+  ? initControlsUI({
+    elements: {
+      list: document.getElementById('rule-list'),
+      add: document.getElementById('rule-add'),
+      code: document.getElementById('controls-code'),
+      warn: document.getElementById('controls-warning'),
+      tips: document.getElementById('controls-tips'),
+    },
+    gameHost,
+    signalStore,
+    storage,
+  })
+  : null;
+if (bridge && controls) {
   initCodeUI({
     elements: {
       prompt: document.getElementById('code-prompt'),
@@ -100,21 +102,20 @@ if (bridge) {
       log: document.getElementById('code-log'),
     },
     bridge,
-    signalStore,
+    controls,
     gameHost,
     storage,
   });
 }
-if (wiringEngine) {
+if (controls) {
   initGameWarning({
     element: document.getElementById('game-warning'),
-    signalStore,
-    engine: wiringEngine,
     host: gameHost,
+    controls,
     bridge,
   });
 }
-if (wiringEngine) {
+if (gameOptions && controls) {
   const byId = (id) => document.getElementById(id);
   const design = initDesign({
     hosts: {
@@ -134,14 +135,15 @@ if (wiringEngine) {
     images,
     audio,
     storage,
-    // Registered after the engine's own listener above, so by the time this
-    // runs the engine already holds the new scheme's settings.
+    // Registered after the options' own listener, so by the time this runs
+    // they already hold the new scheme's settings.
     onGameChange: (redraw) => gameHost.onGameChange(redraw),
+    onGameSelected: (id) => gameHost.selectGame(id),
     // A redrawn sprite needs no announcement — the renderer reads the theme
     // every frame. This is for the music, which has to be told to change.
     onThemeApplied: () => gameHost.syncMusic(),
-    // An imported bundle rewrites the wiring underneath the engine holding it.
-    onInputsImported: () => wiringEngine.reloadWiring(),
+    // An imported bundle rewrites the sentences underneath the screen holding them.
+    onRulesImported: () => controls.reload(),
   });
   drawingsReady.then(() => design?.refreshPreviews());
 }
@@ -237,7 +239,7 @@ let live = null; // the last real status, while `stale` is standing in for it
 // a way worth mentioning.
 function expectsStream() {
   return signalStore.all().some((signal) =>
-    (signal.planned || signal.wired) && (signal.kind === 'number' || signal.kind === 'bearing'));
+    signal.planned && (signal.kind === 'number' || signal.kind === 'bearing'));
 }
 
 const connectError = document.getElementById('connect-error');
@@ -291,10 +293,6 @@ onStatus((status) => {
   live = status;
   lastHeard = performance.now();
   paint(status);
-  // A wire holds its last value until the next one arrives, and a board that
-  // has gone lets go of nothing. Without this the craft carries on climbing
-  // into the ceiling while the chip says the controller is gone.
-  if (status.state !== 'connected') wiringEngine?.release();
 });
 
 onInput(() => {

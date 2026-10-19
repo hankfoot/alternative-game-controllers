@@ -2,14 +2,18 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { buildPrompt, describeInputs } from '../js/code-prompt.js';
+import { rulesParts } from '../js/controls-codegen.js';
 import { controlsFor } from '../js/game-facade.js';
-import { createSignalStore } from '../js/signal-store.js';
 import { findGame } from '../js/games/index.js';
 
-function inputsFor(planned) {
-  const store = createSignalStore({ subscribeInput: () => () => {}, now: () => 0 });
-  store.setPlannedChannels(planned);
-  return describeInputs(store.all());
+// The inputs an LLM is told about are the ones the sentences already read.
+function inputsFor(inputIds) {
+  const targets = findGame('flappy').targets;
+  const rules = inputIds.map((input) => {
+    const when = /:analog$|^(light|mic|pitch|roll|temp|heading)$/.test(input) ? 'above' : /^(shake|loud|tilt|logo(up|down)|face|freefall|g\d)/.test(input) ? 'happens' : 'pressed';
+    return { input, when, control: 'flap', threshold: 1 };
+  });
+  return describeInputs(rulesParts(rules, targets));
 }
 
 const game = findGame('brickbreaker');
@@ -28,18 +32,18 @@ test('the prompt names every control of the picked scheme, with the helper that 
 });
 
 test('the prompt says which inputs the program already reads, and how a pin is set up', () => {
-  const inputs = inputsFor([{ channel: 'p0', kind: 'binary', mode: 'Switch', form: 'switch' }, 'pitch', 'loud']);
+  const inputs = inputsFor(['p0:switch', 'pitch', 'loud']);
   const text = buildPrompt({ inputs, controls });
   assert.match(text, /- `p0`: Pin 0 as a Switch\n/, 'a scanned switch owns no handler');
   assert.match(text, /- `pitch`: Pitch\n/, 'nor does a polled reading');
   assert.match(text, /- `loud`: Loud sound — its `input\.onSound\(DetectedSound\.Loud, …\)` handler is already in the program/);
   assert.match(text, /do not change the mode or pull of a pin listed above/);
   assert.match(text, /only one handler per event/);
-  const more = buildPrompt({ inputs: inputsFor([{ channel: 'p2', mode: 'Touch Pad', form: 'pad' }, 'btna', 'shake', 'logo']), controls });
-  assert.match(more, /- `p2`: Pin 2 as a Touch Pad — its `control\.onEvent\(EventBusSource\.MICROBIT_ID_IO_P2, …\)` handler/);
-  assert.match(more, /- `btna`: Button A — its `control\.onEvent\(EventBusSource\.MICROBIT_ID_BUTTON_A, …\)` handler/);
+  const more = buildPrompt({ inputs: inputsFor(['p2:touch', 'btna', 'shake', 'logo']), controls });
+  assert.match(more, /- `p2`: Pin 2 as a Touch Pad — its `control\.onEvent\(EventBusSource\.MICROBIT_ID_IO_P2, EventBusValue\.MICROBIT_BUTTON_EVT_DOWN, …\)` handler/);
+  assert.match(more, /- `btna`: Button A — its `control\.onEvent\(EventBusSource\.MICROBIT_ID_BUTTON_A, EventBusValue\.MICROBIT_BUTTON_EVT_DOWN, …\)` handler/);
   assert.match(more, /- `shake`: Shake — its `input\.onGesture\(Gesture\.Shake, …\)` handler/);
-  assert.match(more, /- `logo`: Logo touch — its `input\.onLogoEvent\(…\)` handler/);
+  assert.match(more, /- `logo`: Logo touch — its `input\.onLogoEvent\(TouchButtonEvent\.Touched, …\)` handler/);
   assert.match(buildPrompt({ inputs: inputsFor([]), controls }), /Nothing yet\. You may set up any input/);
 });
 
@@ -70,7 +74,7 @@ test('the four helpers are documented, and the examples use them', () => {
 
 // A `null` or `undefined` in the text would be read by an LLM as a fact.
 test('nothing missing leaks into the text as a word', () => {
-  const inputs = inputsFor(['p0', 'heading', 'shake']);
+  const inputs = inputsFor(['p0:touch', 'heading', 'shake']);
   const text = buildPrompt({ inputs, controls: controlsFor(findGame('flappy').targets) });
   for (const leak of ['undefined', 'null', 'NaN', '[object']) {
     assert.ok(!text.includes(leak), `no "${leak}" in the prompt`);

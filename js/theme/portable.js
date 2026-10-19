@@ -31,8 +31,8 @@ const ACCEPTED_KINDS = Object.freeze([BUNDLE_KIND, 'experimental-game-controller
  *
  * `game` is the whole of what somebody made that isn't the theme:
  *   selected  — the control scheme they picked
- *   options   — the per-game course settings, from wiring-storage
- *   wiring    — every game's connections, from wiring-storage
+ *   options   — the per-game settings, from js/game-options.js
+ *   rules     — every game's sentences, from js/rules-store.js
  *
  * The last two used to be left out, which made a bundle a strange half-gift: it
  * carried the drawings and the course but not the controller, so opening one
@@ -54,7 +54,7 @@ export async function exportBundle({ theme, assets, game }) {
     game: {
       selected: typeof game?.selected === 'string' ? game.selected : null,
       options: asRecord(game?.options),
-      wiring: asRecord(game?.wiring),
+      rules: asRecord(game?.rules),
     },
   };
 }
@@ -98,7 +98,9 @@ export function readBundle(value) {
     game: {
       selected: typeof game.selected === 'string' ? game.selected : null,
       options: asRecord(game.options),
-      wiring: asRecord(game.wiring),
+      // A file from before the sentences carries `wiring` instead; it opens,
+      // and brings its look and course, with no sentences.
+      rules: asRecord(game.rules),
     },
   };
 }

@@ -2,87 +2,51 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { diagnose } from '../js/game-warning.js';
-import { GAMES } from '../js/games/index.js';
+import { GAMES, findGame } from '../js/games/index.js';
 
-const steeringOf = (id) => GAMES.find((game) => game.id === id).steering;
+const check = (id, rules) => diagnose({ steering: findGame(id).steering, targets: findGame(id).targets, rules });
+const press = (control) => ({ input: 'btna', when: 'pressed', control });
+const hold = (control) => ({ input: 'btna', when: 'held', control });
 
-// A wire, in the shape the engine hands them out in.
-const wire = (source, key) => {
-  const [node, port] = key.split('.');
-  return { source, target: { node, port } };
-};
-const heard = (channel, label = channel) => ({ channel, label, planned: true, live: true });
-const picked = (channel, label = channel) => ({ channel, label, planned: true, live: false });
-
-test('nothing picked anywhere is the first thing worth saying', () => {
-  const found = diagnose({ steering: steeringOf('flappy'), connections: [], signals: [] });
-  assert.equal(found.reason, 'no-inputs');
+test('no sentences at all is the first thing worth saying', () => {
+  const found = check('flappy', []);
+  assert.equal(found.reason, 'no-rules');
   assert.equal(found.level, 'empty');
 });
 
-test('inputs picked but none wired names what has to be steered', () => {
-  const found = diagnose({
-    steering: steeringOf('jetpack'),
-    connections: [],
-    signals: [picked('btna')],
-  });
-  assert.equal(found.reason, 'nothing-wired');
+test('sentences that steer nothing name what has to be steered', () => {
+  const found = check('jetpack', [hold('shift')]);
+  assert.equal(found.reason, 'nothing-steered');
   assert.deepEqual(found.controls.map((control) => control.label), ['Thrust']);
 });
 
-// The case the whole check exists for: Invaders looks wired and flies one way.
-test('half of a two-input scheme is called out ahead of anything else', () => {
-  const found = diagnose({
-    steering: steeringOf('spaceship'),
-    connections: [wire('btna', 'slide.up')],
-    signals: [heard('btna')],
-  });
-  assert.equal(found.reason, 'half-wired');
+// The case the whole check exists for: Invaders looks done and flies one way.
+test('half of a two-way scheme is called out ahead of anything else', () => {
+  const found = check('spaceship', [hold('up')]);
+  assert.equal(found.reason, 'half-steered');
   assert.equal(found.control.label, 'Move');
   assert.equal(found.control.done, 1);
   assert.equal(found.control.total, 2);
 });
 
-test('a fully wired controller that has been heard from says nothing at all', () => {
-  const found = diagnose({
-    steering: steeringOf('spaceship'),
-    connections: [wire('btna', 'slide.up'), wire('btnb', 'slide.down')],
-    signals: [heard('btna'), heard('btnb')],
-  });
-  assert.equal(found, null);
+// A press on a hold control is not a sentence the generator would keep, and
+// it must not count here either.
+test('a sentence of the wrong kind for its control does not count as steering', () => {
+  const found = check('jetpack', [press('thrust')]);
+  assert.equal(found.reason, 'nothing-steered');
 });
 
-// Wiring a channel you picked on Sensing but left out of the flashed code looks
-// exactly like a finished controller until the board is asked to speak.
-test('a wire to a reading the board has never sent is caught last', () => {
-  const found = diagnose({
-    steering: steeringOf('brickbreaker'),
-    connections: [wire('pitch', 'paddle.y')],
-    signals: [picked('pitch', 'Pitch')],
-  });
-  assert.equal(found.reason, 'silent');
-  assert.deepEqual(found.signals.map((signal) => signal.channel), ['pitch']);
-});
-
-test('a silent wire is only mentioned once the wiring is otherwise done', () => {
-  // Same silent channel, but half the scheme is still empty — that comes first.
-  const found = diagnose({
-    steering: steeringOf('spaceship'),
-    connections: [wire('pitch', 'slide.up')],
-    signals: [picked('pitch', 'Pitch')],
-  });
-  assert.equal(found.reason, 'half-wired');
-});
-
-test('every scheme can be got into a state that says nothing', () => {
+test('a finished controller says nothing at all, in every scheme', () => {
+  assert.equal(check('spaceship', [hold('up'), hold('down')]), null);
+  assert.equal(check('brickbreaker', [{ input: 'pitch', when: 'between', control: 'paddle', low: 0, high: 1 }]), null);
   for (const game of GAMES) {
-    const connections = game.steering.flatMap((control) =>
-      control.keys.map((key) => wire('btna', key)));
-    const found = diagnose({
-      steering: game.steering,
-      connections,
-      signals: [heard('btna')],
-    });
-    assert.equal(found, null, `${game.id} still complains about a finished controller`);
+    const rules = game.steering.flatMap((control) => control.keys.map((key) => {
+      const [node, port] = key.split('.');
+      const target = game.targets.find((t) => t.id === node);
+      const type = target.ports.find((p) => p.id === port).type;
+      const name = ['trigger', 'y', 'hold', 'level'].includes(port) ? node : port;
+      return { input: type === 'level' ? 'pitch' : 'btna', when: { trigger: 'pressed', hold: 'held', level: 'between' }[type], control: name, low: 0, high: 1 };
+    }));
+    assert.equal(check(game.id, rules), null, `${game.id} still complains about a finished controller`);
   }
 });

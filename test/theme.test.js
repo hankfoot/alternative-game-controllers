@@ -600,45 +600,24 @@ test('importing what was exported gives back the same theme', async () => {
   assert.equal(read.game.options.jetpack['world.obstacles'].gap, 'tight');
 });
 
-test('an imported course reaches the engine, which is holding the old one', async () => {
-  const { createWiringEngine } = await import('../js/wiring-engine.js');
-  const { createSignalStore } = await import('../js/signal-store.js');
-  const game = {
-    id: 'flappy',
-    targets: [],
-    settings: [{
-      id: 'world',
-      ports: [{
-        id: 'obstacles',
-        options: [{ id: 'gap', choices: [['tight', 'tight'], ['normal', 'normal']], value: 'normal' }],
-      }],
-    }],
-  };
-
+test('an imported course reaches the game through the options', async () => {
+  const { createGameOptions } = await import('../js/game-options.js');
+  const { findGame } = await import('../js/games/index.js');
   const published = [];
-  const actions = {
-    setValue() {}, fire() {}, setWiredPorts() {},
-    setControlOptions: (node, port, options) => published.push([`${node}.${port}`, options]),
+  const host = {
+    actions: { setControlOptions: (node, port, options) => published.push([`${node}.${port}`, options]) },
+    activeGame: () => findGame('flappy'),
+    onGameChange: () => () => {},
   };
-  const storage = memoryStorage();
-  const engine = createWiringEngine({ signalStore: createSignalStore(), actions, game, storage });
-  assert.equal(engine.controlOptions('world', 'obstacles').gap, 'normal');
-
-  // What importing does: rewrite the record from outside, then say so. The game
-  // has not changed, so setGame would refuse — this is the path that must work.
-  // Built from the same helper the code uses rather than typed out, so the test
-  // cannot quietly stop testing anything the next time the namespace moves.
-  storage.setItem(
-    key('controls', 'v1'),
-    JSON.stringify({ flappy: { 'world.obstacles': { gap: 'tight' } } }),
-  );
-  engine.setGame(game);
-  assert.equal(engine.controlOptions('world', 'obstacles').gap, 'normal', 'setGame alone cannot');
-
-  engine.reloadOptions();
-  assert.equal(engine.controlOptions('world', 'obstacles').gap, 'tight');
-  // And the running game is told, not just the screen that draws the dropdown.
-  assert.deepEqual(published.at(-1), ['world.obstacles', { gap: 'tight' }]);
+  const options = createGameOptions({ gameHost: host, storage: memoryStorage() });
+  const bundle = await exportBundle({
+    theme: normalizeTheme({}),
+    assets: fakeAssets([]),
+    game: { selected: 'flappy', options: { flappy: { 'world.obstacles': { gap: 'tight' } } } },
+  });
+  published.length = 0;
+  options.importAll(readBundle(JSON.parse(JSON.stringify(bundle))).game.options);
+  assert.equal(published.find(([port]) => port === 'world.obstacles')[1].gap, 'tight');
 });
 
 test('a file from somewhere else is refused with a reason', () => {
@@ -667,10 +646,10 @@ test('a reference to a drawing the file did not carry falls back to the built-in
 });
 
 // A bundle is the whole of what somebody made, not just how it looks. It used
-// to carry the drawings and the course but neither the inputs nor the wiring,
-// so opening one gave you a game that looked exactly right and answered to
-// nothing. This is the assertion that keeps all of it in the file.
-test('a bundle carries the look, the sounds, the course, the wiring and the inputs', async () => {
+// to carry the drawings and the course but not the controller, so opening one
+// gave you a game that looked exactly right and answered to nothing. This is
+// the assertion that keeps all of it in the file.
+test('a bundle carries the look, the sounds, the course and the sentences', async () => {
   const theme = normalizeTheme({
     scene: { player: { sprite: 'sprite-1' }, backdrop: { sprite: 'sprite-2' } },
     sound: { crash: asUpload('audio-1') },
@@ -692,8 +671,7 @@ test('a bundle carries the look, the sounds, the course, the wiring and the inpu
   const game = {
     selected: 'jetpack',
     options: { jetpack: { 'world.obstacles': { gap: 'tight' } } },
-    wiring: { jetpack: [{ id: 'w1', source: 'btna', sourceKind: 'binary',
-      target: { node: 'lift', port: 'thrust' }, transform: { type: 'hold', invert: false } }] },
+    rules: { jetpack: [{ id: 'r1', input: 'btna', when: 'held', control: 'thrust' }] },
   };
 
   const back = readBundle(JSON.parse(JSON.stringify(await exportBundle({ theme, assets, game }))));
@@ -713,5 +691,12 @@ test('a bundle carries the look, the sounds, the course, the wiring and the inpu
 
   assert.equal(back.game.selected, 'jetpack');
   assert.deepEqual(back.game.options, game.options, 'the course');
-  assert.deepEqual(back.game.wiring, game.wiring, 'the wiring');
+  assert.deepEqual(back.game.rules, game.rules, 'the sentences');
+
+  // A file from before the sentences still opens, with its look and course.
+  const old = readBundle({ kind: BUNDLE_KIND, version: 1, theme: {}, assets: [],
+    game: { selected: 'jetpack', options: game.options, wiring: { jetpack: [] } } });
+  assert.equal(old.error, undefined);
+  assert.deepEqual(old.game.rules, {});
+  assert.equal(old.game.selected, 'jetpack');
 });

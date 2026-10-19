@@ -11,6 +11,8 @@
 //
 // Pure: given the inputs, the controls and the sentence, returns the text.
 
+import { channelInfo } from './channels.js';
+
 const VERB = {
   press: (name) => `gamePress("${name}")`,
   hold: (name) => `gameHold("${name}", true)`,
@@ -24,36 +26,24 @@ function controlLine({ name, kind, description }) {
   return `- \`${name}\` (${kind}): ${description} → \`${VERB[kind]?.(name) ?? name}\``;
 }
 
-// The event handler the generated program registers for each input it reads.
-// MakeCode's Blocks view allows one handler per event: a second `on loud
-// sound` is shown as a disabled grey block and dropped from the program, so
-// an LLM that writes one for an event the program already owns breaks the
-// controller the moment somebody flips to Blocks. Named here so it knows.
-const GESTURES = {
-  shake: 'Shake', tiltleft: 'TiltLeft', tiltright: 'TiltRight', logoup: 'LogoUp', logodown: 'LogoDown',
-  faceup: 'ScreenUp', facedown: 'ScreenDown', freefall: 'FreeFall', g3: 'ThreeG', g6: 'SixG', g8: 'EightG',
-};
-function handlerOf({ channel, mode }) {
-  if (channel === 'btna' || channel === 'btnb') {
-    return `control.onEvent(EventBusSource.MICROBIT_ID_BUTTON_${channel.slice(-1).toUpperCase()}, …)`;
-  }
-  if (channel === 'logo') return 'input.onLogoEvent(…)';
-  if (channel === 'loud') return 'input.onSound(DetectedSound.Loud, …)';
-  if (GESTURES[channel]) return `input.onGesture(Gesture.${GESTURES[channel]}, …)`;
-  if (/^p[0-2]$/.test(channel) && String(mode).toLowerCase().includes('touch')) {
-    return `control.onEvent(EventBusSource.MICROBIT_ID_IO_P${channel.slice(1)}, …)`;
-  }
-  return null;
-}
-
-/** The inputs the program already reads, from the signal store's records. */
-export function describeInputs(signals = []) {
-  return signals
-    .filter((signal) => signal.planned)
-    .sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9) || a.channel.localeCompare(b.channel))
-    .map(({ channel, label, mode }) => ({
-      channel, label: label ?? channel, mode: mode ?? null, handler: handlerOf({ channel, mode }),
-    }));
+/**
+ * The inputs the program already reads, from the parts the sentences make
+ * (see rulesParts in js/controls-codegen.js): each with the handler it owns,
+ * if it owns one. MakeCode's Blocks view allows one handler per event: a
+ * second `on loud sound` is shown as a disabled grey block and dropped from
+ * the program, so an LLM that writes one for an event the program already
+ * owns breaks the controller the moment somebody flips to Blocks.
+ */
+export function describeInputs(parts = []) {
+  return parts.map((part) => {
+    const channel = part.channels[0];
+    return {
+      channel,
+      label: channelInfo(channel).label,
+      mode: part.label ?? null,
+      handler: (part.event ?? part.events?.down ?? null)?.replace(/, function \(\) \{$/, ', …)') ?? null,
+    };
+  });
 }
 
 function inputLine({ channel, label, mode, handler }) {

@@ -1,64 +1,54 @@
 // What is missing between the controller somebody built and the game.
 //
-// Every screen before this one reports on its own half — Sensing lists the
-// inputs you picked, Controls draws the wires you made — and each of them looks
-// perfectly finished on its own while the pair of them adds up to a game that
-// cannot be flown. So the check belongs here, at the point where you find out,
-// and it names the one thing furthest from done rather than listing them all.
+// The sentences on Controls look finished on their own while adding up to a
+// game that cannot be flown — a scheme that slides both ways with only "up"
+// written, or nothing written at all. So the check belongs here, at the point
+// where you find out, and it names the one thing furthest from done rather
+// than listing them all.
 //
 // It is never a blocker. The keys still work, and every message says so: a room
 // halfway through building a controller should still be able to play.
+
+import { actionKind } from './controls-codegen.js';
+import { controlsFor } from './game-facade.js';
 
 const COUNTS = ['no', 'one', 'two', 'three', 'four'];
 const count = (n) => COUNTS[n] ?? String(n);
 
 /**
- * What is wrong with the wiring right now, or null when the controller can fly
- * the craft. Deliberately says nothing about how to word it: this is the half
- * worth testing, and it has no business knowing what a document is.
+ * What is wrong with the sentences right now, or null when the controller can
+ * fly the craft. Deliberately says nothing about how to word it: this is the
+ * half worth testing, and it has no business knowing what a document is.
  *
  * `steering` is what the scheme says it needs — see the SCHEMES merge in
- * js/games/sidescroller.js.
+ * js/games/sidescroller.js. `rules` are sentences already checked against
+ * `targets` (see normalizeRule in js/controls-codegen.js).
  */
-export function diagnose({ steering, connections, signals }) {
-  const wired = new Map();
-  for (const { source, target } of connections) {
-    const key = `${target.node}.${target.port}`;
-    if (!wired.has(key)) wired.set(key, new Set());
-    wired.get(key).add(source);
+export function diagnose({ steering, targets, rules }) {
+  // Which "node.port" each sentence ends up driving.
+  const driven = new Set();
+  const controls = controlsFor(targets);
+  for (const rule of rules) {
+    const control = controls.find((c) => c.name === rule.control && c.kind === actionKind(rule.when));
+    if (control) driven.add(`${control.node}.${control.port}`);
   }
 
-  const controls = steering.map((control) => ({
+  const needed = steering.map((control) => ({
     label: control.label,
     total: control.keys.length,
-    done: control.keys.filter((key) => wired.has(key)).length,
-    sources: control.keys.flatMap((key) => [...(wired.get(key) ?? [])]),
+    done: control.keys.filter((key) => driven.has(key)).length,
   }));
 
-  if (!signals.some((signal) => signal.planned || signal.live)) {
-    return { reason: 'no-inputs', level: 'empty' };
-  }
+  if (!rules.length) return { reason: 'no-rules', level: 'empty', controls: needed };
+  if (needed.every((control) => control.done === 0)) return { reason: 'nothing-steered', level: 'empty', controls: needed };
 
-  if (controls.every((control) => control.done === 0)) {
-    return { reason: 'nothing-wired', level: 'empty', controls };
-  }
+  // A half-written control is worse than an unwritten one and reads worse too —
+  // the craft moves, just never back — so it is the one that gets named first.
+  const partial = needed.find((control) => control.done > 0 && control.done < control.total);
+  if (partial) return { reason: 'half-steered', level: 'partial', control: partial };
 
-  // A half-wired control is worse than an unwired one and reads worse too — the
-  // craft moves, just never back — so it is the one that gets named first.
-  const partial = controls.find((control) => control.done > 0 && control.done < control.total);
-  if (partial) return { reason: 'half-wired', level: 'partial', control: partial };
-
-  const empty = controls.find((control) => control.done === 0);
-  if (empty) return { reason: 'control-unwired', level: 'partial', control: empty };
-
-  // Everything is wired, which is the point at which a wire to a reading the
-  // board has never actually sent stops being invisible. The board is the only
-  // thing that can tell us a channel exists, so silence here usually means the
-  // reading was left out of the code that got flashed.
-  const quiet = [...new Set(controls.flatMap((control) => control.sources))]
-    .map((channel) => signals.find((signal) => signal.channel === channel))
-    .filter((signal) => signal && !signal.live);
-  if (quiet.length) return { reason: 'silent', level: 'partial', signals: quiet };
+  const empty = needed.find((control) => control.done === 0);
+  if (empty) return { reason: 'control-unsteered', level: 'partial', control: empty };
 
   return null;
 }
@@ -81,79 +71,58 @@ function strong(text) {
 
 const controlsLink = () => tabLink('Controls', 'controls');
 
-/**
- * The finding, in words. Text and elements rather than a string of HTML, since
- * a channel's name comes from whatever somebody typed in MakeCode.
- */
+/** The finding, in words. */
 function describe(found) {
-  if (found.reason === 'no-inputs') {
+  if (found.reason === 'no-rules') {
     return [
-      'You haven\'t picked any inputs yet, so there is nothing to wire. Check the ones your '
-      + 'controller uses over on ',
-      tabLink('Sensing', 'sensing'),
-      '.',
-    ];
-  }
-  if (found.reason === 'nothing-wired') {
-    return [
-      'Nothing on your controller steers the game yet. Wire an input to ',
-      strong(found.controls.map((control) => control.label).join(' or ')),
-      ' over on ',
+      'Your controller has no sentences yet, so nothing it does reaches the game. Write one on ',
       controlsLink(),
       '.',
     ];
   }
-  if (found.reason === 'half-wired') {
+  if (found.reason === 'nothing-steered') {
+    return [
+      'Nothing on your controller steers the game yet. Write a sentence that ends in ',
+      strong(found.controls.map((control) => control.label).join(' or ')),
+      ' on ',
+      controlsLink(),
+      '.',
+    ];
+  }
+  if (found.reason === 'half-steered') {
     return [
       strong(found.control.label),
-      ` takes ${count(found.control.total)} inputs and only ${count(found.control.done)} is wired,`
+      ` takes ${count(found.control.total)} controls and only ${count(found.control.done)} has a sentence,`
       + ' so the craft can only go one way. Add the other on ',
       controlsLink(),
       '.',
     ];
   }
-  if (found.reason === 'control-unwired') {
-    return [
-      'Nothing is wired to ',
-      strong(found.control.label),
-      ' yet — wire an input to it on ',
-      controlsLink(),
-      '.',
-    ];
-  }
-  const many = found.signals.length > 1;
   return [
-    'Wired to ',
-    strong(found.signals.map((signal) => signal.label).join(' and ')),
-    `, but your board hasn't sent ${many ? 'those' : 'that'} yet. Check it is connected, and that `
-    + `${many ? 'those readings are' : 'that reading is'} among the inputs you flashed.`,
+    'No sentence ends in ',
+    strong(found.control.label),
+    ' yet — write one on ',
+    controlsLink(),
+    '.',
   ];
 }
 
-export function initGameWarning({ element, signalStore, engine, host, bridge = null }) {
-  if (!element || !signalStore || !engine || !host) return null;
+export function initGameWarning({ element, host, controls, bridge = null }) {
+  if (!element || !host || !controls) return null;
 
   function render() {
-    // A board sending game commands answers for the controls itself: it may
-    // be driving a port nothing is wired to, and the check cannot see inside
-    // its program to know which. So the diagnosis stands down, and says so.
+    // A board sending game commands from code somebody wrote by hand answers
+    // for the controls itself; the check cannot see inside its program. So
+    // while commands arrive the diagnosis stands down, and says so.
     if (bridge?.driven()) {
       element.hidden = false;
       element.dataset.level = 'script';
-      element.replaceChildren(
-        'Your board is driving the game directly — see Code it, on ',
-        controlsLink(),
-        '. The keys under the game work either way.',
-      );
+      element.replaceChildren('Your board is driving the game. The keys under the game work either way.');
       return;
     }
     const game = host.activeGame();
     const found = game?.steering
-      ? diagnose({
-        steering: game.steering,
-        connections: engine.listConnections(),
-        signals: signalStore.all(),
-      })
+      ? diagnose({ steering: game.steering, targets: game.targets, rules: controls.rules() })
       : null;
 
     element.hidden = !found;
@@ -173,8 +142,7 @@ export function initGameWarning({ element, signalStore, engine, host, bridge = n
     );
   }
 
-  engine.subscribe(render);
-  signalStore.subscribe(render);
+  controls.subscribe(render);
   host.onGameChange(render);
   bridge?.subscribe((event) => {
     if (event.type === 'driven') render();

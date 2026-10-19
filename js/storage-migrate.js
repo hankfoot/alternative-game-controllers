@@ -23,10 +23,6 @@ import { key } from './storage-keys.js';
 // must rewrite what this file *writes* and leave what it *reads* exactly as it
 // is, and the only way to guarantee that is for these not to be generated.
 const MOVED = Object.freeze([
-  ['experimental-game-controllers:builder', key('builder')],
-  ['experimental-game-controllers:wiring:v3', key('wiring', 'v3')],
-  ['experimental-game-controllers:jacks:v2', key('jacks', 'v2')],
-  ['experimental-game-controllers:ports:v1', key('ports', 'v1')],
   ['experimental-game-controllers:controls:v1', key('controls', 'v1')],
   ['experimental-game-controllers:game', key('game')],
   ['experimental-game-controllers:theme:v1', key('theme', 'v1')],

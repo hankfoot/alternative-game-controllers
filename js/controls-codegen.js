@@ -23,14 +23,18 @@ import { controlsFor } from './game-facade.js';
 
 // The inputs a sentence can start with. A pin appears once per way of reading
 // it; the screen lets a pin be read one way at a time.
+// A compass bearing is a number to a sentence: "goes above 180" is a thing to
+// say about it, even if the seam at north makes it a poor dial.
+const family = (kind) => (kind === 'bearing' ? 'number' : kind);
+
 export const INPUT_CHOICES = INPUTS.flatMap((input) => {
   if (!input.modes) {
-    return [{ id: input.id, label: input.name, family: input.kind === 'event' ? 'event' : input.kind, catalogue: input.id, mode: null }];
+    return [{ id: input.id, label: input.name, family: family(input.kind), catalogue: input.id, mode: null }];
   }
   return Object.entries(input.modes).map(([mode, variant]) => ({
     id: `${input.id}:${mode}`,
     label: `${input.name} ${variant.label.toLowerCase()}`,
-    family: variant.kind,
+    family: family(variant.kind),
     catalogue: input.id,
     mode,
     pin: input.id,
