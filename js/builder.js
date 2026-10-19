@@ -13,20 +13,38 @@ import { key } from './storage-keys.js';
 
 // --- Code fragments ---------------------------------------------------------
 
+// How long a browser is given, after the radio link comes up, before the board
+// tells it where every held input stands. The connected event fires the moment
+// the link exists, but the browser only subscribes to readings once it has
+// looked the UART service up — a few hundred milliseconds later on a good day —
+// and a line written before then is not queued, it is dropped on the floor
+// (MicroBitUARTService::send returns NOT_SUPPORTED until indications are on).
+// Sent at once, the report never arrived, which is also why its absence was
+// never noticed. This also comfortably covers a touch pad's calibration, which
+// is ten samples fifty milliseconds apart.
+export const CONNECT_SETTLE_MS = 1500;
+
 // Everything the Set up screen's baseline code does, plus the one function every
-// reading goes through. `connect` holds the lines that report each held input's
-// current state the moment a browser attaches over Bluetooth — see `edges` for
-// why the state has to be sent there rather than every tick.
+// reading goes through.
 //
-// `send` is the whole reason one flashed program works over either connection:
-// the USB cable is always written to, and the radio as well once a browser has
-// paired with it. Nothing else in this file writes a line, which is what keeps
-// the two from drifting apart.
+// `report` holds the lines that tell a browser where each held input stands as
+// it attaches — see `edges` for why that has to be said there rather than every
+// tick. `prime` is what must happen once per boot and no earlier than the first
+// browser: a touch pad learning what untouched feels like, which is only worth
+// doing once the thing is built (see `pinInput`). `state` is the top-level
+// variables the scan loop keeps between ticks.
 //
-// A named function with a typed parameter still decompiles to blocks, so the
-// promise at the top of this file survives — that is the only reason `send` can
-// exist rather than every call site carrying both writes.
-function scaffoldTop(connect) {
+// `send` is the one place a line is written, so nothing else in this file needs
+// to know whether anybody is listening. A named function with a typed parameter
+// still decompiles to blocks, so the promise at the top of this file survives —
+// that is the only reason `send` can exist rather than every call site carrying
+// the guard.
+function scaffoldTop({ state, prime, report }) {
+  const connect = [];
+  if (prime.length) {
+    connect.push('if (!(primed)) {', '    primed = true', ...prime.map((l) => '    ' + l), '}');
+  }
+  if (report.length) connect.push(`basic.pause(${CONNECT_SETTLE_MS})`, ...report);
   return [
     // Bluetooth only, deliberately.
     //
@@ -38,6 +56,8 @@ function scaffoldTop(connect) {
     // None of it bought anything the radio does not already do.
     'bluetooth.startUartService()',
     'let connected = false',
+    ...(prime.length ? ['let primed = false'] : []),
+    ...state,
     'function send (line: string) {',
     '    if (connected) {',
     '        bluetooth.uartWriteLine(line)',
@@ -108,6 +128,54 @@ function buttonEdges(channel, source) {
   return edges(channel, { down: on('DOWN'), up: on('UP') });
 }
 
+// How often a switch pin is read. Fifty times a second: a close is seen within
+// a frame, and the radio can never be asked for more lines than this.
+export const SCAN_MS = 20;
+
+/**
+ * A switch pin read every SCAN_MS, reporting only when its level changes.
+ *
+ * This was edge-driven like the buttons, and it was the one input that could
+ * not be. A button's DOWN and UP come out of the DAL's button driver, which
+ * samples the contact and only speaks once the reading has held still; a pin's
+ * RISE and FALL are the GPIO interrupt itself — one event per edge, no
+ * filtering at all (NRF52Pin::rise). Two pieces of foil meeting produce dozens
+ * of edges in a few milliseconds, each spawning a handler that then blocks on
+ * the radio for a whole connection interval. The bus queues at most ten events
+ * per listener and throws the rest away (MESSAGE_BUS_LISTENER_MAX_QUEUE_DEPTH),
+ * so which edge was the *last* delivered came down to luck — and when the final
+ * FALL was the one dropped, the browser was told the switch had closed and was
+ * never told otherwise. Switches that stuck on, half a second of lag, presses
+ * that went missing: all this.
+ *
+ * Polling gives up nothing worth having. A close is reported on the first
+ * sample that sees it, the stream can never exceed one line per scan, and
+ * because it is the level being reported rather than the edges, a lost line
+ * is corrected by the next change instead of latching forever. An open has to
+ * hold for two samples before it is believed — foil breaks contact for far
+ * longer than a switch bounces — which costs the release a frame or two and the
+ * radio nothing.
+ */
+function switchScan(channel, n) {
+  const sent = `${channel}Sent`;
+  const openFor = `${channel}OpenFor`;
+  return [
+    `if (pins.digitalReadPin(DigitalPin.P${n}) == 1) {`,
+    `    ${openFor} = 0`,
+    `    if (${sent} == 0) {`,
+    `        ${sent} = 1`,
+    `        send("${channel}:1")`,
+    `    }`,
+    `} else {`,
+    `    ${openFor} += 1`,
+    `    if (${sent} == 1 && ${openFor} >= 2) {`,
+    `        ${sent} = 0`,
+    `        send("${channel}:0")`,
+    `    }`,
+    `}`,
+  ];
+}
+
 /** Line that reports a numeric reading as "<channel>:<n>". */
 function number(channel, expr) {
   return [`send("${channel}:" + ${expr})`];
@@ -118,9 +186,13 @@ function number(channel, expr) {
 /**
  * Each input contributes:
  *   channels — wire channel names it emits (shown as chips on the tile)
- *   loop     — lines run every tick inside the forever loop (while connected)
+ *   loop     — lines run every tick inside the forever loop
+ *   scan     — lines run every SCAN_MS inside the fast loop (see `switchScan`)
  *   handlers — top-level event handlers (outside the loop)
  *   setup    — lines run once at startup, after the handlers are registered
+ *   state    — top-level variables the scan lines keep between ticks
+ *   prime    — lines run once per boot, on the first Bluetooth connection
+ *   connect  — lines that report the input's level as a browser attaches
  *   build    — one wiring / build-idea note for the "Build it" list
  * Pin inputs have `modes` instead, keyed by mode id.
  *
@@ -154,12 +226,26 @@ function pinInput(n) {
         // other hand the whole time — fiddly, easy to let slip, and it fails
         // silently when it does. Capacitive senses the body's charge through
         // the one wire. V2 only, which the workshop's boards are.
-        setup: [`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Capacitive)`],
+        //
+        // Primed on the first connection rather than at startup, because
+        // setting the mode is also when the pad calibrates: it takes the
+        // highest reading over half a second as "untouched" and fires a little
+        // above that (TouchButton::calibrate). A crocodile clip, a wire and a
+        // sheet of foil add far more than that margin, so a pad calibrated
+        // bare at boot — which is when it used to happen, since the code is
+        // flashed before anything is built — read as touched from the moment
+        // the foil went on and never let go. By the time a browser connects the
+        // thing is built. Once per boot, not per connection: the link drops
+        // and comes back by itself, and recalibrating under a hand that is
+        // holding the pad would teach it that touched is the baseline.
+        prime: [`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Capacitive)`],
         handlers: buttonEdges(ch, `MICROBIT_ID_IO_P${n}`),
         connect: binary(ch, `input.pinIsPressed(TouchPin.P${n})`),
         build:
           `Clip one wire from P${n} to anything conductive — foil, fruit, a spoon. ` +
-          `Touching the object sends 1. No second wire to hold: the pin senses your body through the one clip.`,
+          `Touching the object sends 1. No second wire to hold: the pin senses your body through the one clip. ` +
+          `Clip everything on <em>before</em> you connect — the pad learns what untouched feels like the first time the browser connects, so keep your hands off it for a second then. ` +
+          `Changed the wiring afterwards? Press the reset button on the back of the board and connect again.`,
       },
       switch: {
         label: 'Switch',
@@ -167,20 +253,25 @@ function pinInput(n) {
         channels: [ch],
         // An open switch leaves the pin connected to nothing at all, and a
         // floating input doesn't read 0 — it drifts on whatever hum is in the
-        // room and reports a stream of rises and falls before anyone has
-        // touched the thing. The pull-down ties it to 0 while the circuit is
-        // open, so the only rise is the foils actually meeting. It goes before
-        // setEvents so the pin is already resting at 0 when edge watching
-        // starts, rather than firing an edge from its own settling.
-        setup: [
-          `pins.setPull(DigitalPin.P${n}, PinPullMode.PullDown)`,
-          `pins.setEvents(DigitalPin.P${n}, PinEventType.Edge)`,
+        // room and reads as a switch flapping before anyone has touched the
+        // thing. The pull-down ties it to 0 while the circuit is open, so the
+        // only 1 is the foils actually meeting.
+        setup: [`pins.setPull(DigitalPin.P${n}, PinPullMode.PullDown)`],
+        state: [`let ${ch}Sent = 0`, `let ${ch}OpenFor = 0`],
+        scan: switchScan(ch, n),
+        // The report also resets the scan's memory of what was last sent, so a
+        // browser that attaches mid-hold is not told "closed" here and then
+        // told nothing when the scan, which believed it had already said so,
+        // sees the switch open.
+        connect: [
+          `if (pins.digitalReadPin(DigitalPin.P${n}) == 1) {`,
+          `    ${ch}Sent = 1`,
+          `    send("${ch}:1")`,
+          `} else {`,
+          `    ${ch}Sent = 0`,
+          `    send("${ch}:0")`,
+          `}`,
         ],
-        handlers: edges(ch, {
-          down: `control.onEvent(EventBusSource.MICROBIT_ID_IO_P${n}, EventBusValue.MICROBIT_PIN_EVT_RISE, function () {`,
-          up: `control.onEvent(EventBusSource.MICROBIT_ID_IO_P${n}, EventBusValue.MICROBIT_PIN_EVT_FALL, function () {`,
-        }),
-        connect: binary(ch, `pins.digitalReadPin(DigitalPin.P${n}) == 1`),
         build:
           `Make a switch: clip a wire from 3V to one piece of foil, and another from P${n} to a second piece. ` +
           `When the foils touch, the circuit closes and sends 1. Great for jaws, doors, stomp pads.`,
@@ -354,18 +445,13 @@ function variantOf(input, pinModes) {
 /**
  * What a build asks of the micro:bit's radio, split by the shape of it.
  *
- * Only the radio: the USB cable has no comparable ceiling, which is exactly why
- * the wired option exists. The same program is emitted either way, so this
- * cannot be hidden when somebody is plugged in — the builder has no idea which
- * cable they will use, and the warning is advice about a choice rather than a
- * limit being hit.
- *
  * `streamed` is a line per channel per 100 ms tick, for as long as the board is
  * on: the steady load, and what the caps below are really about. `pressed` is a
- * line per edge — a button sends one going down and one coming up, and nothing
- * at all while it sits still — so a couple of them cost nothing next to a live
- * reading, and a wall of them all being mashed at once is another matter. A
- * gesture is in neither: it fires the once, when it happens.
+ * line per change — a button sends one going down and one coming up, and
+ * nothing at all while it sits still, and a scanned switch is the same — so a
+ * couple of them cost nothing next to a live reading, and a wall of them all
+ * being mashed at once is another matter. A gesture is in neither: it fires the
+ * once, when it happens.
  *
  * `weight` is the two put on one scale, which is what the warning is graded on.
  */
@@ -377,7 +463,7 @@ export function streamLoad(selected, pinModes) {
     const v = variantOf(input, pinModes);
     if (v.kind === 'event') continue;
     if (v.loop) streamed += v.channels.length;
-    else if (v.handlers) pressed += v.channels.length;
+    else if (v.handlers || v.scan) pressed += v.channels.length;
   }
   // A contact worked as hard as a person can work one is worth roughly a third
   // of a reading polled ten times a second. Rounded up, so a controller made
@@ -389,18 +475,35 @@ export function generateCode(selected, pinModes) {
   const handlers = [];
   const setup = [];
   const loop = [];
-  const connect = [];
+  const scan = [];
+  const state = [];
+  const prime = [];
+  const report = [];
   for (const input of INPUTS) {
     if (!selected.has(input.id)) continue;
     const v = variantOf(input, pinModes);
     if (v.handlers) handlers.push(...v.handlers);
     if (v.setup) setup.push(...v.setup);
     if (v.loop) loop.push(...v.loop);
-    if (v.connect) connect.push(...v.connect);
+    if (v.scan) scan.push(...v.scan);
+    if (v.state) state.push(...v.state);
+    if (v.prime) prime.push(...v.prime);
+    if (v.connect) report.push(...v.connect);
   }
 
+  // Every switch shares one scan loop, so every one of them is read by the
+  // same fiber. That matters beyond tidiness: the radio's transmit buffer is
+  // sixty bytes, and a line that does not fit is written in two halves with a
+  // wait in between, during which another fiber's line can land in the gap —
+  // "p0:1" inside "pitch:-42" is a reading for a channel that does not exist.
+  // The fewer fibers writing at once, the less chance of the buffer ever being
+  // that full.
+  const scanLoop = scan.length
+    ? [`loops.everyInterval(${SCAN_MS}, function () {`, ...scan.map((l) => '    ' + l), '})']
+    : [];
+
   return [
-    ...scaffoldTop(connect),
+    ...scaffoldTop({ state, prime, report }),
     ...handlers,
     // Last before the loop: a setup line may block for as long as it takes
     // someone to finish calibrating, so everything that has to be listening by
@@ -412,9 +515,10 @@ export function generateCode(selected, pinModes) {
     // have dropped to one reading every two seconds. The name is only wanted
     // while you are looking at the Bluetooth chooser anyway.
     'basic.showString(control.deviceName())',
+    ...scanLoop,
     'basic.forever(function () {',
     // No `if (connected)` here either, for the same reason it left the handlers:
-    // over the cable it is never true, and `send` already knows what to do.
+    // `send` already knows what to do.
     ...loop.map((l) => '    ' + l),
     '    basic.pause(100)',
     '})',
@@ -423,18 +527,18 @@ export function generateCode(selected, pinModes) {
 
 // --- UI ---------------------------------------------------------------------
 
-// Soft caps on `bluetoothLoad().weight` before the BLE UART starts to lag.
-// Conservative estimates rather than measurements: what a board can actually
-// keep up with depends on the room, the batteries and how far away the laptop
-// is, so these are set low enough to warn before anybody notices rather than
-// after. Tune them down if a build inside the caps still feels late.
-const STREAM_BUSY = 5; // gentle heads-up
-const STREAM_HEAVY = 8; // stronger warning
-
-// How many live readings make the cable worth mentioning. Lower than the caps
-// above on purpose: those say "this is too much for the radio", and by then the
-// useful advice has already been missed. This one says "there is an easier way
-// to run what you have picked" while there is still time to take it.
+// Soft caps on `streamLoad().weight` before the BLE UART starts to lag.
+//
+// Every line is its own indication, and the board waits for the browser to
+// confirm each one before the next goes out (MicroBitUARTService::send), so the
+// radio moves roughly one line per connection interval — somewhere between
+// thirty and sixty lines a second depending on the laptop. Five readings polled
+// ten times a second is that whole budget with nothing left for a press, which
+// is where the old caps sat. These are set low enough to warn before anybody
+// notices rather than after; tune them down if a build inside them still feels
+// late.
+const STREAM_BUSY = 3; // gentle heads-up
+const STREAM_HEAVY = 5; // stronger warning
 
 // Which inputs you picked is the shape of the physical thing you built, so it
 // has to outlast a refresh — the wiring on the Game screen is keyed to these
@@ -573,14 +677,13 @@ export function initBuilder({
     warnEl.hidden = false;
     warnEl.dataset.level = weight >= STREAM_HEAVY ? 'heavy' : 'busy';
     warnEl.innerHTML = weight >= STREAM_HEAVY
-      ? `⚡ You have ${load}. That's a lot for the micro:bit's <strong>Bluetooth</strong> — wirelessly,
-         expect the game to feel laggy or jerky. <strong>Over the USB cable this is fine</strong>, so
-         if you can stay plugged in you can ignore this. Otherwise uncheck what you aren't using;
-         <strong>gestures are free</strong> (shake, tilt-left, free fall… they only send when they
-         happen).`
-      : `⚡ You have ${load}. Fine over the USB cable, and still fine over Bluetooth — but stacking
-         on many more may start to lag wirelessly. <strong>Gestures are free</strong> — they only
-         send the moment they fire, so they never add to this.`;
+      ? `⚡ You have ${load}. That's more than the micro:bit's <strong>Bluetooth</strong> can carry —
+         expect the game to feel laggy or jerky, and presses to arrive late. Uncheck what you
+         aren't using; <strong>gestures are free</strong> (shake, tilt-left, free fall… they only
+         send when they happen).`
+      : `⚡ You have ${load}. Fine so far — but stacking on many more will start to lag over
+         Bluetooth. <strong>Gestures are free</strong> — they only send the moment they fire, so
+         they never add to this.`;
   }
 
   function renderOutput() {

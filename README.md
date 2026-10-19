@@ -92,7 +92,11 @@ immediately. When that pair cannot fit comfortably, the game stacks beneath the 
 
 The Controller page generates complete MakeCode JavaScript from the selected inputs, including
 per-input build tips. Inputs are grouped into touch/press, tilt/direction, gestures, and ambient
-sensors. Buttons, pads, switches and gestures report their DOWN and UP events the instant they
-happen, so a press is never a tick late and a quick tap is never missed; the readings that have no
-edges — tilt, compass, light, sound — are polled by a loop every 100 ms, and the page warns when
-too many of those may overwhelm the micro:bit's Bluetooth UART.
+sensors. Buttons, touch pads, the logo and gestures report their DOWN and UP events the instant they
+happen, so a press is never a tick late and a quick tap is never missed. A switch pin is different:
+its raw edge events are undebounced and the event bus drops any beyond ten, so a switch is scanned
+every 20 ms by one loop and reported only when its level changes. Touch pads calibrate on the first
+Bluetooth connection rather than at boot, so the wire and foil are already clipped on when the pad
+learns what "untouched" feels like. The readings that have no edges — tilt, compass, light, sound —
+are polled by a loop every 100 ms, and the page warns when too many of those may overwhelm the
+micro:bit's Bluetooth UART.

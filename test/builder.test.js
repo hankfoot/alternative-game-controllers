@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { INPUTS, generateCode, streamLoad } from '../js/builder.js';
+import { CONNECT_SETTLE_MS, INPUTS, SCAN_MS, generateCode, streamLoad } from '../js/builder.js';
 
 const MODES = { p0: 'touch', p1: 'touch', p2: 'touch' };
 const code = (ids, modes = MODES) => generateCode(new Set(ids), modes);
@@ -84,17 +84,31 @@ test('the generated program stays block-shaped', () => {
 });
 
 // An open switch leaves the pin attached to nothing, and a floating input picks
-// up room hum as a stream of edges — the switch reporting frantically before
-// anyone has touched it. The pull-down is the whole fix, and it has to be in
-// place before edge watching starts or the pin's own settling reads as an edge.
-test('a switch pin is pulled down, before its edges are watched', () => {
+// up room hum — the switch flapping before anyone has touched it. The pull-down
+// is the whole fix.
+test('a switch pin is pulled down', () => {
   const program = code(['p0'], { p0: 'switch' });
+  assert.ok(program.includes('pins.setPull(DigitalPin.P0, PinPullMode.PullDown)'),
+    'the pin is tied to 0 while the circuit is open');
+});
 
-  const pull = program.indexOf('pins.setPull(DigitalPin.P0, PinPullMode.PullDown)');
-  const events = program.indexOf('pins.setEvents(DigitalPin.P0, PinEventType.Edge)');
-  assert.ok(pull > 0, 'the pin is tied to 0 while the circuit is open');
-  assert.ok(events > 0);
-  assert.ok(pull < events, 'and it is settled before anything watches for edges');
+// A switch used to report its pin's RISE and FALL events, and that is the one
+// source that cannot be reported raw: the events come straight off the GPIO
+// interrupt with no debounce, a foil contact produces dozens per touch, the bus
+// keeps ten per listener and drops the rest, and when the dropped one was the
+// final FALL the browser was never told the switch had opened. So a switch is
+// scanned instead — read fifty times a second by one loop, reporting the level
+// only when it changes — and nothing about it may go back on the event bus.
+test('a switch pin is scanned for changes, never watched for edges', () => {
+  const program = code(['p0', 'p1'], { p0: 'switch', p1: 'switch' });
+
+  assert.ok(!program.includes('setEvents'), 'no edge events are switched on');
+  assert.ok(!program.includes('MICROBIT_PIN_EVT'), 'and none are listened for');
+  assert.equal(count(program, `loops.everyInterval(${SCAN_MS}, function () {`), 1,
+    'one scan loop, shared by every switch');
+  assert.ok(program.includes('if (p0Sent == 0) {') && program.includes('if (p1Sent == 0) {'),
+    'each reports only when its level has changed');
+  assert.ok(program.includes('p0OpenFor >= 2'), 'and an open has to hold before it is believed');
 });
 
 // Touch does its own sensing and is actively broken by a pull — it is the one
@@ -102,6 +116,49 @@ test('a switch pin is pulled down, before its edges are watched', () => {
 test('a touch pin is not pulled', () => {
   const program = code(['p0'], { p0: 'touch' });
   assert.ok(!program.includes('setPull'));
+});
+
+// Setting a pad's mode is also when it calibrates, taking what it reads over
+// the next half second as "untouched". Done at startup that is a bare pin —
+// the code is flashed before anything is built — and a clip, a wire and a sheet
+// of foil read as a touch that never ends. So the pad is primed on the first
+// connection instead, when the thing is built; and only the first, because the
+// link drops and recovers by itself and a hand holding the pad through that
+// would be calibrated in as the baseline.
+test('a touch pin calibrates on the first connection, not at startup', () => {
+  const program = code(['p0'], { p0: 'touch' });
+  const mode = 'pins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)';
+  assert.equal(count(program, mode), 1);
+
+  const connectAt = program.indexOf('bluetooth.onBluetoothConnected');
+  const connectEnd = program.indexOf('\n})\n', connectAt);
+  const modeAt = program.indexOf(mode);
+  assert.ok(connectAt < modeAt && modeAt < connectEnd, 'inside the connected handler');
+  assert.ok(program.includes('if (!(primed)) {'), 'and guarded to once per boot');
+  assert.ok(modeAt > program.indexOf('if (!(primed)) {'), 'by that guard');
+});
+
+// The connected event fires as the link comes up, but the browser only
+// subscribes to readings after it has looked the UART service up, and a line
+// written before then is dropped rather than queued. Reported at once, the
+// state of every held input went nowhere.
+test('held inputs report their state only after the browser has had time to subscribe', () => {
+  const program = code(['btna', 'p0', 'p1'], { p0: 'touch', p1: 'switch' });
+  const pause = program.indexOf(`basic.pause(${CONNECT_SETTLE_MS})`);
+  assert.ok(pause > 0, 'the report waits');
+  for (const report of ['send("btna:', 'send("p0:', 'send("p1:']) {
+    // The first occurrence of each is the one in the connected handler.
+    assert.ok(program.indexOf(report) > pause, `${report} comes after the wait`);
+  }
+  assert.ok(pause > program.indexOf('touchSetMode'), 'and after the pad has started calibrating');
+});
+
+// A browser attaching mid-hold is told the switch is closed; the scan then has
+// to know that was said, or it keeps quiet when the switch opens.
+test('reporting a switch on connect also resets what the scan believes it sent', () => {
+  const program = code(['p1'], { p1: 'switch' });
+  const report = program.indexOf('send("p1:1")');
+  assert.ok(program.lastIndexOf('p1Sent = 1', report) > 0, 'the scan is told a 1 went out');
 });
 
 // Resistive touch — the default — only reads when the player completes a circuit
