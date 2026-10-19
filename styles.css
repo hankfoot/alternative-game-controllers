@@ -262,7 +262,7 @@ h1 {
 .block { margin-top: 8px; }
 .block-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
 h2 { font-size: 1.5rem; letter-spacing: -.02em; font-weight: 700; margin: 0; }
-.lead { color: var(--ink-soft); margin: 0 0 24px; max-width: 62ch; }
+.lead { color: var(--ink-soft); margin: 0 0 32px; max-width: 62ch; }
 .block + .block { margin-top: 52px; }
 
 /* An inline jump to another screen, styled as the link it behaves like. */
@@ -292,10 +292,21 @@ em { color: var(--accent); font-style: italic; }
   margin-top: 1px; color: #fff;
   background: var(--red); /* Set up's page color */
 }
-.step-body { padding-bottom: 24px;  /* a flex item, so a wide code line scrolls inside its block rather than widening the page */ min-width: 0; }
-.step:not(:last-child) .step-body { border-bottom: 1px solid var(--line); margin-bottom: 24px; }
-.step-body h3 { margin: 0 0 5px; font-size: 1.05rem; font-weight: 600; }
+/* A flex item, so min-width: 0 lets a wide code line scroll inside its block
+   rather than widening the page. */
+.step-body { padding-bottom: 32px; min-width: 0; }
+.step:not(:last-child) .step-body { border-bottom: 1px solid var(--line); margin-bottom: 32px; }
+.step-body h3 { margin: 0; font-size: 1.05rem; font-weight: 600; line-height: 1.35; }
 .step-body p { margin: 0; color: var(--ink-soft); max-width: 60ch; }
+/* One rhythm for whatever a step holds — prose, a photo, a list, a button, a
+   live view — so nothing butts against what came before it. Written with two
+   classes' weight so it outranks the `p { margin: 0 }` above, which used to
+   flatten every paragraph's own margin to nothing. The heading sits closer to
+   what it introduces, and a caption closer to what it captions. */
+.step-body > :not(:first-child) { margin-top: 16px; }
+.step-body > h3 + *,
+.step-body > .step-head + * { margin-top: 8px; }
+.step-body > .lesson-watch + .lesson-live { margin-top: 10px; }
 /* Whatever a step mounts — a grid of settings, a row of drawings — stands off
    from the prose introducing it rather than butting against it. */
 .step-body > :is(.settings-grid, .sprite-grid, .theme-preview) { margin-top: 14px; }
@@ -329,7 +340,7 @@ em { color: var(--accent); font-style: italic; }
 }
 
 /* Screenshot placeholders */
-.shot { margin: 14px 0 0; }
+.shot { margin: 0; }
 .shot-ph {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   text-align: center; gap: 6px;
@@ -452,14 +463,14 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .builder-warn[hidden] { display: none; }
 
 /* ---------- Code it on Controls ---------- */
-.code-request { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; max-width: 720px; }
+.code-request { display: flex; flex-wrap: wrap; gap: 8px; max-width: 720px; }
 .code-request input {
   flex: 1 1 260px; min-width: 0; padding: 10px 14px; font: inherit; font-size: .92rem;
   color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
 }
 .code-request input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
 .code-request .btn.copied { background: var(--green-ink); }
-.code-details { margin-top: 10px; max-width: 720px; font-size: .86rem; color: var(--ink-soft); }
+.code-details { max-width: 720px; font-size: .86rem; color: var(--ink-soft); }
 .code-details summary { cursor: pointer; }
 /* The instructions are prose in a code block, and prose has lines far longer
    than any screen; wrapped, rather than scrolled sideways on a phone. What is
@@ -471,7 +482,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
   font-family: var(--mono); font-size: .78rem; line-height: 1.6;
   white-space: pre-wrap; word-break: break-word;
 }
-.code-status { margin: 10px 0 0; font-size: .86rem; color: var(--ink-soft); }
+.code-status { font-size: .86rem; color: var(--ink-soft); }
 .code-status[data-status="driven"] { color: var(--green-ink); }
 .code-log {
   margin: 6px 0 0; max-width: 720px; max-height: 220px; overflow: auto; box-sizing: border-box;
@@ -633,17 +644,17 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .step-head h3 { margin: 0; }
 
 /* ---------- Sensing lessons ---------- */
-.lesson-steps { margin: 10px 0 0; padding-left: 22px; font-size: .9rem; color: var(--ink-soft); max-width: 60ch; }
-.lesson-steps li { margin: 4px 0; }
+.lesson-steps { margin: 0; padding-left: 22px; font-size: .9rem; line-height: 1.55; color: var(--ink-soft); max-width: 60ch; }
+.lesson-steps li + li { margin-top: 6px; }
 .lesson-steps li::marker { color: var(--ink); font-weight: 600; }
 /* A copy button with the code under a fold: the code is for MakeCode, not for reading here. */
-.code-block-folded { max-width: 720px; margin-top: 14px; }
+.code-block-folded { max-width: 720px; }
 .code-block-folded .code-copy { position: static; font-size: .9rem; padding: 10px 16px; color: #fff; background: var(--ink); border-color: var(--ink); }
 .code-block-folded .code-copy.copied { background: var(--green-ink); border-color: var(--green-ink); color: #fff; }
-.code-block-folded .code-details { margin-top: 8px; }
-.lesson-watch { margin-top: 14px; font-size: .86rem; color: var(--ink-soft); }
+.code-block-folded .code-details { margin-top: 10px; }
+.lesson-watch { font-size: .86rem; color: var(--ink-soft); }
 .lesson-live { max-width: 720px; max-height: none; }
-.shot-slot { min-height: 160px; max-width: 620px; margin: 12px 0 0; border: 1px dashed var(--line); border-radius: 10px; background: var(--bg-soft); display: flex; align-items: center; justify-content: center; }
+.shot-slot { min-height: 160px; max-width: 620px; margin: 0; border: 1px dashed var(--line); border-radius: 10px; background: var(--bg-soft); display: flex; align-items: center; justify-content: center; }
 .shot-slot::after { content: "Photo: " attr(aria-label); font-size: .8rem; color: var(--ink-faint); padding: 12px; text-align: center; }
 
 
@@ -1321,15 +1332,15 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 
 /* ---------- Controls: the sentences ---------- */
 .mode-switch { max-width: 560px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-soft); }
-.rule-list { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; max-width: 720px; }
-.rule { padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
-.rule-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
+.rule-list { display: flex; flex-direction: column; gap: 14px; max-width: 720px; }
+.rule { padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.rule-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 6px; margin: 0; }
 .rule-sentence input[type="number"] { width: 5.5em; }
 .rule-empty { margin: 12px 0 0; font-size: .9rem; color: var(--ink-faint); }
 .rule-control { color: var(--ink); }
-.rule-meter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+.rule-meter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
 .rule-live { flex: 1 1 260px; min-width: 0; max-height: none; }
 .rule-use { flex: none; padding: 6px 11px; font-size: .78rem; }
-.rule-note { font-size: .78rem; color: var(--ink-faint); }
+.rule-note { flex-basis: 100%; font-size: .78rem; color: var(--ink-faint); }
 .rule-note[hidden] { display: none; }
-#controls-warning { margin-top: 12px; }
+
