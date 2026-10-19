@@ -347,9 +347,12 @@ basic.forever(function () {
                 MakeCode project, then <strong>Download</strong>. Changed a sentence or a number?
                 Copy and download again.
               </p>
-              <div class="code-block code-block-wide">
-                <button class="code-copy" type="button">Copy</button>
-                <pre><code id="controls-code"></code></pre>
+              <div class="code-block code-block-folded">
+                <button class="code-copy btn" type="button">Copy the code for your board</button>
+                <details class="code-details">
+                  <summary>See the code</summary>
+                  <pre class="code-prompt"><code id="controls-code"></code></pre>
+                </details>
               </div>
               <p class="builder-warn" id="controls-warning" role="status" hidden></p>
               <div id="controls-tips"><!-- build tips, written by js/controls-ui.js --></div>

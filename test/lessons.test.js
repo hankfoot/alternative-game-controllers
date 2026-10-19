@@ -20,6 +20,14 @@ test('each lesson streams exactly its own channels', () => {
   }
 });
 
+test('every lesson says where the clips go, and leaves room for a photo', () => {
+  for (const lesson of LESSONS) {
+    assert.ok(lesson.steps.length >= 3, `${lesson.id} has steps`);
+    assert.match(lesson.image.src, /^assets\/lesson-/);
+    assert.ok(lesson.image.alt);
+  }
+});
+
 test('the four lessons cover touch, switch, analog and events', () => {
   assert.deepEqual(LESSONS.map((lesson) => lesson.id), ['touch', 'switch', 'analog', 'events']);
   assert.deepEqual(lessonChannels(byId('analog')), [

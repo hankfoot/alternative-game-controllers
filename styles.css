@@ -633,10 +633,18 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .step-head h3 { margin: 0; }
 
 /* ---------- Sensing lessons ---------- */
-.lesson-wiring { font-size: .88rem; color: var(--ink-soft); }
+.lesson-steps { margin: 10px 0 0; padding-left: 22px; font-size: .9rem; color: var(--ink-soft); max-width: 60ch; }
+.lesson-steps li { margin: 4px 0; }
+.lesson-steps li::marker { color: var(--ink); font-weight: 600; }
+/* A copy button with the code under a fold: the code is for MakeCode, not for reading here. */
+.code-block-folded { max-width: 720px; margin-top: 14px; }
+.code-block-folded .code-copy { position: static; font-size: .9rem; padding: 10px 16px; color: #fff; background: var(--ink); border-color: var(--ink); }
+.code-block-folded .code-copy.copied { background: var(--green-ink); border-color: var(--green-ink); color: #fff; }
+.code-block-folded .code-details { margin-top: 8px; }
 .lesson-watch { margin-top: 14px; font-size: .86rem; color: var(--ink-soft); }
 .lesson-live { max-width: 720px; max-height: none; }
-.shot-slot { min-height: 120px; max-width: 620px; border: 1px dashed var(--line); border-radius: 10px; }
+.shot-slot { min-height: 160px; max-width: 620px; margin: 12px 0 0; border: 1px dashed var(--line); border-radius: 10px; background: var(--bg-soft); display: flex; align-items: center; justify-content: center; }
+.shot-slot::after { content: "Photo: " attr(aria-label); font-size: .8rem; color: var(--ink-faint); padding: 12px; text-align: center; }
 
 
 /* Cards keep one comfortable size whatever the scheme asks for: a scheme with a
