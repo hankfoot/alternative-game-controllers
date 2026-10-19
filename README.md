@@ -1,6 +1,6 @@
 # Game Controller Workshop
 
-A companion website for the **Fidget Camp 2026** workshop on unconventional controllers.
+A companion website for a workshop on unconventional controllers, originally designed by Avi Romanoff and Hank Duhaime.
 
 Wire a real-world object to a **BBC micro:bit v2**, stream its sensors over **Web Bluetooth**,
 and turn everyday objects into controllers for a browser game.
