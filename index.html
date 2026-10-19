@@ -394,16 +394,21 @@ basic.forever(function () {
           <li class="step">
             <span class="step-num">1</span>
             <div class="step-body">
-              <h3>Copy the instructions for your AI</h3>
+              <h3>Say what you want, and copy it for your AI</h3>
               <p>
-                They list your inputs and the game's controls by their real names, so whatever
-                you ask for comes back using them. Paste them in, then say what you want —
-                <em>“flap every third clap”</em>.
+                Describe the interaction in a sentence. The copy comes with everything the AI
+                needs to know — your inputs and the game's controls, by their real names — so
+                paste it into any chat and it writes the script.
               </p>
-              <div class="code-block code-block-wide">
-                <button class="code-copy" type="button">Copy</button>
-                <pre><code id="script-prompt"></code></pre>
+              <div class="script-request">
+                <input id="script-request" type="text" autocomplete="off" spellcheck="false"
+                  placeholder="flap every third clap" aria-label="What you want the controller to do" />
+                <button class="btn" id="script-copy" type="button">Copy for your AI</button>
               </div>
+              <details class="script-details">
+                <summary>What gets copied</summary>
+                <pre class="script-prompt"><code id="script-prompt"></code></pre>
+              </details>
             </div>
           </li>
           <li class="step">

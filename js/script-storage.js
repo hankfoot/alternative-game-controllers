@@ -15,12 +15,20 @@ const STORAGE_KEY = key('script', 'v1');
 // that is not what it claims to be, not a limit anyone should meet.
 export const SCRIPT_LIMIT = 64 * 1024;
 
-/** `{ source, autoRun }` from whatever was stored or imported, or null. */
+/**
+ * `{ source, request, autoRun }` from whatever was stored or imported, or null.
+ *
+ * `request` is the sentence they typed for the AI. Kept with the script so a
+ * refresh gives it back, and so a bundle says what its script was for.
+ * Either one on its own is worth keeping; nothing at all is not.
+ */
 export function normalizeScript(value) {
   if (!value || typeof value !== 'object') return null;
-  const { source, autoRun } = value;
-  if (typeof source !== 'string' || !source.trim() || source.length > SCRIPT_LIMIT) return null;
-  return { source, autoRun: autoRun === true };
+  const { source, request, autoRun } = value;
+  const text = typeof source === 'string' && source.length <= SCRIPT_LIMIT ? source : '';
+  const ask = typeof request === 'string' && request.length <= SCRIPT_LIMIT ? request : '';
+  if (!text.trim() && !ask.trim()) return null;
+  return { source: text, request: ask, autoRun: autoRun === true && Boolean(text.trim()) };
 }
 
 export function loadScript(storage) {

@@ -4,12 +4,21 @@ import test from 'node:test';
 import { SCRIPT_LIMIT, clearScript, loadScript, normalizeScript, saveScript } from '../js/script-storage.js';
 import { memoryStorage } from './helpers/memory-storage.js';
 
-test('a script round-trips with whether it was running', () => {
+test('a script round-trips with what it was for and whether it was running', () => {
   const storage = memoryStorage();
-  saveScript(storage, { source: 'game.press("flap")', autoRun: true });
-  assert.deepEqual(loadScript(storage), { source: 'game.press("flap")', autoRun: true });
+  saveScript(storage, { source: 'game.press("flap")', request: 'flap on clap', autoRun: true });
+  assert.deepEqual(loadScript(storage), { source: 'game.press("flap")', request: 'flap on clap', autoRun: true });
   saveScript(storage, { source: 'game.press("flap")' });
-  assert.equal(loadScript(storage).autoRun, false, 'not running unless said so');
+  assert.deepEqual(loadScript(storage), { source: 'game.press("flap")', request: '', autoRun: false },
+    'not running unless said so');
+});
+
+// The sentence is typed before there is any script, and losing it on a refresh
+// is losing the one thing that was theirs.
+test('a request with no script yet is still kept, and cannot be marked to run', () => {
+  const storage = memoryStorage();
+  saveScript(storage, { request: 'chair height steers', autoRun: true });
+  assert.deepEqual(loadScript(storage), { source: '', request: 'chair height steers', autoRun: false });
 });
 
 test('nothing worth keeping clears the record', () => {
@@ -29,7 +38,7 @@ test('a record that is not a script reads as none', () => {
   assert.equal(normalizeScript('a string'), null);
   assert.equal(normalizeScript({ source: 42 }), null);
   assert.equal(normalizeScript({ source: 'x'.repeat(SCRIPT_LIMIT + 1) }), null);
-  assert.deepEqual(normalizeScript({ source: 'ok', autoRun: 'yes' }), { source: 'ok', autoRun: false });
+  assert.deepEqual(normalizeScript({ source: 'ok', autoRun: 'yes' }), { source: 'ok', request: '', autoRun: false });
 });
 
 test('a store that refuses the write does not take the page down', () => {

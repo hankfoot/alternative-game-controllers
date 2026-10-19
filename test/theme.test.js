@@ -703,7 +703,7 @@ test('a bundle carries the look, the sounds, the course, the wiring and the inpu
 
   // The script travels, but not the fact that it was running: it is a
   // stranger's code until whoever opened the file presses Run.
-  assert.deepEqual(back.game.script, { source: game.script.source, autoRun: false });
+  assert.deepEqual(back.game.script, { source: game.script.source, request: '', autoRun: false });
   const without = readBundle(JSON.parse(JSON.stringify(await exportBundle({ theme, assets, game: { ...game, script: undefined } }))));
   assert.equal(without.game.script, null, 'a bundle with no script reads as none');
   assert.equal(readBundle({ kind: BUNDLE_KIND, version: 1, game: { script: { source: 7 } } }).game.script, null);

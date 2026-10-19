@@ -456,7 +456,22 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
    than any screen; wrapped, rather than scrolled sideways on a phone. What is
    copied is the text, so wrapping changes nothing about what the LLM sees. */
 #controls-script .step-body { min-width: 0; }
-#script-prompt { white-space: pre-wrap; word-break: break-word; }
+.script-request { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; max-width: 720px; }
+.script-request input {
+  flex: 1 1 260px; min-width: 0; padding: 10px 14px; font: inherit; font-size: .92rem;
+  color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+}
+.script-request input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+.script-request .btn.copied { background: var(--green-ink); }
+.script-details { margin-top: 10px; max-width: 720px; font-size: .86rem; color: var(--ink-soft); }
+.script-details summary { cursor: pointer; }
+.script-prompt {
+  margin: 8px 0 0; overflow-x: auto; max-height: 320px; overflow-y: auto;
+  background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 16px; color: var(--ink);
+  font-family: var(--mono); font-size: .78rem; line-height: 1.6;
+  white-space: pre-wrap; word-break: break-word;
+}
 .script-source {
   display: block; width: 100%; max-width: 720px; min-height: 220px; resize: vertical;
   margin-top: 6px; padding: 14px 16px; box-sizing: border-box;

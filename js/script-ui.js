@@ -17,9 +17,12 @@ const LOG_LINES = 50;
 // How long after the last keystroke the draft is saved.
 const SAVE_DELAY_MS = 300;
 
+// How long the copy button says so.
+const COPIED_MS = 1400;
+
 export function initScriptUI({ elements, runner, signalStore, gameHost, storage }) {
-  const { prompt, source, run, stop, clear, status, log } = elements;
-  if (!prompt || !source || !run || !stop || !runner || !signalStore || !gameHost) return null;
+  const { prompt, request, copy, source, run, stop, clear, status, log } = elements;
+  if (!source || !run || !stop || !runner || !signalStore || !gameHost) return null;
 
   // Whether Run was pressed more recently than Stop. Saved alongside the text,
   // so a refresh — which is how a board gets re-paired — brings the script back
@@ -30,7 +33,7 @@ export function initScriptUI({ elements, runner, signalStore, gameHost, storage 
   function save() {
     clearTimeout(saveTimer);
     saveTimer = null;
-    saveScript(storage, { source: source.value, autoRun: wanted });
+    saveScript(storage, { source: source.value, request: request?.value ?? '', autoRun: wanted });
   }
 
   function saveSoon() {
@@ -38,15 +41,67 @@ export function initScriptUI({ elements, runner, signalStore, gameHost, storage 
     saveTimer = setTimeout(save, SAVE_DELAY_MS);
   }
 
-  function renderPrompt() {
+  // The whole of what goes to the AI: the instructions, written fresh from
+  // the inputs and scheme, with the person's sentence at the end.
+  function promptText() {
     const game = gameHost.activeGame();
-    prompt.textContent = buildPrompt({
+    return buildPrompt({
       inputs: describeInputs(signalStore.all()),
       controls: controlsFor(game?.targets),
       schemeName: game?.label ?? '',
       schemeTagline: game?.tagline ?? '',
+      request: request?.value ?? '',
     });
   }
+
+  function renderPrompt() {
+    if (prompt) prompt.textContent = promptText();
+  }
+
+  // Copied rather than shown: nobody needs to read a page of API reference to
+  // use it, and the sentence they typed is the only part that is theirs. The
+  // text is still there, folded away, for anyone who wants to see it.
+  copy?.addEventListener('click', async () => {
+    if (!request?.value.trim()) {
+      request?.focus();
+      return;
+    }
+    const original = copy.textContent;
+    let label = 'Copied — paste it into your AI';
+    try {
+      await navigator.clipboard.writeText(promptText());
+      copy.classList.add('copied');
+    } catch {
+      // Clipboard blocked — a non-secure context, usually. The text is still
+      // there under the fold; open it and select it, so one keystroke copies.
+      label = 'Copy blocked — select the text below';
+      const details = prompt?.closest('details');
+      if (details) details.open = true;
+      if (prompt) {
+        const range = document.createRange();
+        range.selectNodeContents(prompt);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+    }
+    copy.textContent = label;
+    setTimeout(() => {
+      copy.textContent = original;
+      copy.classList.remove('copied');
+    }, COPIED_MS * 2);
+  });
+
+  request?.addEventListener('input', () => {
+    renderPrompt();
+    saveSoon();
+  });
+  request?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      copy?.click();
+    }
+  });
 
   const lines = [];
   function renderLog() {
@@ -120,6 +175,7 @@ export function initScriptUI({ elements, runner, signalStore, gameHost, storage 
   const saved = loadScript(storage);
   if (saved) {
     source.value = saved.source;
+    if (request) request.value = saved.request;
     wanted = saved.autoRun;
     if (saved.autoRun) runner.run(saved.source);
   }
@@ -133,6 +189,8 @@ export function initScriptUI({ elements, runner, signalStore, gameHost, storage 
       wanted = false;
       runner.stop();
       source.value = fresh?.source ?? '';
+      if (request) request.value = fresh?.request ?? '';
+      renderPrompt();
       save();
     },
   };

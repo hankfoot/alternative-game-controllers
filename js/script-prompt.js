@@ -56,7 +56,8 @@ function controlLine({ name, kind, description }) {
   return `- \`${name}\` (${kind}): ${description} → \`${VERB[kind]?.(name) ?? name}\``;
 }
 
-export function buildPrompt({ inputs = [], controls = [], schemeName = '', schemeTagline = '' } = {}) {
+export function buildPrompt({ inputs = [], controls = [], schemeName = '', schemeTagline = '', request = '' } = {}) {
+  const ask = request.trim();
   const inputLines = inputs.length
     ? inputs.map(inputLine)
     : ['- No inputs are enabled yet. Pick some on the Sensing page, or connect a board, then copy this again.'];
@@ -139,5 +140,11 @@ inputs.on('pitch', (pitch) => {
 ## If they would rather do it on the micro:bit
 
 Any line of the form \`send("name:" + number)\` in the MakeCode program invents a channel called \`name\`; it shows up on the Controls page the first time it arrives, and can be wired like any other. So a count can live on the board instead — for example a handler that counts loud sounds and sends \`"clap3:1"\` on every third one — at the cost of re-flashing on every change.
+
+## What they want
+
+${ask || '(They will describe it in the next message.)'}
+
+Write the script for that, following the rules above.
 `;
 }

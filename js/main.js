@@ -95,6 +95,8 @@ const scriptUi = runner
   ? initScriptUI({
     elements: {
       prompt: document.getElementById('script-prompt'),
+      request: document.getElementById('script-request'),
+      copy: document.getElementById('script-copy'),
       source: document.getElementById('script-source'),
       run: document.getElementById('script-run'),
       stop: document.getElementById('script-stop'),

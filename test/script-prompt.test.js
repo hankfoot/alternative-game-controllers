@@ -40,6 +40,18 @@ test('the prompt names every control of the picked scheme, with the call that dr
   assert.ok(text.includes(game.tagline));
 });
 
+// The sentence they typed is the whole point of the copy; it goes last, after
+// every rule the answer has to follow.
+test('what they asked for closes the prompt, after the rules', () => {
+  const text = buildPrompt({ inputs: [], controls, request: '  flap every third clap ' });
+  const ask = text.indexOf('## What they want\n\nflap every third clap\n');
+  assert.ok(ask > 0);
+  assert.ok(ask > text.indexOf('## Rules'), 'after the rules');
+  assert.ok(ask > text.indexOf('## Example 2'), 'and after the examples');
+  assert.match(text.slice(ask), /Write the script for that/);
+  assert.match(buildPrompt({ inputs: [], controls }), /\(They will describe it in the next message\.\)/);
+});
+
 test('with nothing enabled the prompt says so instead of listing nothing', () => {
   const text = buildPrompt({ inputs: inputsFor([]), controls });
   assert.match(text, /No inputs are enabled yet/);
