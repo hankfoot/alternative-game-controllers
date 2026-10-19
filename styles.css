@@ -451,6 +451,34 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .builder-warn strong { color: var(--ink); }
 .builder-warn[hidden] { display: none; }
 
+/* ---------- Code it: the script box on Controls ---------- */
+/* The instructions are prose in a code block, and prose has lines far longer
+   than any screen; wrapped, rather than scrolled sideways on a phone. What is
+   copied is the text, so wrapping changes nothing about what the LLM sees. */
+#controls-script .step-body { min-width: 0; }
+#script-prompt { white-space: pre-wrap; word-break: break-word; }
+.script-source {
+  display: block; width: 100%; max-width: 720px; min-height: 220px; resize: vertical;
+  margin-top: 6px; padding: 14px 16px; box-sizing: border-box;
+  background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px;
+  color: var(--ink); font-family: var(--mono); font-size: .82rem; line-height: 1.6;
+  tab-size: 2;
+}
+.script-source:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+.script-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.script-status { font-size: .86rem; color: var(--ink-soft); }
+.script-status[data-status="running"] { color: var(--green-ink); }
+.script-status[data-status="error"] { color: var(--red-ink); }
+.script-log {
+  margin: 6px 0 0; max-width: 720px; max-height: 220px; overflow: auto; box-sizing: border-box;
+  padding: 10px 14px; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px;
+  font-family: var(--mono); font-size: .78rem; line-height: 1.55; color: var(--ink-soft);
+  white-space: pre-wrap; word-break: break-word;
+}
+.script-log:empty::before { content: "Nothing yet."; color: var(--ink-faint); }
+.script-log [data-level="error"] { color: var(--red-ink); }
+.script-log [data-level="warn"] { color: var(--yellow-ink); }
+
 /* The same shape as the builder's warning, one screen along: yellow for "you
    could wire more", red for "nothing on your controller reaches the game". */
 .game-warn {
@@ -462,6 +490,11 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .game-warn[data-level="empty"] {
   background: var(--red-soft); border-color: color-mix(in srgb, var(--red) 40%, var(--line));
   color: var(--red-ink);
+}
+/* Blue rather than yellow: a script running is a state, not a complaint. */
+.game-warn[data-level="script"] {
+  background: var(--blue-soft); border-color: color-mix(in srgb, var(--blue) 40%, var(--line));
+  color: var(--blue-ink);
 }
 .game-warn strong { color: var(--ink); }
 .game-warn .link-btn { color: inherit; }

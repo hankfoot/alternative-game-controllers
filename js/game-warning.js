@@ -130,10 +130,23 @@ function describe(found) {
   ];
 }
 
-export function initGameWarning({ element, signalStore, engine, host }) {
+export function initGameWarning({ element, signalStore, engine, host, runner = null }) {
   if (!element || !signalStore || !engine || !host) return null;
 
   function render() {
+    // A running script answers for the controls itself: it may be driving a
+    // port nothing is wired to, and the check cannot see inside it to know
+    // which. So while one runs the diagnosis stands down, and says so.
+    if (runner?.running()) {
+      element.hidden = false;
+      element.dataset.level = 'script';
+      element.replaceChildren(
+        'A script is driving the game — see Code it, on ',
+        controlsLink(),
+        '. The keys under the game work either way.',
+      );
+      return;
+    }
     const game = host.activeGame();
     const found = game?.steering
       ? diagnose({
@@ -163,6 +176,9 @@ export function initGameWarning({ element, signalStore, engine, host }) {
   engine.subscribe(render);
   signalStore.subscribe(render);
   host.onGameChange(render);
+  runner?.subscribe((event) => {
+    if (event.type === 'status') render();
+  });
   render();
   return { render };
 }

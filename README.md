@@ -7,11 +7,11 @@ and turn everyday objects into controllers for a browser game.
 
 ## How it works
 
-1. On the **Controller** page, choose inputs and copy the generated MakeCode.
+1. On the **Sensing** page, choose inputs and copy the generated MakeCode.
 2. Flash that code to a micro:bit using the walkthrough on the **Setup** page.
 3. Open the site in desktop or Android Chrome/Edge and click **Connect**.
 4. Open the Live-input control to test each signal.
-5. Wire signals to controls on the **Game** page and play.
+5. Wire signals to controls on the **Controls** page, or paste a script there, and play on **Game**.
 
 ## Input protocol
 
@@ -59,7 +59,7 @@ deployment branch is needed.
 
 ## Wiring inputs to the game
 
-The Game page contains a visual patch bay. Choose or drag an input onto a compatible game port,
+The Controls page contains a visual patch bay. Choose or drag an input onto a compatible game port,
 then tune its threshold, range, direction, cooldown, or smoothing. Buttons and gestures work as
 triggers; sensor readings can drive the craft's position and how hard it climbs. How fast the
 world runs is a choice rather than a control, and lives on the Design page. Wiring is saved in
@@ -67,6 +67,26 @@ browser storage and survives a refresh.
 
 On wide screens the wiring workbench and game sit side-by-side so changes can be tested
 immediately. When that pair cannot fit comfortably, the game stacks beneath the workbench.
+
+## Scripting an input ("Code it")
+
+Below the patch bay, the Controls page has a box for a short JavaScript script, meant to be
+written by an LLM from a description like "flap every third clap" or "the height of my chair
+steers the craft". The page generates a copy-pasteable instructions block for the LLM, listing
+the inputs actually enabled and the controls of the selected scheme by name. The script is run
+in the page with two objects:
+
+- `inputs` — `on(channel, fn)`, `onPress(channel, fn)`, `value(channel)`, `list()`, and
+  `publish(channel, value, { kind })`, which puts a reading the script computed onto the bus so
+  it appears on the patch bay as a normal source.
+- `game` — `press(name)`, `hold(name, on)`, `set(name, 0..1)`, `start()`, `phase()`,
+  `controls()`. Names are the scheme's ports by friendly name: `flap`, `thrust`, `up`/`down`,
+  `paddle`, `shift`, `advance`.
+
+The same two objects sit on `window.workshop` for use from the devtools console. Stop undoes
+everything a script set up (timers, listeners, held controls, published channels). The script
+is saved as it is typed, travels in the Save/Load bundle, and restarts on reload if it was
+running; a script from an imported bundle never auto-runs. See `js/script-runner.js`.
 
 ## Code structure
 
@@ -82,6 +102,8 @@ immediately. When that pair cannot fit comfortably, the game stacks beneath the 
   the game and its control schemes, and `index.js` is the registry the rest of the app reads.
 - `js/game.js` connects those rules to the DOM/canvas; `js/game-warning.js` works out what is still
   missing between a controller and a playable game.
+- `js/script-runner.js` runs a pasted script against the inputs and the game; `js/script-prompt.js`
+  writes the instructions for an LLM; `js/script-storage.js` and `js/script-ui.js` persist and bind it.
 - `js/design.js` is the Design screen — course settings plus the look and sound of the game.
 - `js/theme/` is that look-and-sound layer: drawing, sound, storage, and scene rendering.
 - `js/bluetooth.js`, `js/bus.js`, and `js/visualizer.js` handle the input pipeline.

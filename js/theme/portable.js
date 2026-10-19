@@ -14,6 +14,7 @@ import { normalizeTheme } from './theme-store.js';
 import { referencedAssets } from './images.js';
 import { SLOT_IDS } from './defaults.js';
 import { key } from '../storage-keys.js';
+import { normalizeScript } from '../script-storage.js';
 
 export const BUNDLE_KIND = key('theme');
 const BUNDLE_VERSION = 1;
@@ -34,6 +35,7 @@ const ACCEPTED_KINDS = Object.freeze([BUNDLE_KIND, 'experimental-game-controller
  *   options   — the per-game course settings, from wiring-storage
  *   wiring    — every game's connections, from wiring-storage
  *   inputs    — the sensors they checked on the Sensing page
+ *   script    — the Code it script, if they wrote one (null otherwise)
  *
  * The last two used to be left out, which made a bundle a strange half-gift: it
  * carried the drawings and the course but not the controller, so opening one
@@ -57,6 +59,7 @@ export async function exportBundle({ theme, assets, game }) {
       options: asRecord(game?.options),
       wiring: asRecord(game?.wiring),
       inputs: asRecord(game?.inputs),
+      script: normalizeScript(game?.script),
     },
   };
 }
@@ -108,6 +111,9 @@ export function readBundle(value) {
         selected: Array.isArray(game.inputs?.selected) ? game.inputs.selected : [],
         pinModes: asRecord(game.inputs?.pinModes),
       },
+      // Optional, and older files simply have none. Whether it was running
+      // does not travel: it is somebody else's code until Run is pressed here.
+      script: normalizeScript(game.script) && { ...normalizeScript(game.script), autoRun: false },
     },
   };
 }

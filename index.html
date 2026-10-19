@@ -382,6 +382,59 @@ basic.forever(function () {
         </section>
       </section>
 
+      <section class="block" id="controls-script">
+        <div class="block-head"><h2>Code it</h2></div>
+        <p class="lead">
+          Want something the wires can't say — every third clap, the height of a chair, two readings
+          combined? Describe it to an AI, paste what it writes here, and it runs right on this page
+          against your inputs. No reflashing.
+        </p>
+
+        <ol class="steps">
+          <li class="step">
+            <span class="step-num">1</span>
+            <div class="step-body">
+              <h3>Copy the instructions for your AI</h3>
+              <p>
+                They list your inputs and the game's controls by their real names, so whatever
+                you ask for comes back using them. Paste them in, then say what you want —
+                <em>“flap every third clap”</em>.
+              </p>
+              <div class="code-block code-block-wide">
+                <button class="code-copy" type="button">Copy</button>
+                <pre><code id="script-prompt"></code></pre>
+              </div>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step-num">2</span>
+            <div class="step-body">
+              <h3>Paste what it wrote, and run it</h3>
+              <textarea id="script-source" class="script-source" aria-label="Script" spellcheck="false"
+                autocomplete="off" autocapitalize="off" placeholder="// Paste the script here, then press Run (or Ctrl+Enter)"></textarea>
+              <div class="script-actions">
+                <button class="btn" id="script-run" type="button">Run</button>
+                <button class="btn btn-soft" id="script-stop" type="button" disabled>Stop</button>
+                <button class="btn btn-soft" id="script-clear" type="button">Clear</button>
+                <span class="script-status" id="script-status" role="status"></span>
+              </div>
+            </div>
+          </li>
+          <li class="step">
+            <span class="step-num">3</span>
+            <div class="step-body">
+              <h3>Play</h3>
+              <p>
+                The script keeps running while you switch to Game, and comes back when you refresh
+                this page. Anything it prints, and anything it gets wrong, shows up here. Stop undoes
+                everything it set up.
+              </p>
+              <pre class="script-log" id="script-log" role="log" aria-live="polite"></pre>
+            </div>
+          </li>
+        </ol>
+      </section>
+
       <nav class="pager">
         <button class="pager-btn" data-tab-target="sensing"><span aria-hidden="true">&larr;</span> Sensing</button>
         <button class="pager-btn pager-next" data-tab-target="design">Design <span aria-hidden="true">&rarr;</span></button>

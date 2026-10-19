@@ -541,6 +541,9 @@ export function initGame({ look = null, audio = null, musicWhen = null } = {}) {
         current?.engine.setControlOptions?.(node, port, options),
     },
     activeGame: () => current?.game ?? null,
+    // Where the round stands, for a script deciding whether "start" would
+    // start one or restart the one in progress.
+    phase: () => current?.engine.state.phase ?? null,
     selectGame,
     // The theme is read fresh every frame, so a visual change needs no call at
     // all; this is only for the parts that aren't drawn — volume, mute, and

@@ -695,10 +695,18 @@ test('a bundle carries the look, the sounds, the course, the wiring and the inpu
     wiring: { jetpack: [{ id: 'w1', source: 'btna', sourceKind: 'binary',
       target: { node: 'lift', port: 'thrust' }, transform: { type: 'hold', invert: false } }] },
     inputs: { selected: ['btna', 'pitch'], pinModes: { p0: 'switch' } },
+    script: { source: "inputs.onPress('loud', () => game.press('flap'))", autoRun: true },
   };
 
   const back = readBundle(JSON.parse(JSON.stringify(await exportBundle({ theme, assets, game }))));
   assert.equal(back.error, undefined);
+
+  // The script travels, but not the fact that it was running: it is a
+  // stranger's code until whoever opened the file presses Run.
+  assert.deepEqual(back.game.script, { source: game.script.source, autoRun: false });
+  const without = readBundle(JSON.parse(JSON.stringify(await exportBundle({ theme, assets, game: { ...game, script: undefined } }))));
+  assert.equal(without.game.script, null, 'a bundle with no script reads as none');
+  assert.equal(readBundle({ kind: BUNDLE_KIND, version: 1, game: { script: { source: 7 } } }).game.script, null);
 
   // Both kinds of asset travel, and only the ones actually used.
   assert.deepEqual(back.assets.map((a) => a.id).sort(),

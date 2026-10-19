@@ -10,6 +10,8 @@ import { createSignalStore } from './signal-store.js';
 import { initTabs } from './tabs.js';
 import { createWiringEngine } from './wiring-engine.js';
 import { initWiringUI } from './wiring-ui.js';
+import { createScriptRunner } from './script-runner.js';
+import { initScriptUI } from './script-ui.js';
 import { initDesign } from './design.js';
 import { createThemeStore, browserStorage } from './theme/theme-store.js';
 import { createAssetStore } from './theme/assets.js';
@@ -67,6 +69,15 @@ const wiringEngine = gameHost
 // Each game keeps its own independent wiring, so the board swaps with the game.
 if (wiringEngine) gameHost.onGameChange((game) => wiringEngine.setGame(game));
 
+// --- Scripts ----------------------------------------------------------------
+// Pasted code runs against the same store and the same game actions the patch
+// bay uses, beside the wiring rather than instead of it.
+const runner = gameHost ? createScriptRunner({ signalStore, gameHost }) : null;
+// The one deliberate global. Everything else in this app is module-local, and
+// stays so; this is the same `inputs` and `game` a pasted script receives, put
+// where somebody with the console open can try a call before writing one.
+if (runner) window.workshop = runner.api();
+
 // --- Controller code builder ------------------------------------------------
 const builder = initBuilder({
   grid: document.getElementById('builder-grid'),
@@ -80,12 +91,30 @@ const builder = initBuilder({
 // --- Consumers -------------------------------------------------------------
 initVisualizer(signalStore);
 if (wiringEngine) initWiringUI({ signalStore, engine: wiringEngine });
+const scriptUi = runner
+  ? initScriptUI({
+    elements: {
+      prompt: document.getElementById('script-prompt'),
+      source: document.getElementById('script-source'),
+      run: document.getElementById('script-run'),
+      stop: document.getElementById('script-stop'),
+      clear: document.getElementById('script-clear'),
+      status: document.getElementById('script-status'),
+      log: document.getElementById('script-log'),
+    },
+    runner,
+    signalStore,
+    gameHost,
+    storage,
+  })
+  : null;
 if (wiringEngine) {
   initGameWarning({
     element: document.getElementById('game-warning'),
     signalStore,
     engine: wiringEngine,
     host: gameHost,
+    runner,
   });
 }
 if (wiringEngine) {
@@ -121,6 +150,9 @@ if (wiringEngine) {
       builder?.reload();
       wiringEngine.reloadWiring();
     },
+    // The box is holding whatever was typed before the import; the file's
+    // script replaces it, stopped.
+    onScriptImported: () => scriptUi?.reload(),
   });
   drawingsReady.then(() => design?.refreshPreviews());
 }

@@ -170,6 +170,18 @@ test('a touch pin senses capacitively, so no GND wire is needed', () => {
   assert.ok(!program.includes('TouchTargetMode.Resistive'));
 });
 
+// A clap is over in less than the 100 ms between two samples of the streamed
+// sound level, so counting claps off `mic` lost most of them. The board's own
+// loud-sound event fires once per clap and costs the radio nothing between.
+test('a loud sound is reported as an event off the board, not read off the mic', () => {
+  const program = code(['loud']);
+  assert.ok(program.includes('input.onSound(DetectedSound.Loud, function () {'));
+  assert.ok(program.includes('send("loud:1")'));
+  assert.ok(!program.includes('soundLevel'), 'and streams nothing for it');
+  const load = streamLoad(new Set(['loud']), MODES);
+  assert.deepEqual({ streamed: load.streamed, pressed: load.pressed }, { streamed: 0, pressed: 0 });
+});
+
 test('a build of nothing but gestures still reports them', () => {
   const program = code(['shake', 'g8']);
   assert.ok(program.includes('send("shake:1")'));

@@ -400,6 +400,17 @@ const SECTIONS = [
         'No wiring. Fires on a firm whack (6g) — a solid smack or a real shake.'),
       gesture('g8', 'Big slam', 'EightG', '💥',
         'No wiring. Fires only on a big impact (8g) — a hard slam. Use for a “power move”.'),
+      {
+        // Lives with the gestures because it costs what they cost: one line
+        // when it happens, nothing otherwise. The alternative, counting peaks
+        // off the streamed sound level, misses claps shorter than the 100 ms
+        // between samples — which is most of them.
+        id: 'loud', emoji: '👏', name: 'Loud sound',
+        kind: 'event',
+        channels: ['loud'],
+        handlers: handler('input.onSound(DetectedSound.Loud, function () {', ['send("loud:1")']),
+        build: 'No wiring. Fires once per clap, shout or bang — the mic is next to the touch logo. Count them in a script (see Code it on Controls) to make every third clap do something.',
+      },
     ],
   },
   {
