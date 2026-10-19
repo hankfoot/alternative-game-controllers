@@ -30,10 +30,16 @@ test('the prompt names every control of the picked scheme, with the helper that 
 test('the prompt says which inputs the program already reads, and how a pin is set up', () => {
   const inputs = inputsFor([{ channel: 'p0', kind: 'binary', mode: 'Switch', form: 'switch' }, 'pitch', 'loud']);
   const text = buildPrompt({ inputs, controls });
-  assert.match(text, /- `p0`: Pin 0 as a Switch/);
-  assert.match(text, /- `pitch`: Pitch\n/);
-  assert.match(text, /- `loud`: Loud sound\n/);
+  assert.match(text, /- `p0`: Pin 0 as a Switch\n/, 'a scanned switch owns no handler');
+  assert.match(text, /- `pitch`: Pitch\n/, 'nor does a polled reading');
+  assert.match(text, /- `loud`: Loud sound — its `input\.onSound\(DetectedSound\.Loud, …\)` handler is already in the program/);
   assert.match(text, /do not change the mode or pull of a pin listed above/);
+  assert.match(text, /only one handler per event/);
+  const more = buildPrompt({ inputs: inputsFor([{ channel: 'p2', mode: 'Touch Pad', form: 'pad' }, 'btna', 'shake', 'logo']), controls });
+  assert.match(more, /- `p2`: Pin 2 as a Touch Pad — its `control\.onEvent\(EventBusSource\.MICROBIT_ID_IO_P2, …\)` handler/);
+  assert.match(more, /- `btna`: Button A — its `control\.onEvent\(EventBusSource\.MICROBIT_ID_BUTTON_A, …\)` handler/);
+  assert.match(more, /- `shake`: Shake — its `input\.onGesture\(Gesture\.Shake, …\)` handler/);
+  assert.match(more, /- `logo`: Logo touch — its `input\.onLogoEvent\(…\)` handler/);
   assert.match(buildPrompt({ inputs: inputsFor([]), controls }), /Nothing yet\. You may set up any input/);
 });
 

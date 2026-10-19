@@ -24,16 +24,41 @@ function controlLine({ name, kind, description }) {
   return `- \`${name}\` (${kind}): ${description} → \`${VERB[kind]?.(name) ?? name}\``;
 }
 
+// The event handler the generated program registers for each input it reads.
+// MakeCode's Blocks view allows one handler per event: a second `on loud
+// sound` is shown as a disabled grey block and dropped from the program, so
+// an LLM that writes one for an event the program already owns breaks the
+// controller the moment somebody flips to Blocks. Named here so it knows.
+const GESTURES = {
+  shake: 'Shake', tiltleft: 'TiltLeft', tiltright: 'TiltRight', logoup: 'LogoUp', logodown: 'LogoDown',
+  faceup: 'ScreenUp', facedown: 'ScreenDown', freefall: 'FreeFall', g3: 'ThreeG', g6: 'SixG', g8: 'EightG',
+};
+function handlerOf({ channel, mode }) {
+  if (channel === 'btna' || channel === 'btnb') {
+    return `control.onEvent(EventBusSource.MICROBIT_ID_BUTTON_${channel.slice(-1).toUpperCase()}, …)`;
+  }
+  if (channel === 'logo') return 'input.onLogoEvent(…)';
+  if (channel === 'loud') return 'input.onSound(DetectedSound.Loud, …)';
+  if (GESTURES[channel]) return `input.onGesture(Gesture.${GESTURES[channel]}, …)`;
+  if (/^p[0-2]$/.test(channel) && String(mode).toLowerCase().includes('touch')) {
+    return `control.onEvent(EventBusSource.MICROBIT_ID_IO_P${channel.slice(1)}, …)`;
+  }
+  return null;
+}
+
 /** The inputs the program already reads, from the signal store's records. */
 export function describeInputs(signals = []) {
   return signals
     .filter((signal) => signal.planned)
     .sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9) || a.channel.localeCompare(b.channel))
-    .map(({ channel, label, mode }) => ({ channel, label: label ?? channel, mode: mode ?? null }));
+    .map(({ channel, label, mode }) => ({
+      channel, label: label ?? channel, mode: mode ?? null, handler: handlerOf({ channel, mode }),
+    }));
 }
 
-function inputLine({ channel, label, mode }) {
-  return `- \`${channel}\`: ${label}${mode ? ` as a ${mode}` : ''}`;
+function inputLine({ channel, label, mode, handler }) {
+  const taken = handler ? ` — its \`${handler}\` handler is already in the program` : '';
+  return `- \`${channel}\`: ${label}${mode ? ` as a ${mode}` : ''}${taken}`;
 }
 
 export function buildPrompt({ inputs = [], controls = [], schemeName = '', schemeTagline = '', request = '' } = {}) {
@@ -69,6 +94,8 @@ ${inputLines.join('\n')}
 
 You may read the same sensors again, but do not change the mode or pull of a pin listed above. Any other pin is free.
 
+MakeCode's Blocks view allows only one handler per event. Where a handler is named above, the program already has it: do not write another for the same event, or it will be dropped when they switch to Blocks. If the interaction needs that event, say so plainly instead of writing it — they can untick that input on the Sensing page and copy these instructions again.
+
 ## Writing MakeCode
 
 - Write the MakeCode flavour of TypeScript that converts to blocks: \`let\` variables at the top level, \`function name () { }\`, \`if\`/\`else\`, \`for\`, \`while\`. No classes, arrow functions, ternaries, \`const\`, \`async\` or imports.
@@ -82,6 +109,8 @@ You may read the same sensors again, but do not change the mode or pull of a pin
 - Reply with one code block to paste at the very END of their program, below everything already there, then one or two sentences on what to tune.
 
 ## Example 1: flap every third clap
+
+(Assumes the program does not already read \`loud\`.)
 
 \`\`\`ts
 // How many claps per flap
