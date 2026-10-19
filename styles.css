@@ -292,7 +292,7 @@ em { color: var(--accent); font-style: italic; }
   margin-top: 1px; color: #fff;
   background: var(--red); /* Set up's page color */
 }
-.step-body { padding-bottom: 24px; }
+.step-body { padding-bottom: 24px;  /* a flex item, so a wide code line scrolls inside its block rather than widening the page */ min-width: 0; }
 .step:not(:last-child) .step-body { border-bottom: 1px solid var(--line); margin-bottom: 24px; }
 .step-body h3 { margin: 0 0 5px; font-size: 1.05rem; font-weight: 600; }
 .step-body p { margin: 0; color: var(--ink-soft); max-width: 60ch; }
@@ -452,7 +452,6 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .builder-warn[hidden] { display: none; }
 
 /* ---------- Code it on Controls ---------- */
-#controls-code .step-body { min-width: 0; }
 .code-request { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; max-width: 720px; }
 .code-request input {
   flex: 1 1 260px; min-width: 0; padding: 10px 14px; font: inherit; font-size: .92rem;

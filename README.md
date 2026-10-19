@@ -57,25 +57,27 @@ Configure Pages to **Deploy from a branch**, using the `main` branch and `/(root
 `index.html`, `styles.css`, `js/`, and `assets/` directly; no workflow, generated bundle, or
 deployment branch is needed.
 
-## Wiring inputs to the game
+## The workshop, screen by screen
 
-The Controls page contains a visual patch bay. Choose or drag an input onto a compatible game port,
-then tune its threshold, range, direction, cooldown, or smoothing. Buttons and gestures work as
-triggers; sensor readings can drive the craft's position and how hard it climbs. How fast the
-world runs is a choice rather than a control, and lives on the Design page. Wiring is saved in
-browser storage and survives a refresh.
+1. **Setup** — MakeCode, the starter project, flashing, and preparing foil and crocodile clips.
+2. **Sensing** — four lessons, each a small program to download and a live view of what it sends:
+   a touch pad (capacitive, one wire), a switch (two foils, pulled down and scanned), analog
+   readings (pitch, light, and a voltage off a pencil line), and events (shake, loud sound).
+   Every snippet is built by the same assembler as the controller's program, so the pin fixes
+   are the same ones (`js/lessons.js`).
+3. **Controls** — pick how the craft moves, then write sentences in dropdowns: *when Button A is
+   pressed, flap*; *when light is below 100, hold thrust*; *pitch steers paddle between -40 and
+   30*. A reading is drawn live under its sentence with the line it has to cross. The sentences
+   become the MakeCode program for the board (`js/controls-codegen.js`), which streams every
+   reading it uses and drives the game through the helpers below. Sentences are saved per scheme.
+4. **Design** — the course, how the controls feel (flap strength, slide speed…), and the look and
+   sound of the game.
+5. **Game**.
 
-On wide screens the wiring workbench and game sit side-by-side so changes can be tested
-immediately. When that pair cannot fit comfortably, the game stacks beneath the workbench.
+## The game API on the wire
 
-## Driving the game from the board ("Code it")
-
-Below the patch bay, the Controls page has a box for a sentence — "flap every third clap",
-"the height of my chair steers the craft" — and a button that copies it together with
-instructions for an LLM. The LLM writes MakeCode code; the person pastes it at the bottom of
-their MakeCode program and downloads it. Nothing pasted is ever run in the browser.
-
-The generated program always carries four helpers, which are the game's API on the wire:
+The generated program always carries four helpers, which are how any code on the board — the
+sentences, or something an LLM wrote — drives the game:
 
 | Helper | Line sent | Effect |
 | --- | --- | --- |
@@ -85,9 +87,19 @@ The generated program always carries four helpers, which are the game's API on t
 | `gameStart()` | `game:start` | starts a round, or retries after a crash |
 
 Control names are the scheme's ports by friendly name (`flap`, `thrust`, `up`/`down`, `paddle`,
-`shift`, `advance`). The browser routes commands straight to the game ([js/game-commands.js](js/game-commands.js)),
+`shift`, `advance`). The browser routes commands straight to the game (`js/game-commands.js`),
 shows them in a log, and lets go of every held control when the board disconnects. The same
-facade sits on `window.workshop.game` for trying a control from the devtools console.
+facade sits on `window.workshop.game` for trying a control from the devtools console. Nothing
+pasted into the page is ever executed.
+
+## Code it: vibecoding a controller
+
+Below the sentences, Controls has a box for a sentence the dropdowns cannot say — "flap every
+third clap" — and a button that copies it together with instructions for an LLM: the four
+helpers, the controls of the picked scheme, the inputs the program already reads and the
+handlers it already owns (MakeCode's Blocks view allows one per event), and MakeCode's
+block-shaped dialect. The LLM writes MakeCode; the person pastes it at the bottom of the program
+and downloads.
 
 ## Code structure
 
@@ -95,10 +107,12 @@ facade sits on `window.workshop.game` for trying a control from the devtools con
   Game — and the static workshop content.
 - `styles.css` contains the complete responsive design.
 - `js/main.js` builds everything and wires it together; `js/tabs.js` runs the page panels.
-- `js/builder.js` generates MakeCode and controller-building guidance.
+- `js/builder.js` is the catalogue of inputs and the assembler that turns parts into a program;
+  `js/lessons.js` makes the Sensing lessons from it, `js/controls-codegen.js` the sentences, and
+  `js/controls-ui.js` and `js/rules-store.js` are the Controls screen and its storage.
 - `js/channels.js` holds friendly metadata for known wire-protocol channels.
-- `js/signal-store.js` owns discovered, planned, and wired input state.
-- `js/wiring-*.js` separate wiring configuration, runtime math, persistence, coordination, and UI.
+- `js/signal-store.js` owns discovered and planned input state; `js/game-options.js` the
+  per-scheme choices the game declares on its controls and course.
 - `js/games/` contains testable game rules: `base.js` is shared scaffolding, `sidescroller.js` is
   the game and its control schemes, and `index.js` is the registry the rest of the app reads.
 - `js/game.js` connects those rules to the DOM/canvas; `js/game-warning.js` works out what is still
@@ -112,15 +126,14 @@ facade sits on `window.workshop.game` for trying a control from the devtools con
 - `test/` covers wiring migration, persistence, protocol parsing, game rules, themes
   (`test/theme.test.js`), and the game-readiness check (`test/game-warning.test.js`).
 
-## Controller code builder
+## Generated programs
 
-The Controller page generates complete MakeCode JavaScript from the selected inputs, including
-per-input build tips. Inputs are grouped into touch/press, tilt/direction, gestures, and ambient
-sensors. Buttons, touch pads, the logo and gestures report their DOWN and UP events the instant they
-happen, so a press is never a tick late and a quick tap is never missed. A switch pin is different:
-its raw edge events are undebounced and the event bus drops any beyond ten, so a switch is scanned
-every 20 ms by one loop and reported only when its level changes. Touch pads calibrate on the first
-Bluetooth connection rather than at boot, so the wire and foil are already clipped on when the pad
-learns what "untouched" feels like. The readings that have no edges — tilt, compass, light, sound —
-are polled by a loop every 100 ms, and the page warns when too many of those may overwhelm the
-micro:bit's Bluetooth UART.
+Every program the site writes — a lesson's snippet or a controller — shares one scaffold:
+Bluetooth UART, a `send` that only writes while a browser is attached, the four game helpers, and
+a report of each held input's level 1.5 s after a browser connects (the UART service drops lines
+written before the browser subscribes). Buttons, touch pads and the logo report DOWN and UP events
+the instant they happen; switch pins are scanned every 20 ms because their raw edge events are
+undebounced and the event bus drops any beyond ten; touch pads calibrate on the first connection
+so the foil is already clipped on. Readings with no edges — tilt, compass, light, sound, analog
+pins — are polled every 100 ms, and the page warns when too many of those may overwhelm the
+Bluetooth UART.
