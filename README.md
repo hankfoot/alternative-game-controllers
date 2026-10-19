@@ -1,4 +1,4 @@
-# Game Controller Workshop
+# Alternative Game Controllers
 
 A companion website for a workshop on unconventional controllers, originally designed by Avi Romanoff and Hank Duhaime.
 

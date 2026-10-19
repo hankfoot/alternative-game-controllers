@@ -59,7 +59,7 @@ export function buildPrompt({ inputs = [], controls = [], schemeName = '', schem
   const controlLines = controls.length ? controls.map(controlLine) : ['- (no scheme selected)'];
   const scheme = schemeName ? ` (scheme: ${schemeName})` : '';
 
-  return `# Writing micro:bit code for the Game Controller Workshop
+  return `# Writing micro:bit code for Alternative Game Controllers
 
 You are helping someone program a BBC micro:bit V2 in MakeCode — the JavaScript editor at makecode.microbit.org — so that something they built controls a browser game. The micro:bit talks to the game over Bluetooth, and the program already on it does all of that. Your job is to add code that reads the sensors and calls four functions that are already defined in their program.
 
