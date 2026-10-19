@@ -13,6 +13,7 @@ import { initWiringUI } from './wiring-ui.js';
 import { createCommandBridge } from './game-commands.js';
 import { initCodeUI } from './code-ui.js';
 import { initDesign } from './design.js';
+import { createGameOptions } from './game-options.js';
 import { createThemeStore, browserStorage } from './theme/theme-store.js';
 import { createAssetStore } from './theme/assets.js';
 import { createImageCache, assetBytes } from './theme/images.js';
@@ -69,6 +70,9 @@ const wiringEngine = gameHost
 // Each game keeps its own independent wiring, so the board swaps with the game.
 if (wiringEngine) gameHost.onGameChange((game) => wiringEngine.setGame(game));
 
+// --- What the controls and the course are set to -----------------------------
+const gameOptions = gameHost ? createGameOptions({ gameHost, storage }) : null;
+
 // --- Game commands from the board ------------------------------------------
 // A board can steer the game directly, with "game:…" lines its program writes
 // through the helpers the builder emits. Beside the wiring, not instead of it.
@@ -124,7 +128,7 @@ if (wiringEngine) {
       importFile: byId('theme-import-file'),
       preview: byId('design-preview'),
     },
-    engine: wiringEngine,
+    options: gameOptions,
     theme: themeStore,
     assets: assetStore,
     images,
@@ -136,7 +140,6 @@ if (wiringEngine) {
     // A redrawn sprite needs no announcement — the renderer reads the theme
     // every frame. This is for the music, which has to be told to change.
     onThemeApplied: () => gameHost.syncMusic(),
-    onOptionsImported: () => wiringEngine.reloadOptions(),
     // An imported bundle rewrites the wiring underneath the engine holding it.
     onInputsImported: () => wiringEngine.reloadWiring(),
   });

@@ -24,9 +24,7 @@ import { FONTS, fontStack, cardPalette } from './theme/theme-store.js';
 import { createColourPicker } from './theme/colour-picker.js';
 import { newAssetId } from './theme/assets.js';
 import { exportBundle, readBundle, downloadBundle } from './theme/portable.js';
-import {
-  loadAllPortOptions, saveAllPortOptions, loadAllConnections, saveAllConnections,
-} from './wiring-storage.js';
+import { loadAllConnections, saveAllConnections } from './wiring-storage.js';
 import { RULES, courseFrom } from './games/sidescroller.js';
 import { GAMES } from './games/index.js';
 
@@ -131,10 +129,10 @@ const VOLUMES = [['0.25', 'quietly'], ['0.5', 'at a normal volume'], ['0.85', 'l
 const at = (theme, path) => path.split('.').reduce((value, key) => value?.[key], theme);
 
 export function initDesign({
-  hosts, engine, theme, assets, images, audio,
-  onGameChange, onThemeApplied, onOptionsImported, onInputsImported, storage,
+  hosts, options, theme, assets, images, audio,
+  onGameChange, onThemeApplied, onInputsImported, storage,
 }) {
-  if (!hosts?.settings || !engine) return null;
+  if (!hosts?.settings || !options) return null;
   let uploads = [];
   // One per slot, so the thumbnails can be redrawn without rebuilding the
   // section — rebuilding it would throw away an editor somebody has open.
@@ -150,11 +148,15 @@ export function initDesign({
     onThemeApplied?.();
   }
 
-  // --- The course: the game's own settings, straight off the engine ----------
+  // --- The course, and how the controls feel -------------------------------
+  // Both are choices the game declares on its own ports. The course cards are
+  // the settings nothing drives; the controls card is the options on the
+  // ports a sentence or a key does drive — how hard a flap kicks, how fast a
+  // slide moves — which used to be reachable only from the patch bay.
   function renderSettings() {
     const host = hosts.settings;
     host.textContent = '';
-    const groups = engine.settings ?? [];
+    const groups = [...(options.settings ?? []), ...controlsWithOptions()];
 
     if (!groups.length) {
       const empty = document.createElement('div');
@@ -170,11 +172,12 @@ export function initDesign({
     for (const definition of groups) {
       const section = card(definition.label, definition.description, definition.emoji);
       for (const port of definition.ports ?? []) {
-        const picked = engine.controlOptions(definition.id, port.id);
+        const node = port.node ?? definition.id;
+        const picked = options.get(node, port.id);
         const block = group();
         for (const option of port.options ?? []) {
           const control = select(option.choices, picked[option.id], (value) => {
-            engine.setControlOption(definition.id, port.id, option.id, value);
+            options.set(node, port.id, option.id, value);
           });
           block.appendChild(sentence(option.lead, control, option.trail));
         }
@@ -182,6 +185,21 @@ export function initDesign({
       }
       host.appendChild(section);
     }
+  }
+
+  /** The scheme's controls that carry options, as one card. */
+  function controlsWithOptions() {
+    const ports = (options.targets ?? []).flatMap((target) => (target.ports ?? [])
+      .filter((port) => port.options?.length)
+      .map((port) => ({ ...port, node: target.id, label: target.label })));
+    if (!ports.length) return [];
+    return [{
+      id: 'controls',
+      label: 'How the controls feel',
+      emoji: '🎮',
+      description: 'What each control does with what your controller sends it.',
+      ports,
+    }];
   }
 
 
@@ -806,8 +824,8 @@ export function initDesign({
         // engine: export wants every game's settings, and the engine only ever
         // holds one.
         game: {
-          selected: engine.gameId,
-          options: loadAllPortOptions(storage),
+          selected: options.gameId,
+          options: options.exportAll(),
           wiring: loadAllConnections(storage),
         },
       });
@@ -839,14 +857,11 @@ export function initDesign({
       for (const asset of bundle.assets) {
         if (!await assets.put(asset)) refused += 1;
       }
-      saveAllPortOptions(storage, bundle.game.options);
+      options.importAll(bundle.game.options);
       saveAllConnections(storage, bundle.game.wiring);
       // The builder is holding the old picks and the engine the old wiring, so
       // both have to be told to re-read before any of this is on screen.
       onInputsImported?.();
-      // The engine read its options at load and is holding the old ones, so it
-      // has to be sent back to the store before the course matches the file.
-      onOptionsImported?.();
       theme.replace(bundle.theme);
       await refreshUploads();
       await applied();
@@ -924,8 +939,8 @@ export function initDesign({
     // and the split between "speed" and "the course" is a matter of which card
     // a control is printed on, not of which numbers it moves.
     const course = () => courseFrom({
-      ...engine.controlOptions('speed', 'pace'),
-      ...engine.controlOptions('world', 'obstacles'),
+      ...options.get('speed', 'pace'),
+      ...options.get('world', 'obstacles'),
     }, PRETEND_SCORE);
 
     let distance = 0;
