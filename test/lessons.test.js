@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { LESSONS, SECTIONS, TOUCH_COMPARISON, lessonChannels, lessonCode } from '../js/lessons.js';
+import { LESSONS, SECTIONS, lessonChannels, lessonCode } from '../js/lessons.js';
 
 const byId = (id) => LESSONS.find((lesson) => lesson.id === id);
 
@@ -25,9 +25,6 @@ test('touch walks through three ways, motion through three examples, ambient is 
   assert.deepEqual(SECTIONS[0].lessons.map((l) => l.id), ['switch', 'resistive', 'capacitive']);
   assert.deepEqual(SECTIONS[1].lessons.map((l) => l.id), ['tilt', 'gestures', 'compass']);
   assert.deepEqual(SECTIONS[2].lessons.map((l) => l.id), ['ambient']);
-  assert.equal(SECTIONS[0].comparison, TOUCH_COMPARISON, 'touch opens with the comparison');
-  assert.deepEqual(TOUCH_COMPARISON.columns, ['Switch', 'Resistive touch', 'Capacitive touch']);
-  for (const row of TOUCH_COMPARISON.rows) assert.equal(row.length, 4, `${row[0]} has a cell for each way`);
 });
 
 test('every lesson says what to do, and leaves room for a photo', () => {

@@ -644,17 +644,6 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .step-head h3 { margin: 0; }
 
 /* ---------- Sensing lessons ---------- */
-/* The touch comparison: three ways side by side. Scrolls sideways inside its
-   own box on a phone rather than widening the page. */
-.compare-wrap { max-width: 760px; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
-.compare { width: 100%; border-collapse: collapse; font-size: .84rem; line-height: 1.45; }
-.compare th, .compare td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
-.compare tr:last-child > * { border-bottom: none; }
-.compare thead th { background: var(--bg-soft); color: var(--ink); font-weight: 600; white-space: nowrap; }
-.compare tbody th { color: var(--ink); font-weight: 600; white-space: nowrap; }
-.compare td { color: var(--ink-soft); min-width: 150px; }
-.step-body > .compare-wrap + .substeps { margin-top: 24px; }
-
 /* Examples inside a step: lettered, set off by a dashed rule, with the same
    rhythm as a step's own contents. */
 .substeps { list-style: none; margin: 0; padding: 0; }
