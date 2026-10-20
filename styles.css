@@ -645,16 +645,28 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .step-head h3 { margin: 0; }
 
 /* ---------- Sensing lessons ---------- */
-/* Examples inside a step: lettered, set off by a dashed rule, with the same
-   rhythm as a step's own contents. */
-.substeps { list-style: none; margin: 0; padding: 0; }
-.substep { display: grid; grid-template-columns: 26px 1fr; gap: 14px; padding: 24px 0; border-top: 1px dashed var(--line); }
-.substep:last-child { padding-bottom: 0; }
+/* Examples inside a step: lettered, in the same column as the step numbers
+   and with their text in line with the step's own, joined to the number by a
+   rail (see railFor in js/lessons.js). The 46px pulls them back out of the step
+   body: its 30px number column plus the 16px gap. */
+.substeps { list-style: none; padding: 0; margin: 0 0 0 -46px; }
+.substep { display: grid; grid-template-columns: 30px 1fr; gap: 16px; }
 .substep-num {
+  position: relative; z-index: 1; justify-self: center; margin-top: 24px;
   width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
   font-weight: 700; font-size: .8rem; color: var(--ink); background: var(--bg-soft); border: 1px solid var(--line);
 }
-.substep-body { min-width: 0; }
+.substep:first-child .substep-num { margin-top: 0; }
+.substep-body { min-width: 0; padding-top: 24px; border-top: 1px dashed var(--line); }
+.substep:first-child .substep-body { padding-top: 0; border-top: none; }
+.substep:not(:last-child) .substep-body { padding-bottom: 24px; }
+/* The rail: from under the step's number to the top of its last letter. */
+.step.has-substeps { position: relative; }
+.step.has-substeps > .step-num { position: relative; z-index: 1; }
+.step.has-substeps::before {
+  content: ""; position: absolute; left: 14px; width: 2px; border-radius: 1px;
+  top: var(--rail-top, 30px); height: var(--rail-height, 0px); background: var(--line);
+}
 .substep-body h4 { margin: 0; font-size: 1rem; font-weight: 600; line-height: 26px; }
 .substep-body > :not(:first-child) { margin-top: 14px; }
 .substep-body > h4 + * { margin-top: 6px; }

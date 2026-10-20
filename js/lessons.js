@@ -202,6 +202,28 @@ function renderExample(lesson, index, signalStore, views) {
   return item;
 }
 
+/**
+ * The line joining a step's number to its lettered examples. Where it has to
+ * end — the top of the last letter — depends on how long each example runs,
+ * so it is measured, and measured again whenever the step changes size: a
+ * fold opening, the window narrowing, the panel being shown at all (hidden,
+ * everything measures zero).
+ */
+function railFor(item) {
+  const update = () => {
+    const num = item.querySelector(':scope > .step-num');
+    const letters = item.querySelectorAll('.substep-num');
+    if (!num || !letters.length) return;
+    const top = item.getBoundingClientRect().top;
+    const from = num.getBoundingClientRect().bottom - top;
+    const to = letters[letters.length - 1].getBoundingClientRect().top - top;
+    item.style.setProperty('--rail-top', `${from}px`);
+    item.style.setProperty('--rail-height', `${Math.max(0, to - from)}px`);
+  };
+  if (typeof ResizeObserver === 'function') new ResizeObserver(update).observe(item);
+  update();
+}
+
 export function initLessons({ host, signalStore }) {
   if (!host || !signalStore) return null;
   host.textContent = '';
@@ -221,6 +243,7 @@ export function initLessons({ host, signalStore }) {
       const examples = el('ol', 'substeps');
       section.lessons.forEach((lesson, i) => examples.appendChild(renderExample(lesson, i, signalStore, views)));
       body.appendChild(examples);
+      item.classList.add('has-substeps');
     } else {
       // A single example needs no letter: its parts sit straight in the step.
       const only = renderExample(section.lessons[0], 0, signalStore, views);
@@ -233,6 +256,7 @@ export function initLessons({ host, signalStore }) {
     list.appendChild(item);
   });
   host.appendChild(list);
+  list.querySelectorAll('.step.has-substeps').forEach(railFor);
 
   return { destroy: () => views.forEach((view) => view.destroy()) };
 }
