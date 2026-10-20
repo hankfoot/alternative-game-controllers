@@ -19,6 +19,7 @@ export const SECTIONS = [
     id: 'touch',
     title: 'Touch',
     intro: 'Electricity only flows when it has a complete path to travel, called a circuit. Each of these examples gives your micro:bit a different way to notice when that path is completed.',
+    note: 'For the best results, stick your foil or copper tape onto something stiff, like cardboard, or fold it over on itself, so the crocodile clips have something to grip.',
     lessons: [
       {
         id: 'switch',
@@ -243,6 +244,7 @@ export function initLessons({ host, signalStore }) {
     const body = el('div', 'step-body');
     body.appendChild(el('h3', null, section.title));
     body.appendChild(el('p', null, section.intro));
+    if (section.note) body.appendChild(el('p', 'note', section.note));
     if (section.lessons.length > 1) {
       const examples = el('ol', 'substeps');
       section.lessons.forEach((lesson, i) => examples.appendChild(renderExample(lesson, i, signalStore, views)));
