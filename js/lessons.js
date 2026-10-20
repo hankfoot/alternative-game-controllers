@@ -23,7 +23,6 @@ export const SECTIONS = [
       {
         id: 'switch',
         title: 'Switch',
-        emoji: '🔛',
         intro: 'Two pieces of foil complete the circuit when they touch each other.',
         steps: [
           'Clip 3V to one piece of foil and P1 to another.',
@@ -37,7 +36,6 @@ export const SECTIONS = [
       {
         id: 'resistive',
         title: 'Resistive touch',
-        emoji: '🍌',
         intro: 'Your body completes the circuit between the pin and ground.',
         steps: [
           'Clip P2 to a piece of foil, or to a banana.',
@@ -51,7 +49,6 @@ export const SECTIONS = [
       {
         id: 'capacitive',
         title: 'Capacitive touch',
-        emoji: '🫳',
         intro: 'The pin senses your body through a single piece of foil, so there is nothing to hold.',
         steps: [
           'Fold a piece of foil a few times and clip P0 to it.',
@@ -72,7 +69,6 @@ export const SECTIONS = [
       {
         id: 'tilt',
         title: 'Tilt',
-        emoji: '📐',
         intro: 'Pitch and roll measure the tilt in degrees.',
         steps: [
           COPY,
@@ -84,7 +80,6 @@ export const SECTIONS = [
       {
         id: 'gestures',
         title: 'Gestures',
-        emoji: '🫨',
         intro: 'Gestures are sent once each time they happen.',
         steps: [
           COPY,
@@ -96,7 +91,6 @@ export const SECTIONS = [
       {
         id: 'compass',
         title: 'Compass',
-        emoji: '🧭',
         intro: 'The compass measures which way the board points, in degrees from north.',
         steps: [
           'Copy the code and download it.',
@@ -116,7 +110,6 @@ export const SECTIONS = [
       {
         id: 'ambient',
         title: 'Light, sound and temperature',
-        emoji: '🌤️',
         intro: '',
         steps: [
           COPY,
@@ -175,7 +168,7 @@ export function copyBlock(code, label) {
   return block;
 }
 
-const LETTERS = 'abcdefghij';
+const LETTERS = 'ABCDEFGHIJ';
 
 function renderExample(lesson, index, signalStore, views) {
   const item = el('li', 'substep');
@@ -183,7 +176,7 @@ function renderExample(lesson, index, signalStore, views) {
   const letter = el('span', 'substep-num', LETTERS[index]);
   letter.setAttribute('aria-hidden', 'true');
   const body = el('div', 'substep-body');
-  body.appendChild(el('h4', null, `${lesson.emoji} ${lesson.title}`));
+  body.appendChild(el('h4', null, lesson.title));
   if (lesson.intro) body.appendChild(el('p', null, lesson.intro));
 
   const figure = el('figure', 'shot shot-slot');
