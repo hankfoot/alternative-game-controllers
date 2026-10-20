@@ -1082,7 +1082,7 @@ const CONTROL_SCHEMES = [
     emoji: '🐤',
     scheme: 'Tap to rise',
     hint: 'Tap to rise.',
-    tagline: 'One trigger input. Each tap pushes the craft up, and gravity pulls it back down.',
+    tagline: 'Each tap pushes the craft up, and gravity pulls it back down.',
     targets: [
       {
         id: 'flap',
@@ -1115,7 +1115,7 @@ const CONTROL_SCHEMES = [
     emoji: '🚀',
     scheme: 'Hold to rise',
     hint: 'Hold to climb.',
-    tagline: 'One held input. The craft climbs for as long as you hold it, and falls when you let go.',
+    tagline: 'The craft climbs for as long as you hold, and falls when you let go.',
     targets: [
       {
         id: 'lift',
@@ -1152,7 +1152,7 @@ const CONTROL_SCHEMES = [
     emoji: '👾',
     scheme: 'Hold to slide',
     hint: 'Hold up or down to move.',
-    tagline: 'Two held inputs and no gravity. The craft moves at a steady rate while held and stops when released.',
+    tagline: 'One control moves the craft up and another moves it down. When you let go, it stays where it is.',
     targets: [
       {
         id: 'slide',
@@ -1202,7 +1202,7 @@ const CONTROL_SCHEMES = [
     emoji: '🧱',
     scheme: 'Steer directly',
     hint: 'Steer to the gap.',
-    tagline: 'One continuous input. Its reading maps directly to height, so a dial or slider works better than a button.',
+    tagline: 'A sensor reading sets how high the craft flies, so a tilt or a dial works better than a button.',
     targets: [
       {
         id: 'paddle',

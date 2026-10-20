@@ -294,10 +294,7 @@ function pinInput(n) {
         handlers: buttonEdges(ch, `MICROBIT_ID_IO_P${n}`),
         connect: binary(ch, `input.pinIsPressed(TouchPin.P${n})`),
         build:
-          `Clip one wire from P${n} to anything conductive — foil, fruit, a spoon. ` +
-          `Touching the object sends 1. No second wire to hold: the pin senses your body through the one clip. ` +
-          `Clip the foil on <em>before</em> the board starts, and keep your hands off it as it starts — that is when it learns what untouched feels like. ` +
-          `If it ever sticks on, or you change the wiring, press <strong>A and B together</strong>: it relearns and shows a tick.`,
+          `Clip a piece of foil to pin P${n}. Keep your hands off it while the micro:bit starts. If it stays on after you let go, press <strong>A and B together</strong> to reset it.`,
       },
       resistive: {
         label: 'Touch pad (resistive)',
@@ -314,9 +311,7 @@ function pinInput(n) {
         handlers: buttonEdges(ch, `MICROBIT_ID_IO_P${n}`),
         connect: binary(ch, `input.pinIsPressed(TouchPin.P${n})`),
         build:
-          `Clip P${n} to a piece of foil — or straight into a banana, a lump of Play-Doh, a cup of water. ` +
-          `Clip GND to a second piece of foil and hold it in your other hand (or wrap it round your wrist). ` +
-          `Touching the P${n} object completes the circuit through you and sends 1.`,
+          `Clip a piece of foil, or a banana, to pin P${n}. Clip another piece of foil to the GND pin and hold it while you touch the first one.`,
       },
       switch: {
         label: 'Switch',
@@ -347,8 +342,7 @@ function pinInput(n) {
           `}`,
         ],
         build:
-          `Make a switch: clip a wire from 3V to one piece of foil, and another from P${n} to a second piece. ` +
-          `When the foils touch, the circuit closes and sends 1. Great for jaws, doors, stomp pads.`,
+          `Clip one piece of foil to pin P${n} and another to the 3V pin. Mount them so they touch when your controller is used, like the jaws of a puppet or a door closing.`,
       },
       analog: {
         label: 'Analog',
@@ -360,9 +354,7 @@ function pinInput(n) {
         read: `pins.analogReadPin(AnalogPin.P${n})`,
         loop: number(ch, `pins.analogReadPin(AnalogPin.P${n})`),
         build:
-          `Read a voltage on P${n} as a number from 0 to 1023. Draw a thick pencil line, clip 3V to one end and GND ` +
-          `to the other, and P${n} to a third clip you slide along it: the reading follows the clip. A bent wire ` +
-          `dipped in a cup of water, or a strip of foil with a weight pressing on it, work the same way.`,
+          `Pin P${n} reads a number from 0 to 1023, depending on how much electricity reaches it. Draw a thick pencil line, clip 3V to one end and GND to the other, and slide a clip from P${n} along the line.`,
       },
     },
   };
@@ -395,7 +387,7 @@ const SECTIONS = [
         events: buttonEvents('MICROBIT_ID_BUTTON_A'),
         handlers: buttonEdges('btna', 'MICROBIT_ID_BUTTON_A'),
         connect: binary('btna', 'input.buttonIsPressed(Button.A)'),
-        build: 'No wiring. To press it with an object, tape something onto the button or build a little lever that pushes it.',
+        build: 'Press the A button. You can also tape on a lever or a flap that presses it for you.',
       },
       {
         id: 'btnb', emoji: '🔘', name: 'Button B',
@@ -404,7 +396,7 @@ const SECTIONS = [
         events: buttonEvents('MICROBIT_ID_BUTTON_B'),
         handlers: buttonEdges('btnb', 'MICROBIT_ID_BUTTON_B'),
         connect: binary('btnb', 'input.buttonIsPressed(Button.B)'),
-        build: 'No wiring. Same tricks as Button A — two buttons means two separate channels.',
+        build: 'Press the B button. You can also tape on a lever or a flap that presses it for you.',
       },
       {
         id: 'logo', emoji: '⭐', name: 'Logo touch',
@@ -416,7 +408,7 @@ const SECTIONS = [
         events: LOGO_EVENTS,
         handlers: edges('logo', LOGO_EVENTS),
         connect: binary('logo', 'input.logoIsPressed()'),
-        build: 'No wiring. Touch the gold logo on the front — it even works through a thin strip of foil taped over it.',
+        build: 'Touch the gold logo on the front of the micro:bit. It works through a thin strip of foil or tape too.',
       },
       pinInput(0),
       pinInput(1),
@@ -434,7 +426,7 @@ const SECTIONS = [
         channels: ['pitch'],
         read: 'input.rotation(Rotation.Pitch)',
         loop: number('pitch', 'input.rotation(Rotation.Pitch)'),
-        build: 'No wiring — strap the whole micro:bit (plus battery pack) to your object and tip it forward or back. Arrives in degrees. Great for steering.',
+        build: 'Attach the micro:bit and its battery to your object, then tip it forward and back.',
       },
       {
         id: 'roll', emoji: '📐', name: 'Roll',
@@ -442,7 +434,7 @@ const SECTIONS = [
         channels: ['roll'],
         read: 'input.rotation(Rotation.Roll)',
         loop: number('roll', 'input.rotation(Rotation.Roll)'),
-        build: 'No wiring — strap the whole micro:bit (plus battery pack) to your object and tip it left or right. Arrives in degrees. Great for steering.',
+        build: 'Attach the micro:bit and its battery to your object, then tip it from side to side.',
       },
       {
         id: 'heading', emoji: '🧭', name: 'Compass',
@@ -461,7 +453,7 @@ const SECTIONS = [
         setup: ['let calibrated = input.compassHeading()'],
         read: 'input.compassHeading()',
         loop: number('heading', 'input.compassHeading()'),
-        build: 'No wiring — spin your object like a dial. On power-up it asks you to calibrate: tilt the board to fill the LED grid. Calibrate with the finished object assembled, battery and all — the reading is thrown off by whatever is attached, so a bare board calibrated on the bench will be wrong once it is inside your build. Expect to redo it after each download, and test in the room you will play in: laptops, speaker magnets and steel tables all pull it about. On the Controls page you pick which direction to watch for, and whether it fires on arrival or holds while pointing that way.',
+        build: 'Attach the micro:bit to your object and turn it like a dial. When it starts, tilt it until every light is on to calibrate the compass, and do this once your controller is fully built. Keep it away from laptops and speakers, which have magnets inside.',
       },
     ],
   },
@@ -471,27 +463,27 @@ const SECTIONS = [
     desc: 'One-off moves — the board flags the instant each happens, so unlike the live inputs they add nothing to the Bluetooth load. Lean on these when you can.',
     inputs: [
       gesture('shake', 'Shake', 'Shake', '🫨',
-        'No wiring — attach the board to anything shakeable. A maraca, a stuffed animal, a pool noodle.'),
+        'Attach the micro:bit to something you can shake, like a maraca or a stuffed animal.'),
       gesture('tiltleft', 'Tilt left', 'TiltLeft', '👈',
-        'No wiring. Fires the moment the board tips past ~45° to the left — a quick flick, not a hold.'),
+        'Happens once each time the micro:bit tips quickly to the left.'),
       gesture('tiltright', 'Tilt right', 'TiltRight', '👉',
-        'No wiring. The mirror of tilt-left — pair the two to nudge something left/right.'),
+        'Happens once each time the micro:bit tips quickly to the right.'),
       gesture('logoup', 'Logo up', 'LogoUp', '🙂',
-        'No wiring. Board held UPRIGHT (LED display facing you), gold-logo edge at the top — the normal way to read it. Fires when it swings into that position.'),
+        'Happens when the micro:bit is held upright with the gold logo at the top.'),
       gesture('logodown', 'Logo down', 'LogoDown', '🙃',
-        'No wiring. Still UPRIGHT and facing you, but turned 180° so the logo edge is now at the bottom. Fires when your object is flipped upside down.'),
+        'Happens when the micro:bit is turned upside down, with the gold logo at the bottom.'),
       gesture('faceup', 'Face up', 'ScreenUp', '🔆',
-        'No wiring. Board laid FLAT like on a table, LED display pointing up at the ceiling. Fires when it settles face-up.'),
+        'Happens when the micro:bit is laid flat with its lights facing up.'),
       gesture('facedown', 'Face down', 'ScreenDown', '🌙',
-        'No wiring. Board laid FLAT the other way, LED display pointing down at the floor. Fires when it settles face-down.'),
+        'Happens when the micro:bit is laid flat with its lights facing down.'),
       gesture('freefall', 'Free fall', 'FreeFall', '🪂',
-        'No wiring. Fires the instant the board is in the air — toss it up (and catch it!) or drop it onto a cushion.'),
+        'Happens when the micro:bit is dropped or tossed. Catch it, or drop it onto something soft.'),
       gesture('g3', 'Small bump', 'ThreeG', '💥',
-        'No wiring. Fires on a light knock (3g) — a gentle tap or bump of your object.'),
+        'Happens when the micro:bit gets a gentle bump or tap.'),
       gesture('g6', 'Hard hit', 'SixG', '💥',
-        'No wiring. Fires on a firm whack (6g) — a solid smack or a real shake.'),
+        'Happens when the micro:bit gets a firm knock.'),
       gesture('g8', 'Big slam', 'EightG', '💥',
-        'No wiring. Fires only on a big impact (8g) — a hard slam. Use for a “power move”.'),
+        'Happens only when the micro:bit gets a hard slam.'),
       {
         // Lives with the gestures because it costs what they cost: one line
         // when it happens, nothing otherwise. The alternative, counting peaks
@@ -502,7 +494,7 @@ const SECTIONS = [
         channels: ['loud'],
         event: 'input.onSound(DetectedSound.Loud, function () {',
         handlers: handler('input.onSound(DetectedSound.Loud, function () {', ['send("loud:1")']),
-        build: 'No wiring. Fires once per clap, shout or bang — the mic is next to the touch logo. Count them in a script (see Code it on Controls) to make every third clap do something.',
+        build: 'Happens once each time the microphone hears a clap or a shout. The microphone is next to the gold logo.',
       },
     ],
   },
@@ -517,7 +509,7 @@ const SECTIONS = [
         channels: ['light'],
         read: 'input.lightLevel()',
         loop: number('light', 'input.lightLevel()'),
-        build: 'No wiring. Cover and uncover the LED grid with your hand, or shine a flashlight on it. Sends 0–255.',
+        build: 'Cover the lights on the front with your hand, or shine a light on them. The number goes from 0 in the dark to 255 in bright light.',
       },
       {
         id: 'temp', emoji: '🌡️', name: 'Temperature',
@@ -525,7 +517,7 @@ const SECTIONS = [
         channels: ['temp'],
         read: 'input.temperature()',
         loop: number('temp', 'input.temperature()'),
-        build: 'No wiring. Warm the processor with your thumbs — it responds slowly, which makes for hilarious controls.',
+        build: 'Warm the micro:bit between your thumbs. The temperature changes slowly.',
       },
       {
         id: 'mic', emoji: '🎤', name: 'Sound',
@@ -533,7 +525,7 @@ const SECTIONS = [
         channels: ['mic'],
         read: 'input.soundLevel()',
         loop: number('mic', 'input.soundLevel()'),
-        build: 'No wiring. Clap, yell, blow, sing — loudness arrives as 0–255. The mic is next to the touch logo.',
+        build: 'Talk, clap, or blow near the microphone, which is next to the gold logo. The number goes from 0 when it is quiet to 255 when it is loud.',
       },
     ],
   },

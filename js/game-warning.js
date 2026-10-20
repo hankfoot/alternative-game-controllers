@@ -117,7 +117,7 @@ export function initGameWarning({ element, host, controls, bridge = null }) {
     if (bridge?.driven()) {
       element.hidden = false;
       element.dataset.level = 'script';
-      element.replaceChildren('Your board is driving the game. The keys under the game work either way.');
+      element.replaceChildren('Your micro:bit is controlling the game. The keys below the game work too.');
       return;
     }
     const game = host.activeGame();
@@ -138,7 +138,7 @@ export function initGameWarning({ element, host, controls, bridge = null }) {
       ...describe(found),
       // Said every time rather than once, because it is the reassuring half and
       // whoever is reading this is looking at the alarming half.
-      ' The keys under the game work either way.',
+      ' The keys below the game work too.',
     );
   }
 

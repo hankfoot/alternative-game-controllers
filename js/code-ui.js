@@ -105,8 +105,8 @@ export function initCodeUI({ elements, bridge, controls, gameHost, storage }) {
     if (!status) return;
     const driven = bridge.driven();
     status.textContent = driven
-      ? 'Your board is driving the game.'
-      : 'Waiting for a command from your board.';
+      ? 'Your micro:bit is controlling the game.'
+      : 'Nothing from your micro:bit yet.';
     status.dataset.status = driven ? 'driven' : 'idle';
   }
 

@@ -204,7 +204,7 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
       meter.appendChild(live);
       const view = createChannelView(live, { signalStore, channels: [{ channel, kind: 'number' }], markers: marker });
       views.push(view);
-      const use = el('button', 'btn btn-soft rule-use', rule.when === 'between' ? 'Use current as low' : 'Use current reading');
+      const use = el('button', 'btn btn-soft rule-use', rule.when === 'between' ? 'Use the current reading as the low end' : 'Use the current reading');
       use.type = 'button';
       use.addEventListener('click', () => {
         const now = view.value(channel);
@@ -214,7 +214,7 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
         persist();
         render();
       });
-      const note = el('span', 'rule-note', 'Waiting for the board — download the code below, then connect.');
+      const note = el('span', 'rule-note', 'The live reading appears here once the micro:bit is connected.');
       meter.append(use, note);
       signalStore.subscribe(({ type, signal }) => {
         if (type === 'value' && signal.channel === channel) note.hidden = true;
