@@ -644,6 +644,20 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .step-head h3 { margin: 0; }
 
 /* ---------- Sensing lessons ---------- */
+.lesson-section { margin-top: 48px; }
+.lesson-section:first-child { margin-top: 32px; }
+.lesson-section-title { margin: 0; font-size: 1.35rem; }
+.lesson-section-intro { margin: 8px 0 24px; color: var(--ink-soft); max-width: 62ch; }
+#panel-sensing .lesson-section > .steps { margin-top: 0; }
+/* The touch comparison: three ways side by side. Scrolls sideways inside its
+   own box on a phone rather than widening the page. */
+.compare-wrap { max-width: 760px; overflow-x: auto; margin: 0 0 28px; border: 1px solid var(--line); border-radius: 12px; }
+.compare { width: 100%; border-collapse: collapse; font-size: .84rem; line-height: 1.45; }
+.compare th, .compare td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.compare tr:last-child > * { border-bottom: none; }
+.compare thead th { background: var(--bg-soft); color: var(--ink); font-weight: 600; white-space: nowrap; }
+.compare tbody th { color: var(--ink); font-weight: 600; white-space: nowrap; }
+.compare td { color: var(--ink-soft); min-width: 150px; }
 .lesson-steps { margin: 0; padding-left: 22px; font-size: .9rem; line-height: 1.55; color: var(--ink-soft); max-width: 60ch; }
 .lesson-steps li + li { margin-top: 6px; }
 .lesson-steps li::marker { color: var(--ink); font-weight: 600; }

@@ -254,7 +254,7 @@ function pinInput(n) {
     name: `Pin ${n}`,
     modes: {
       touch: {
-        label: 'Touch Pad',
+        label: 'Touch pad (capacitive)',
         kind: 'binary', form: 'pad',
         channels: [ch],
         // Setting the mode is also what switches the pin into touch sensing, so
@@ -297,7 +297,26 @@ function pinInput(n) {
           `Clip one wire from P${n} to anything conductive — foil, fruit, a spoon. ` +
           `Touching the object sends 1. No second wire to hold: the pin senses your body through the one clip. ` +
           `Clip the foil on <em>before</em> the board starts, and keep your hands off it as it starts — that is when it learns what untouched feels like. ` +
-          `If it ever sticks on, or you change the wiring, press <strong>A and B together</strong>: it counts down again and relearns.`,
+          `If it ever sticks on, or you change the wiring, press <strong>A and B together</strong>: it relearns and shows a tick.`,
+      },
+      resistive: {
+        label: 'Touch pad (resistive)',
+        kind: 'binary', form: 'pad',
+        channels: [ch],
+        // The classic micro:bit touch: the pin rests high on a very weak
+        // pull-up (10 MΩ on the board itself), and a person holding GND who
+        // touches the pin's foil drags it low through their body. Setting the
+        // mode hands the pin to the runtime's button driver, which smooths the
+        // flicker a hand makes and raises the same DOWN and UP events as a
+        // button — so it reports exactly like one. Nothing to calibrate.
+        setup: [`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Resistive)`],
+        events: buttonEvents(`MICROBIT_ID_IO_P${n}`),
+        handlers: buttonEdges(ch, `MICROBIT_ID_IO_P${n}`),
+        connect: binary(ch, `input.pinIsPressed(TouchPin.P${n})`),
+        build:
+          `Clip P${n} to a piece of foil — or straight into a banana, a lump of Play-Doh, a cup of water. ` +
+          `Clip GND to a second piece of foil and hold it in your other hand (or wrap it round your wrist). ` +
+          `Touching the P${n} object completes the circuit through you and sends 1.`,
       },
       switch: {
         label: 'Switch',

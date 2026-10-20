@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { LESSONS, lessonChannels, lessonCode } from '../js/lessons.js';
+import { LESSONS, SECTIONS, TOUCH_COMPARISON, lessonChannels, lessonCode } from '../js/lessons.js';
 
 const byId = (id) => LESSONS.find((lesson) => lesson.id === id);
 
@@ -20,37 +20,48 @@ test('each lesson streams exactly its own channels', () => {
   }
 });
 
-test('every lesson says where the clips go, and leaves room for a photo', () => {
+test('touch, motion and ambient, with the three ways to touch in the first', () => {
+  assert.deepEqual(SECTIONS.map((s) => s.id), ['touch', 'motion', 'ambient']);
+  assert.deepEqual(SECTIONS[0].lessons.map((l) => l.id), ['switch', 'resistive', 'capacitive']);
+  assert.deepEqual(SECTIONS[1].lessons.map((l) => l.id), ['tilt', 'gestures']);
+  assert.deepEqual(SECTIONS[2].lessons.map((l) => l.id), ['light', 'sound', 'temperature']);
+  assert.deepEqual(TOUCH_COMPARISON.columns, ['Switch', 'Resistive touch', 'Capacitive touch']);
+  for (const row of TOUCH_COMPARISON.rows) assert.equal(row.length, 4, `${row[0]} has a cell for each way`);
+});
+
+test('every lesson says what to do, and leaves room for a photo', () => {
   for (const lesson of LESSONS) {
-    assert.ok(lesson.steps.length >= 3, `${lesson.id} has steps`);
+    assert.ok(lesson.steps.length >= 2, `${lesson.id} has steps`);
     assert.match(lesson.image.src, /^assets\/lesson-/);
     assert.ok(lesson.image.alt);
   }
-});
-
-test('the four lessons cover touch, switch, analog and events', () => {
-  assert.deepEqual(LESSONS.map((lesson) => lesson.id), ['touch', 'switch', 'analog', 'events']);
-  assert.deepEqual(lessonChannels(byId('analog')), [
-    { channel: 'pitch', kind: 'number' }, { channel: 'light', kind: 'number' }, { channel: 'p2', kind: 'number' },
-  ]);
-  assert.deepEqual(lessonChannels(byId('events')).map((c) => c.kind), ['event', 'event']);
+  assert.equal(new Set(LESSONS.map((l) => l.image.src)).size, LESSONS.length, 'a photo of its own each');
 });
 
 // The lessons are made by the same assembler as the controller, so the fixes
 // that cost a workshop are in every snippet.
-test('the touch and switch lessons carry the pin fixes', () => {
-  const touch = lessonCode(byId('touch'));
-  assert.ok(touch.includes('pins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)'));
-  assert.ok(touch.includes('\npins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)\n'), 'calibrated at startup');
+test('the three touch lessons are wired the three different ways', () => {
   const sw = lessonCode(byId('switch'));
   assert.ok(sw.includes('pins.setPull(DigitalPin.P1, PinPullMode.PullDown)'));
   assert.ok(sw.includes('loops.everyInterval(20, function () {'), 'scanned, not edge-watched');
-  assert.ok(!sw.includes('setEvents'));
+  assert.ok(!sw.includes('touchSetMode'));
+
+  const resistive = lessonCode(byId('resistive'));
+  assert.ok(resistive.includes('pins.touchSetMode(TouchTarget.P2, TouchTargetMode.Resistive)'));
+  assert.ok(resistive.includes('EventBusSource.MICROBIT_ID_IO_P2, EventBusValue.MICROBIT_BUTTON_EVT_DOWN'));
+  assert.ok(!resistive.includes('Capacitive'), 'nothing capacitive about it');
+  assert.ok(!resistive.includes('Button.AB'), 'and nothing to recalibrate');
+
+  const capacitive = lessonCode(byId('capacitive'));
+  assert.ok(capacitive.includes('\npins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)\n'), 'calibrated at startup');
+  assert.ok(capacitive.includes('input.onButtonPressed(Button.AB'), 'with A+B to relearn');
 });
 
-test('the analog lesson reads a voltage off a pin', () => {
-  const code = lessonCode(byId('analog'));
-  assert.ok(code.includes('send("p2:" + pins.analogReadPin(AnalogPin.P2))'));
-  assert.ok(code.includes('send("pitch:" + input.rotation(Rotation.Pitch))'));
-  assert.ok(!code.includes('setPull'), 'an analog pin is not pulled');
+test('motion and ambient lessons need no pins', () => {
+  for (const id of ['tilt', 'gestures', 'light', 'sound', 'temperature']) {
+    const code = lessonCode(byId(id));
+    assert.ok(!code.includes('DigitalPin') && !code.includes('TouchTarget'), `${id} touches no pin`);
+  }
+  assert.deepEqual(lessonChannels(byId('tilt')), [{ channel: 'pitch', kind: 'number' }, { channel: 'roll', kind: 'number' }]);
+  assert.deepEqual(lessonChannels(byId('sound')).map((c) => c.kind), ['number', 'event']);
 });

@@ -40,7 +40,7 @@ test('the prompt says which inputs the program already reads, and how a pin is s
   assert.match(text, /do not change the mode or pull of a pin listed above/);
   assert.match(text, /only one handler per event/);
   const more = buildPrompt({ inputs: inputsFor(['p2:touch', 'btna', 'shake', 'logo']), controls });
-  assert.match(more, /- `p2`: Pin 2 as a Touch Pad — its `control\.onEvent\(EventBusSource\.MICROBIT_ID_IO_P2, EventBusValue\.MICROBIT_BUTTON_EVT_DOWN, …\)` handler/);
+  assert.match(more, /- `p2`: Pin 2 as a Touch pad \(capacitive\) — its `control\.onEvent\(EventBusSource\.MICROBIT_ID_IO_P2, EventBusValue\.MICROBIT_BUTTON_EVT_DOWN, …\)` handler/);
   assert.match(more, /- `btna`: Button A — its `control\.onEvent\(EventBusSource\.MICROBIT_ID_BUTTON_A, EventBusValue\.MICROBIT_BUTTON_EVT_DOWN, …\)` handler/);
   assert.match(more, /- `shake`: Shake — its `input\.onGesture\(Gesture\.Shake, …\)` handler/);
   assert.match(more, /- `logo`: Logo touch — its `input\.onLogoEvent\(TouchButtonEvent\.Touched, …\)` handler/);
