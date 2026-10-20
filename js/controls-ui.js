@@ -188,8 +188,12 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     }
 
     line.append(', ');
-    line.appendChild(el('strong', 'rule-control', controlPhrase(rule)));
-    line.append(kindOf(rule) === 'hold' ? ' for as long as it lasts.' : '.');
+    // One span for the control and the words after it, so the sentence's
+    // spacing between parts does not land in front of the full stop.
+    const ending = el('span', 'rule-ending');
+    ending.appendChild(el('strong', 'rule-control', controlPhrase(rule)));
+    ending.append(kindOf(rule) === 'hold' ? ' for as long as it lasts.' : '.');
+    line.appendChild(ending);
     row.appendChild(line);
 
     // The reading, live, with the line it has to cross drawn on it. Only a

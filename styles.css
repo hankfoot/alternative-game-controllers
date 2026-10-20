@@ -289,14 +289,15 @@ em { color: var(--accent); font-style: italic; }
 .step-num {
   flex: none; width: 30px; height: 30px; border-radius: 50%;
   font-weight: 700; font-size: .9rem; display: grid; place-items: center;
-  margin-top: 1px; color: #fff;
+  color: #fff;
   background: var(--red); /* Set up's page color */
 }
 /* A flex item, so min-width: 0 lets a wide code line scroll inside its block
    rather than widening the page. */
 .step-body { padding-bottom: 32px; min-width: 0; }
 .step:not(:last-child) .step-body { border-bottom: 1px solid var(--line); margin-bottom: 32px; }
-.step-body h3 { margin: 0; font-size: 1.05rem; font-weight: 600; line-height: 1.35; }
+/* As tall as the number beside it (30px), so the title sits on its middle. */
+.step-body h3 { margin: 0; font-size: 1.05rem; font-weight: 600; line-height: 30px; }
 .step-body p { margin: 0; color: var(--ink-soft); max-width: 60ch; }
 /* One rhythm for whatever a step holds — prose, a photo, a list, a button, a
    live view — so nothing butts against what came before it. Written with two
@@ -470,7 +471,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 }
 .code-request input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
 .code-request .btn.copied { background: var(--green-ink); }
-.code-details { max-width: 720px; font-size: .86rem; color: var(--ink-soft); }
+.code-details { max-width: 720px; font-size: .85rem; color: var(--ink-soft); }
 .code-details summary { cursor: pointer; }
 /* The instructions are prose in a code block, and prose has lines far longer
    than any screen; wrapped, rather than scrolled sideways on a phone. What is
@@ -650,15 +651,15 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .substep { display: grid; grid-template-columns: 26px 1fr; gap: 14px; padding: 24px 0; border-top: 1px dashed var(--line); }
 .substep:last-child { padding-bottom: 0; }
 .substep-num {
-  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; margin-top: 1px;
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
   font-weight: 700; font-size: .8rem; color: var(--ink); background: var(--bg-soft); border: 1px solid var(--line);
 }
 .substep-body { min-width: 0; }
-.substep-body h4 { margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.35; }
+.substep-body h4 { margin: 0; font-size: 1rem; font-weight: 600; line-height: 26px; }
 .substep-body > :not(:first-child) { margin-top: 14px; }
 .substep-body > h4 + * { margin-top: 6px; }
 .substep-body > .lesson-watch + .lesson-live { margin-top: 10px; }
-.lesson-steps { margin: 0; padding-left: 22px; font-size: .9rem; line-height: 1.55; color: var(--ink-soft); max-width: 60ch; }
+.lesson-steps { margin: 0; padding-left: 22px; font-size: 1rem; line-height: 1.6; color: var(--ink-soft); max-width: 60ch; }
 .lesson-steps li + li { margin-top: 6px; }
 .lesson-steps li::marker { color: var(--ink); font-weight: 600; }
 /* A copy button with the code under a fold: the code is for MakeCode, not for reading here. */
@@ -666,7 +667,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .code-block-folded .code-copy { position: static; font-size: .9rem; padding: 10px 16px; color: #fff; background: var(--ink); border-color: var(--ink); }
 .code-block-folded .code-copy.copied { background: var(--green-ink); border-color: var(--green-ink); color: #fff; }
 .code-block-folded .code-details { margin-top: 10px; }
-.lesson-watch { font-size: .86rem; color: var(--ink-soft); }
+.lesson-watch { font-size: .85rem; color: var(--ink-soft); }
 .lesson-live { max-width: 720px; max-height: none; }
 .shot-slot { min-height: 160px; max-width: 620px; margin: 0; border: 1px dashed var(--line); border-radius: 10px; background: var(--bg-soft); display: flex; align-items: center; justify-content: center; }
 .shot-slot::after { content: "Photo: " attr(aria-label); font-size: .8rem; color: var(--ink-faint); padding: 12px; text-align: center; }
@@ -766,8 +767,8 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .settings-group + .settings-group { margin-top: 10px; }
 .wiring-target-heading { display: flex; gap: 10px; margin-bottom: 10px; }
 .wiring-target-heading > span { font-size: 1.12rem; line-height: 1.25; }
-.wiring-target-heading h4 { margin: 0; font-size: .88rem; }
-.wiring-target-heading p { margin: 2px 0 0; font-size: .73rem; line-height: 1.35; color: var(--ink-soft); max-width: 42ch; }
+.wiring-target-heading h4 { margin: 0; font-size: 1rem; line-height: 1.35; }
+.wiring-target-heading p { margin: 3px 0 0; font-size: .85rem; line-height: 1.45; color: var(--ink-soft); max-width: 52ch; }
 /* A port is one block, the mirror of an output: its name, and a box holding
    what's wired into it — one card per wire, each reading the same sentence an
    output shows, just from the far end. The jack mounts on the box's own left
@@ -823,13 +824,13 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
    line of text rather than under labels, so it states what the wire does. */
 .wiring-sentence {
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0;
-  color: var(--ink); font-size: .8rem;
+  color: var(--ink); font-size: .9rem;
 }
 /* `line-height` is stated after `font: inherit`, and has to be: the shorthand
    resets it, so these boxes were taking the body's 1.6 and setting a line taller
    than the box it had to sit in — which is why the words met the bottom edge. */
 .wiring-sentence select, .wiring-sentence input {
-  min-height: 30px; padding: 5px 8px; font: inherit; font-size: .8rem; font-weight: 600;
+  min-height: 30px; padding: 5px 8px; font: inherit; font-size: 1em; font-weight: 600;
   line-height: 1.25;
   color: var(--ink); background: var(--bg);
   border: 1px solid var(--line); border-radius: 7px;
@@ -1354,7 +1355,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .rule-control { color: var(--ink); }
 .rule-meter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
 .rule-live { flex: 1 1 260px; min-width: 0; max-height: none; }
-.rule-use { flex: none; padding: 6px 11px; font-size: .78rem; }
-.rule-note { flex-basis: 100%; font-size: .78rem; color: var(--ink-faint); }
+.rule-use { flex: none; padding: 6px 11px; font-size: .85rem; }
+.rule-note { flex-basis: 100%; font-size: .85rem; color: var(--ink-faint); }
 .rule-note[hidden] { display: none; }
 
