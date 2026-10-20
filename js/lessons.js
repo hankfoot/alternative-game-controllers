@@ -23,7 +23,7 @@ export const SECTIONS = [
       {
         id: 'switch',
         title: 'Switch',
-        intro: 'A switch is two pieces of metal that let electricity through only when they touch, like the light switch on a wall. Foil works well because metal carries electricity easily. This is useful for noticing when two things come together, like a lid closing on a jar or a door shutting.',
+        intro: 'A switch is two pieces of metal that let electricity through only when they touch, like the light switch on a wall. Foil works well because metal carries electricity easily. We can attach foil to two objects to detect when they come together, like a lid closing on a jar or a door shutting.',
         steps: [
           'Clip one piece of foil to pin P0.',
           'Clip another piece of foil to the 3V pin.',
