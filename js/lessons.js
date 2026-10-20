@@ -51,7 +51,7 @@ export const SECTIONS = [
         title: 'Capacitive touch',
         intro: 'Your body also holds a small amount of electric charge, a bit like a sponge holds water. With just one piece of foil, the micro:bit can feel that charge when your finger touches it, so you don’t need to hold anything else. This is how a phone’s touchscreen works, and it is useful for buttons that should feel like nothing at all.',
         steps: [
-          'Clip a piece of foil to pin P0.',
+          'Clip one piece of foil to pin P0.',
           UPLOAD + ' Keep your hands off the foil while it starts.',
           'Touch the foil.',
           'If it stays on after you let go, press A and B together to reset it.',
