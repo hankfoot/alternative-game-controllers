@@ -23,7 +23,7 @@ export const SECTIONS = [
       {
         id: 'switch',
         title: 'Switch',
-        intro: 'Touching two pieces of conductive material together can complete a circuit just like how a light switch works: when the foils meet, electricity flows from the 3V pin into P0. This is useful for detecting when two objects come into contact, such as when a lid is put on a jar or when a door is closed.',
+        intro: 'Touching two pieces of conductive material together can complete a circuit just like how a light switch works. Metal foil conducts electricity very well, so when the foils meet, the full 3V passes straight into P0. This is useful for detecting when two objects come into contact, such as when a lid is put on a jar or when a door is closed.',
         steps: [
           'Clip one piece of foil to pin P0.',
           'Clip another piece of foil to the 3V pin.',
@@ -36,7 +36,7 @@ export const SECTIONS = [
       {
         id: 'resistive',
         title: 'Resistive touch',
-        intro: 'Your body conducts electricity, so you can complete a circuit yourself by touching a pin while holding the ground pin: a tiny current flows from P0, through you, to GND. This is how a fruit piano works: anything a little conductive, like a banana or Play-Doh, can become a button.',
+        intro: 'Your body conducts electricity too, though much less well than metal. In this mode the micro:bit listens for even a tiny current, so touching P0 while holding the ground pin is enough to complete the circuit through you. This is how a fruit piano works: anything a little conductive, like a banana or Play-Doh, can become a button.',
         steps: [
           'Clip one piece of foil to pin P0.',
           'Clip another piece of foil to the GND pin and hold it in one hand.',
