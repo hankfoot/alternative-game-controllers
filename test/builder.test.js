@@ -3,7 +3,7 @@ import test from 'node:test';
 
 const MODES = { p0: 'touch', p1: 'touch', p2: 'touch' };
 
-import { CONNECT_SETTLE_MS, INPUTS, SCAN_MS, assemble, generateCode, streamLoad, variantFor } from '../js/builder.js';
+import { CONNECT_SETTLE_MS, INPUTS, SCAN_MS, assemble, generateCode, starterCode, streamLoad, variantFor } from '../js/builder.js';
 
 const load = (ids, modes = MODES) => streamLoad(ids.map((id) => variantFor(id, modes[id])));
 
@@ -289,4 +289,23 @@ test('a touch pad can be recalibrated with A and B, which also releases it', () 
     assert.ok(away > 0 && back > away && up > back, `P${n}: switched away, back, then released`);
   }
   assert.ok(!code(['p1'], { p1: 'switch' }).includes('Button.AB'), 'nothing to recalibrate, no handler');
+});
+
+// The Setup screen's program: Bluetooth and the board's waiting face, and
+// nothing that reads or sends — so a first download proves only that a
+// board, a browser and a person can find each other.
+test('the Setup starter is Bluetooth and the waiting face, and nothing else', () => {
+  const program = starterCode();
+  assert.ok(program.startsWith('bluetooth.startUartService()'));
+  const x = program.indexOf('basic.showIcon(IconNames.No)');
+  const rune = program.indexOf('basic.showLeds(`');
+  const name = program.indexOf('basic.showString(control.deviceName())');
+  assert.ok(x > 0 && rune > x && name > rune, 'X, Bluetooth sign, name');
+  assert.ok(program.includes('basic.showIcon(IconNames.Happy)'), 'a smiley once paired');
+  for (const absent of ['send(', 'busy', 'gamePress', 'touchSetMode']) {
+    assert.ok(!program.includes(absent), `no ${absent}`);
+  }
+  // The same face as every other program, so Setup shows what they all show.
+  const face = (text) => text.slice(text.indexOf('        basic.showIcon(IconNames.No)'), text.indexOf('basic.showString(control.deviceName())'));
+  assert.equal(face(program).replaceAll(' && !(busy)', ''), face(code(['btna'])).replaceAll(' && !(busy)', ''));
 });

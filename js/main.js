@@ -5,6 +5,7 @@ import { onStatus, onInput } from './bus.js';
 import { connect, disconnect, isSupported } from './bluetooth.js';
 import { initVisualizer } from './visualizer.js';
 import { initLessons } from './lessons.js';
+import { starterCode } from './builder.js';
 import { initGame } from './game.js';
 import { initGameWarning } from './game-warning.js';
 import { createSignalStore } from './signal-store.js';
@@ -72,6 +73,12 @@ const bridge = gameHost ? createCommandBridge({ gameHost }) : null;
 // somebody with the console open can try `workshop.game.press('flap')` without
 // a board in hand.
 if (bridge) window.workshop = { game: bridge.game };
+
+// --- Setup's starter program -----------------------------------------------
+// Written from the generator rather than kept in the page, so the board's
+// waiting screen on Setup is the same one every later program shows.
+const setupCode = document.getElementById('setup-code');
+if (setupCode) setupCode.textContent = starterCode();
 
 // --- Sensing lessons ---------------------------------------------------------
 // Rendered before the copy buttons below are bound, since each lesson has one.

@@ -593,6 +593,76 @@ export function variantFor(id, mode = null) {
   return input.modes[mode] ?? null;
 }
 
+// The one thing that draws on the LEDs, so nothing draws over anything
+// else. Not connected: an X for a second, a Bluetooth rune for a second, then
+// the board's five-letter name — "waiting to pair", and which board to pick in
+// the Bluetooth list. Connected: a smiley, drawn once rather than every time
+// round — redrawing all 25 LEDs for a picture that never changes is work on
+// the processor that keeps the radio fed. Its own loop, so the pauses in the
+// animation never hold up a reading.
+//
+// `busy` is for programs where something else sometimes needs the LEDs (a
+// touch pad relearning); the Setup starter has nothing of the kind.
+function faceLoopLines({ busy }) {
+  const idle = busy ? '!(connected) && !(busy)' : '!(connected)';
+  return [
+    'basic.forever(function () {',
+    ...(busy ? ['    if (busy) {', '        basic.pause(100)', '    } else if (connected) {'] : ['    if (connected) {']),
+    '        if (!(faceShown)) {',
+    '            faceShown = true',
+    '            basic.showIcon(IconNames.Happy)',
+    '        }',
+    '        basic.pause(100)',
+    '    } else {',
+    '        basic.showIcon(IconNames.No)',
+    // A full second each, timed here rather than left to the blocks' own
+    // display time: on a real board that came out at half what it should
+    // have. Checked between, so a connection mid-way goes to the smiley —
+    // except during the name, which cannot be stopped once it is scrolling.
+    '        basic.pause(1000)',
+    `        if (${idle}) {`,
+    '            basic.showLeds(`',
+    '                . . # # .',
+    '                # . # . #',
+    '                . # # # .',
+    '                # . # . #',
+    '                . . # # .',
+    '                `)',
+    '            basic.pause(1000)',
+    '        }',
+    `        if (${idle}) {`,
+    // Cleared first, so the name scrolls in from a dark screen rather than
+    // sliding in beside the Bluetooth sign still lit from the step before.
+    '            basic.clearScreen()',
+    '            basic.showString(control.deviceName())',
+    '        }',
+    '    }',
+    '})',
+  ];
+}
+
+/**
+ * The program on the Setup screen: Bluetooth on, and the board's face — the
+ * X, the Bluetooth sign and its name until it pairs, a smiley once it has —
+ * and nothing else. It is what proves a board, a browser and a person can
+ * find each other before any sensing starts.
+ */
+export function starterCode() {
+  return [
+    'bluetooth.startUartService()',
+    'let connected = false',
+    'let faceShown = false',
+    'bluetooth.onBluetoothConnected(function () {',
+    '    connected = true',
+    '    faceShown = false',
+    '})',
+    'bluetooth.onBluetoothDisconnected(function () {',
+    '    connected = false',
+    '})',
+    ...faceLoopLines({ busy: false }),
+  ].join('\n');
+}
+
 /**
  * A complete program from a list of parts.
  *
@@ -648,49 +718,7 @@ export function assemble(parts, { extra = [] } = {}) {
     ])
     : [];
 
-  // The one thing that draws on the LEDs, so nothing draws over anything
-  // else. Not connected: an X for a second, a Bluetooth rune for a second,
-  // then the board's five-letter name — "waiting to pair", and which board to
-  // pick in the Bluetooth list. Connected: a smiley,
-  // drawn once rather than every time round — redrawing all 25 LEDs for a
-  // picture that never changes is work on the processor that keeps the radio
-  // fed. Its own loop, so the pauses in the animation never hold up a reading.
-  const faceLoop = [
-    'basic.forever(function () {',
-    '    if (busy) {',
-    '        basic.pause(100)',
-    '    } else if (connected) {',
-    '        if (!(faceShown)) {',
-    '            faceShown = true',
-    '            basic.showIcon(IconNames.Happy)',
-    '        }',
-    '        basic.pause(100)',
-    '    } else {',
-    '        basic.showIcon(IconNames.No)',
-    // A full second each, timed here rather than left to the blocks' own
-    // display time: on a real board that came out at half what it should
-    // have. Checked between, so a connection mid-way goes to the smiley —
-    // except during the name, which cannot be stopped once it is scrolling.
-    '        basic.pause(1000)',
-    '        if (!(connected) && !(busy)) {',
-    '            basic.showLeds(`',
-    '                . . # # .',
-    '                # . # . #',
-    '                . # # # .',
-    '                # . # . #',
-    '                . . # # .',
-    '                `)',
-    '            basic.pause(1000)',
-    '        }',
-    '        if (!(connected) && !(busy)) {',
-    // Cleared first, so the name scrolls in from a dark screen rather than
-    // sliding in beside the Bluetooth sign still lit from the step before.
-    '            basic.clearScreen()',
-    '            basic.showString(control.deviceName())',
-    '        }',
-    '    }',
-    '})',
-  ];
+  const faceLoop = faceLoopLines({ busy: true });
 
 
   return [

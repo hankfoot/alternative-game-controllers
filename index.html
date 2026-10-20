@@ -183,21 +183,7 @@
               </p>
               <div class="code-block">
                 <button class="code-copy" type="button">Copy</button>
-                <pre><code>bluetooth.startUartService()
-let connected = false
-bluetooth.onBluetoothConnected(function () {
-    connected = true
-})
-bluetooth.onBluetoothDisconnected(function () {
-    connected = false
-})
-basic.forever(function () {
-    if (connected) {
-        basic.showIcon(IconNames.Yes)
-    } else {
-        basic.showString(control.deviceName())
-    }
-})</code></pre>
+                <pre><code id="setup-code"><!-- written by js/main.js from js/builder.js starterCode() --></code></pre>
               </div>
             </div>
           </li>
@@ -237,19 +223,28 @@ basic.forever(function () {
           <li class="step">
             <span class="step-num">6</span>
             <div class="step-body">
-              <h3>Find your micro:bit's name</h3>
+              <h3>Connect to your board</h3>
               <p>
-                Every micro:bit has a unique five-letter Bluetooth name and shows up as
-                <code>BBC micro:bit [·····]</code> (five letters of its own). Your board is now scrolling
-                that five-letter code across the LEDs — note yours so you can spot it in a room full of
-                boards.
+                While the board waits to connect, it shows an X, a Bluetooth symbol, and its
+                five-letter name. Every board has its own name, so note yours.
               </p>
               <figure class="shot">
                 <video src="assets/setup-name.mp4" autoplay loop muted playsinline aria-label="The five-letter name scrolling across the micro:bit LEDs"></video>
               </figure>
+              <p>
+                Press <strong>Connect</strong> at the top of this page and choose
+                <code>BBC micro:bit [·····]</code> with your board's name. The board shows a smiley
+                face when it connects.
+              </p>
+              <figure class="shot">
+                <img src="assets/setup-chooser.png" alt="The browser's Bluetooth chooser listing BBC micro:bit devices" />
+              </figure>
+              <p>
+                You will use the same Connect button for every program from here on. If you refresh
+                this page, you need to connect again.
+              </p>
             </div>
           </li>
-
         </ol>
       </section>
 
@@ -267,27 +262,6 @@ basic.forever(function () {
           Each example is a small program. Paste it into MakeCode, download it to your board,
           and press <strong>Connect</strong> at the top of this page.
         </p>
-        <p class="lead">
-          While the board waits to connect, it shows an X, a Bluetooth symbol, and its
-          five-letter name. When it connects, it shows a smiley face.
-        </p>
-
-        <details class="how">
-          <summary>Connecting to your board</summary>
-          <div class="how-body">
-            <p>
-              Press <strong>Connect</strong> and choose the <code>BBC micro:bit [·····]</code>
-              with your board's five-letter name.
-            </p>
-            <p>
-              The board needs power from a battery pack or a USB cable. If you refresh this page,
-              you will need to connect again.
-            </p>
-            <figure class="shot">
-              <img src="assets/setup-chooser.png" alt="The browser's Bluetooth chooser listing BBC micro:bit devices" />
-            </figure>
-          </div>
-        </details>
 
         <div id="lesson-list"><!-- sections of lessons, written by js/lessons.js --></div>
       </section>
