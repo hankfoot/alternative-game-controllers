@@ -160,6 +160,7 @@ test('the LEDs show whether the board is paired', () => {
   assert.ok(x > 0 && rune > x && name > rune, 'unpaired: the X, the rune, then the name');
   assert.ok(face.slice(x, rune).includes('basic.pause(1000)') && face.slice(rune, name).includes('basic.pause(1000)'),
     'each picture held for a full second, timed by the program');
+  assert.ok(face.slice(rune, name).includes('basic.clearScreen()\n            basic.showString'), 'the screen cleared just before the name');
   assert.equal(count(program, 'IconNames.Happy'), 1, 'drawn only by the face loop');
   const connectAt = program.indexOf('bluetooth.onBluetoothConnected');
   assert.ok(!program.slice(connectAt, program.indexOf('\n})\n', connectAt)).includes('showIcon'),

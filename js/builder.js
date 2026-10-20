@@ -664,6 +664,9 @@ export function assemble(parts, { extra = [] } = {}) {
     '            basic.pause(1000)',
     '        }',
     '        if (!(connected) && !(busy)) {',
+    // Cleared first, so the name scrolls in from a dark screen rather than
+    // sliding in beside the Bluetooth sign still lit from the step before.
+    '            basic.clearScreen()',
     '            basic.showString(control.deviceName())',
     '        }',
     '    }',
