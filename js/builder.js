@@ -629,9 +629,10 @@ export function assemble(parts, { extra = [] } = {}) {
     ])
     : [];
 
-  // The one thing that draws on the LEDs, so nothing
-  // draws over anything else. Not connected: a Bluetooth rune for a second,
-  // then an X for a second — "waiting to pair". Connected: a smiley,
+  // The one thing that draws on the LEDs, so nothing draws over anything
+  // else. Not connected: an X for a second, a Bluetooth rune for a second,
+  // then the board's five-letter name — "waiting to pair", and which board to
+  // pick in the Bluetooth list. Connected: a smiley,
   // drawn once rather than every time round — redrawing all 25 LEDs for a
   // picture that never changes is work on the processor that keeps the radio
   // fed. Its own loop, so the pauses in the animation never hold up a reading.
@@ -646,45 +647,34 @@ export function assemble(parts, { extra = [] } = {}) {
     '        }',
     '        basic.pause(100)',
     '    } else {',
-    '        basic.showLeds(`',
-    '            . . # # .',
-    '            # . # . #',
-    '            . # # # .',
-    '            # . # . #',
-    '            . . # # .',
-    '            `)',
+    '        basic.showIcon(IconNames.No)',
     // A full second each, timed here rather than left to the blocks' own
     // display time: on a real board that came out at half what it should
-    // have. Checked between, so a connection mid-way goes to the smiley.
+    // have. Checked between, so a connection mid-way goes to the smiley —
+    // except during the name, which cannot be stopped once it is scrolling.
     '        basic.pause(1000)',
     '        if (!(connected) && !(busy)) {',
-    '            basic.showIcon(IconNames.No)',
+    '            basic.showLeds(`',
+    '                . . # # .',
+    '                # . # . #',
+    '                . # # # .',
+    '                # . # . #',
+    '                . . # # .',
+    '                `)',
     '            basic.pause(1000)',
+    '        }',
+    '        if (!(connected) && !(busy)) {',
+    '            basic.showString(control.deviceName())',
     '        }',
     '    }',
     '})',
   ];
 
-  // Holding B scrolls the board's five-letter name — the one you pick out of
-  // the Bluetooth list — whenever you need it, without it taking up the
-  // waiting loop. 5 is the runtime's "held" event (DEVICE_BUTTON_EVT_HOLD),
-  // which fires once after B has been down for a second and a half; MakeCode
-  // has no name for it. It holds the LEDs while it scrolls, so the face loop
-  // waits, and nothing else is held up.
-  const nameOnHold = handler('control.onEvent(EventBusSource.MICROBIT_ID_BUTTON_B, 5, function () {', [
-    'if (!(busy)) {',
-    '    busy = true',
-    '    basic.showString(control.deviceName())',
-    '    faceShown = false',
-    '    busy = false',
-    '}',
-  ]);
 
   return [
     ...scaffoldTop({ state, report }),
     ...handlers,
     ...recalibration,
-    ...nameOnHold,
     // Last before the loop: a setup line may block for as long as it takes
     // someone to finish calibrating, so everything that has to be listening by
     // then is already registered above.

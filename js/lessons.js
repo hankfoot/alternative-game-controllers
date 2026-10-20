@@ -21,7 +21,7 @@ export const LESSONS = [
       'Clip one end of a crocodile lead to the P0 pad on the board.',
       'Clip the other end to a square of foil. Tape the foil to anything you like.',
       'Copy the code and download it, with your hands off the foil — the board learns what untouched feels like the moment it starts.',
-      'Press Connect and pick your board. Until it pairs it flashes a Bluetooth sign and an X; once paired it smiles. Hold B to see its five-letter name.',
+      'Press Connect and pick your board — until it pairs it shows an X, a Bluetooth sign and its five-letter name, over and over. Once paired it smiles.',
       'Touch the foil: the row below goes to 1.',
       'Stuck on 1, or moved the foil? Press A and B together: it relearns, and shows a tick.',
     ],

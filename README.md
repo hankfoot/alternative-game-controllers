@@ -131,8 +131,8 @@ and downloads.
 
 Every program the site writes — a lesson's snippet or a controller — shares one scaffold:
 Bluetooth UART, a `send` that only writes while a browser is attached, the four game helpers, a
-face on the LEDs (a Bluetooth rune and an X, a second each, until it pairs,
-and a smiley once it has; holding B scrolls the board's name), and a report of each held input's level 1.5 s after a browser connects (the UART service drops lines
+face on the LEDs (an X, a Bluetooth rune and the board's name in a loop until it pairs, and a
+smiley once it has), and a report of each held input's level 1.5 s after a browser connects (the UART service drops lines
 written before the browser subscribes). Buttons, touch pads and the logo report DOWN and UP events
 the instant they happen; switch pins are scanned every 20 ms because their raw edge events are
 undebounced and the event bus drops any beyond ten; touch pads calibrate at startup, and again

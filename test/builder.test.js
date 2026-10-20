@@ -57,15 +57,15 @@ test('nothing that reads or reports is gated on a Bluetooth browser being attach
 
 // `showString` blocks for the length of its scroll — about two seconds — so in
 // the loop that reads and sends, it would drop the board to one reading every
-// two seconds. It runs only when B is held, in its own handler.
-test('holding B scrolls the board name, and nothing else ever does', () => {
+// two seconds. It belongs to the LED loop, which has nothing else to do.
+test('the board name scrolls only in the LED loop, never in the loop that reads', () => {
   const program = code(['pitch']);
   assert.equal(count(program, 'control.deviceName()'), 1);
-  const hold = program.indexOf('control.onEvent(EventBusSource.MICROBIT_ID_BUTTON_B, 5, function () {');
-  const end = program.indexOf('\n})\n', hold);
-  const name = program.indexOf('basic.showString(control.deviceName())');
-  assert.ok(hold > 0 && name > hold && name < end, 'only on the B-held event');
-  assert.ok(program.slice(hold, end).includes('busy = true'), 'holding the LEDs while it scrolls');
+  const face = program.indexOf('basic.forever(function () {\n    if (busy) {');
+  const readings = program.indexOf('basic.forever(function () {\n    send("pitch:');
+  const name = program.indexOf('control.deviceName()');
+  assert.ok(face > 0 && name > face && name < readings, 'in the face loop, where its seconds hold up nothing');
+  assert.ok(!program.includes('MICROBIT_ID_BUTTON_B, 5'), 'and nothing on holding B');
 });
 
 
@@ -145,21 +145,21 @@ test('a touch pin calibrates once at startup, not when the browser connects', ()
   assert.ok(!program.slice(connectAt, connectEnd).includes('touchSetMode'), 'not when the browser connects');
 });
 
-// What the LEDs say: until it pairs, a Bluetooth rune for a second and an X
-// for a second, round and round; a smiley once it has paired. One loop owns
-// them. Holding B shows the board's name.
+// What the LEDs say: until it pairs, an X for a second, a Bluetooth rune for
+// a second and the board's name, round and round; a smiley once it has paired.
+// One loop owns them.
 test('the LEDs show whether the board is paired', () => {
   const program = code(['btna']);
   assert.ok(!program.includes('countdown') && !program.includes('showNumber'), 'no countdown');
 
   const face = program.slice(program.indexOf('basic.forever(function () {\n    if (busy) {'));
   assert.ok(face.includes('basic.showIcon(IconNames.Happy)'), 'a smiley when paired');
-  const rune = face.indexOf('basic.showLeds(`');
   const x = face.indexOf('basic.showIcon(IconNames.No)');
-  assert.ok(rune > 0 && x > rune, 'unpaired: the rune, then the X');
-  assert.ok(face.slice(rune, x).includes('basic.pause(1000)') && face.slice(x).includes('basic.pause(1000)'),
-    'each held for a full second, timed by the program');
-  assert.ok(!face.includes('deviceName'), 'and no name in the waiting loop');
+  const rune = face.indexOf('basic.showLeds(`');
+  const name = face.indexOf('basic.showString(control.deviceName())');
+  assert.ok(x > 0 && rune > x && name > rune, 'unpaired: the X, the rune, then the name');
+  assert.ok(face.slice(x, rune).includes('basic.pause(1000)') && face.slice(rune, name).includes('basic.pause(1000)'),
+    'each picture held for a full second, timed by the program');
   assert.equal(count(program, 'IconNames.Happy'), 1, 'drawn only by the face loop');
   const connectAt = program.indexOf('bluetooth.onBluetoothConnected');
   assert.ok(!program.slice(connectAt, program.indexOf('\n})\n', connectAt)).includes('showIcon'),
