@@ -640,8 +640,7 @@ export function assemble(parts, { extra = [] } = {}) {
 
   // The one thing that draws on the LEDs once startup is over, so nothing
   // draws over anything else. Not connected: a Bluetooth rune for a second,
-  // an X for a second, then the board's five-letter name — "waiting to pair",
-  // and which board to pick in the Bluetooth list. Connected: a smiley,
+  // then an X for a second — "waiting to pair". Connected: a smiley,
   // drawn once rather than every time round — redrawing all 25 LEDs for a
   // picture that never changes is work on the processor that keeps the radio
   // fed. Its own loop, so the pauses in the animation never hold up a reading.
@@ -663,25 +662,38 @@ export function assemble(parts, { extra = [] } = {}) {
     '            # . # . #',
     '            . . # # .',
     '            `)',
-    // showLeds holds for 400 ms and showIcon for 600 ms on their own; the
-    // pauses make each a full second. Checked between, so a connection that
-    // lands mid-way goes straight to the smiley.
-    '        basic.pause(600)',
+    // A full second each, timed here rather than left to the blocks' own
+    // display time: on a real board that came out at half what it should
+    // have. Checked between, so a connection mid-way goes to the smiley.
+    '        basic.pause(1000)',
     '        if (!(connected) && !(busy)) {',
     '            basic.showIcon(IconNames.No)',
-    '            basic.pause(400)',
-    '        }',
-    '        if (!(connected) && !(busy)) {',
-    '            basic.showString(control.deviceName())',
+    '            basic.pause(1000)',
     '        }',
     '    }',
     '})',
   ];
 
+  // Holding B scrolls the board's five-letter name — the one you pick out of
+  // the Bluetooth list — whenever you need it, without it taking up the
+  // waiting loop. 5 is the runtime's "held" event (DEVICE_BUTTON_EVT_HOLD),
+  // which fires once after B has been down for a second and a half; MakeCode
+  // has no name for it. It holds the LEDs while it scrolls, so the face loop
+  // waits, and nothing else is held up.
+  const nameOnHold = handler('control.onEvent(EventBusSource.MICROBIT_ID_BUTTON_B, 5, function () {', [
+    'if (!(busy)) {',
+    '    busy = true',
+    '    basic.showString(control.deviceName())',
+    '    faceShown = false',
+    '    busy = false',
+    '}',
+  ]);
+
   return [
     ...scaffoldTop({ state, report }),
     ...handlers,
     ...recalibration,
+    ...nameOnHold,
     // Last before the loop: a setup line may block for as long as it takes
     // someone to finish calibrating, so everything that has to be listening by
     // then is already registered above.
