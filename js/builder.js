@@ -639,8 +639,9 @@ export function assemble(parts, { extra = [] } = {}) {
     : [];
 
   // The one thing that draws on the LEDs once startup is over, so nothing
-  // draws over anything else. Not connected: a Bluetooth rune and an X, in
-  // turn, which says "waiting to pair" from across a room. Connected: a smiley,
+  // draws over anything else. Not connected: a Bluetooth rune for a second,
+  // an X for a second, then the board's five-letter name — "waiting to pair",
+  // and which board to pick in the Bluetooth list. Connected: a smiley,
   // drawn once rather than every time round — redrawing all 25 LEDs for a
   // picture that never changes is work on the processor that keeps the radio
   // fed. Its own loop, so the pauses in the animation never hold up a reading.
@@ -662,8 +663,16 @@ export function assemble(parts, { extra = [] } = {}) {
     '            # . # . #',
     '            . . # # .',
     '            `)',
+    // showLeds holds for 400 ms and showIcon for 600 ms on their own; the
+    // pauses make each a full second. Checked between, so a connection that
+    // lands mid-way goes straight to the smiley.
+    '        basic.pause(600)',
     '        if (!(connected) && !(busy)) {',
     '            basic.showIcon(IconNames.No)',
+    '            basic.pause(400)',
+    '        }',
+    '        if (!(connected) && !(busy)) {',
+    '            basic.showString(control.deviceName())',
     '        }',
     '    }',
     '})',
@@ -677,12 +686,10 @@ export function assemble(parts, { extra = [] } = {}) {
     // someone to finish calibrating, so everything that has to be listening by
     // then is already registered above.
     ...setup,
-    // Startup: 3-2-1 (hands off), the touch pads learn "untouched", then the
-    // board's five-letter name once — it is how you pick your board out of the
-    // Bluetooth list — and the face loop takes over the LEDs.
+    // Startup: 3-2-1 (hands off), the touch pads learn "untouched", and the
+    // face loop takes over the LEDs.
     'countdown()',
     ...calibrate,
-    'basic.showString(control.deviceName())',
     'busy = false',
     ...faceLoop,
     ...scanLoop,

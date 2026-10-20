@@ -55,19 +55,17 @@ test('nothing that reads or reports is gated on a Bluetooth browser being attach
   assert.equal(count(rest, 'if (connected)'), 1, 'send is the only reader of the readings that asks');
 });
 
-// `showString` blocks for the length of its scroll — about two seconds — so from
-// inside the forever loop it would drop a wired session to one reading every two
-// seconds, which is precisely "wired feels broken".
-test('the board name is scrolled once at startup, never inside the loop', () => {
+// `showString` blocks for the length of its scroll — about two seconds — so in
+// the loop that reads and sends, it would drop the board to one reading every
+// two seconds. It belongs to the LED loop, which has nothing else to do.
+test('the board name scrolls in the LED loop, never in the loop that reads', () => {
   const program = code(['pitch']);
   assert.equal(count(program, 'control.deviceName()'), 1);
-
-  const loopAt = program.indexOf('basic.forever');
-  assert.ok(loopAt > 0);
-  assert.ok(
-    program.indexOf('control.deviceName()') < loopAt,
-    'it has to happen before the loop starts, not in it',
-  );
+  const face = program.indexOf('basic.forever(function () {\n    if (busy) {');
+  const readings = program.indexOf('basic.forever(function () {\n    send("pitch:');
+  assert.ok(face > 0 && readings > face);
+  const name = program.indexOf('control.deviceName()');
+  assert.ok(name > face && name < readings, 'in the face loop, where its two seconds hold up nothing');
 });
 
 
@@ -142,29 +140,33 @@ test('a touch pin calibrates at startup, straight after the hands-off countdown'
 
   const countdownCall = program.indexOf('\ncountdown()\n');
   assert.ok(countdownCall > 0 && program.indexOf(mode, countdownCall) > countdownCall, 'after the 3-2-1');
-  assert.ok(program.indexOf(mode, countdownCall) < program.indexOf('basic.showString(control.deviceName())'),
-    'and before the name scrolls, so it is done by the time anyone can connect');
+  assert.ok(program.indexOf(mode, countdownCall) < program.indexOf('busy = false', countdownCall),
+    'and before the face loop takes over, so it is done by the time anyone can connect');
   const connectAt = program.indexOf('bluetooth.onBluetoothConnected');
   const connectEnd = program.indexOf('\n})\n', connectAt);
   assert.ok(!program.slice(connectAt, connectEnd).includes('touchSetMode'), 'not when the browser connects');
 });
 
-// What the LEDs say: 3-2-1 while it is not ready, the name once, then a
-// Bluetooth rune and an X in turn until it pairs, and a smiley once it has.
-// One loop owns them, so nothing draws over anything else.
+// What the LEDs say: 3-2-1 while it is not ready, then — until it pairs — a
+// Bluetooth rune for a second, an X for a second and the board's name, round
+// and round; a smiley once it has paired. One loop owns them.
 test('the LEDs count down at startup, then show whether the board is paired', () => {
   const program = code(['btna']);
   const countdown = program.slice(program.indexOf('function countdown () {'));
   assert.ok(countdown.startsWith('function countdown () {\n    busy = true\n    basic.showNumber(3)\n    basic.showNumber(2)\n    basic.showNumber(1)'));
   const startup = program.indexOf('\ncountdown()\n');
-  const name = program.indexOf('basic.showString(control.deviceName())');
-  const ready = program.indexOf('busy = false', name);
-  assert.ok(startup > 0 && name > startup && ready > name, 'count, name, then the face takes over');
+  const ready = program.indexOf('busy = false', startup);
+  assert.ok(startup > 0 && ready > startup, 'count, then the face takes over');
 
   const face = program.slice(program.indexOf('basic.forever(function () {\n    if (busy) {'));
   assert.ok(face.includes('basic.showIcon(IconNames.Happy)'), 'a smiley when paired');
-  assert.ok(face.includes('basic.showIcon(IconNames.No)'), 'an X when not');
-  assert.ok(face.includes('basic.showLeds(`'), 'after a Bluetooth rune');
+  const rune = face.indexOf('basic.showLeds(`');
+  const x = face.indexOf('basic.showIcon(IconNames.No)');
+  const name = face.indexOf('basic.showString(control.deviceName())');
+  assert.ok(rune > 0 && x > rune && name > x, 'unpaired: the rune, the X, then the name');
+  assert.ok(face.slice(rune, x).includes('basic.pause(600)') && face.slice(x, name).includes('basic.pause(400)'),
+    'each picture held for a second');
+  assert.equal(count(program, 'control.deviceName()'), 1, 'the name only in the loop');
   assert.equal(count(program, 'IconNames.Happy'), 1, 'drawn only by the face loop');
   const connectAt = program.indexOf('bluetooth.onBluetoothConnected');
   assert.ok(!program.slice(connectAt, program.indexOf('\n})\n', connectAt)).includes('showIcon'),
