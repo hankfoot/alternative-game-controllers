@@ -236,6 +236,8 @@ function number(channel, expr) {
  *   setup    — lines run once at startup, after the handlers are registered
  *   state    — top-level variables the scan lines keep between ticks
  *   prime    — lines run once per boot, on the first Bluetooth connection
+ *   recalibrate — lines run when A and B are pressed together, to teach a
+ *              touch pad what untouched feels like again
  *   connect  — lines that report the input's level as a browser attaches
  *   build    — one wiring / build-idea note for the "Build it" list
  * Pin inputs have `modes` instead, keyed by mode id.
@@ -283,6 +285,20 @@ function pinInput(n) {
         // and comes back by itself, and recalibrating under a hand that is
         // holding the pad would teach it that touched is the baseline.
         prime: [`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Capacitive)`],
+        // Learning "untouched" again, on demand. The pad calibrates once, from
+        // ten readings, when it is switched into capacitive mode — and a foil
+        // square on a lead can be caught mid-settle and learn a level too low,
+        // after which every reading is a touch and the pad sticks on. Setting
+        // the mode it is already in does nothing, so it is switched away and
+        // back, which builds a fresh sensor that calibrates again. A pad that
+        // was stuck on never sends its release, so one is raised by hand: the
+        // UP handler then tells the page, and lets go of anything the pad was
+        // holding in the game.
+        recalibrate: [
+          `pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Resistive)`,
+          `pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Capacitive)`,
+          `control.raiseEvent(EventBusSource.MICROBIT_ID_IO_P${n}, EventBusValue.MICROBIT_BUTTON_EVT_UP)`,
+        ],
         events: buttonEvents(`MICROBIT_ID_IO_P${n}`),
         handlers: buttonEdges(ch, `MICROBIT_ID_IO_P${n}`),
         connect: binary(ch, `input.pinIsPressed(TouchPin.P${n})`),
@@ -290,7 +306,7 @@ function pinInput(n) {
           `Clip one wire from P${n} to anything conductive — foil, fruit, a spoon. ` +
           `Touching the object sends 1. No second wire to hold: the pin senses your body through the one clip. ` +
           `Clip everything on <em>before</em> you connect — the pad learns what untouched feels like the first time the browser connects, so keep your hands off it for a second then. ` +
-          `Changed the wiring afterwards? Press the reset button on the back of the board and connect again.`,
+          `If it ever sticks on, or you change the wiring, take your hands off the foil and press <strong>A and B together</strong> to teach it again.`,
       },
       switch: {
         label: 'Switch',
@@ -582,6 +598,7 @@ export function assemble(parts, { extra = [] } = {}) {
   const scan = [];
   const state = [];
   const prime = [];
+  const recalibrate = [];
   const report = [];
   for (const v of parts) {
     if (!v) continue;
@@ -591,6 +608,7 @@ export function assemble(parts, { extra = [] } = {}) {
     if (v.scan) scan.push(...v.scan);
     if (v.state) state.push(...v.state);
     if (v.prime) prime.push(...v.prime);
+    if (v.recalibrate) recalibrate.push(...v.recalibrate);
     if (v.connect) report.push(...v.connect);
   }
 
@@ -605,9 +623,27 @@ export function assemble(parts, { extra = [] } = {}) {
     ? [`loops.everyInterval(${SCAN_MS}, function () {`, ...scan.map((l) => '    ' + l), '})']
     : [];
 
+  // A and B together, because neither alone is free: either may be an input
+  // a sentence uses. A diamond while it happens, so there is something to see;
+  // `primed` is set too, so the first connection after it does not repeat it.
+  const recalibration = recalibrate.length
+    ? handler('input.onButtonPressed(Button.AB, function () {', [
+      'basic.showIcon(IconNames.SmallDiamond)',
+      'primed = true',
+      ...recalibrate,
+      'basic.pause(300)',
+      'if (connected) {',
+      '    basic.showIcon(IconNames.Yes)',
+      '} else {',
+      '    basic.clearScreen()',
+      '}',
+    ])
+    : [];
+
   return [
     ...scaffoldTop({ state, prime, report }),
     ...handlers,
+    ...recalibration,
     // Last before the loop: a setup line may block for as long as it takes
     // someone to finish calibrating, so everything that has to be listening by
     // then is already registered above.

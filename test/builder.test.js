@@ -131,7 +131,9 @@ test('a touch pin is not pulled', () => {
 test('a touch pin calibrates on the first connection, not at startup', () => {
   const program = code(['p0'], { p0: 'touch' });
   const mode = 'pins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)';
-  assert.equal(count(program, mode), 1);
+  // Once outside the A+B recalibration, which switches it again on demand.
+  const outside = program.slice(0, program.indexOf('input.onButtonPressed(Button.AB'));
+  assert.equal(count(outside, mode), 1);
 
   const connectAt = program.indexOf('bluetooth.onBluetoothConnected');
   const connectEnd = program.indexOf('\n})\n', connectAt);
@@ -170,7 +172,11 @@ test('reporting a switch on connect also resets what the scan believes it sent',
 test('a touch pin senses capacitively, so no GND wire is needed', () => {
   const program = code(['p0'], { p0: 'touch' });
   assert.ok(program.includes('pins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)'));
-  assert.ok(!program.includes('TouchTargetMode.Resistive'));
+  // Resistive only as the hop that makes A+B rebuild the sensor; it is put
+  // straight back to capacitive on the next line.
+  const resistive = program.split('\n').findIndex((line) => line.includes('TouchTargetMode.Resistive'));
+  assert.ok(program.split('\n')[resistive + 1].includes('TouchTargetMode.Capacitive'));
+  assert.equal(count(program, 'TouchTargetMode.Resistive'), 1);
 });
 
 // Code somebody adds below the program — usually written by an LLM from the
@@ -242,4 +248,19 @@ test('assemble takes parts of its own, and lines to append', () => {
   assert.ok(program.endsWith('// by hand\ngameStart()'), 'hand-written lines come last');
   assert.equal(variantFor('p0', 'nonsense'), null);
   assert.equal(variantFor('nothing'), null);
+});
+
+// A pad can learn "untouched" too low — a foil square caught mid-settle — and
+// then read as touched for ever. A and B together teach it again, and raise the
+// release the stuck pad never sent, so the page and the game let go too.
+test('a touch pad can be recalibrated with A and B, which also releases it', () => {
+  const program = code(['p0', 'p2'], { p0: 'touch', p2: 'touch' });
+  assert.equal(count(program, 'input.onButtonPressed(Button.AB, function () {'), 1, 'one handler for every pad');
+  for (const n of [0, 2]) {
+    const away = program.indexOf(`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Resistive)`);
+    const back = program.indexOf(`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Capacitive)`, away);
+    const up = program.indexOf(`control.raiseEvent(EventBusSource.MICROBIT_ID_IO_P${n}, EventBusValue.MICROBIT_BUTTON_EVT_UP)`);
+    assert.ok(away > 0 && back > away && up > back, `P${n}: switched away, back, then released`);
+  }
+  assert.ok(!code(['p1'], { p1: 'switch' }).includes('Button.AB'), 'nothing to recalibrate, no handler');
 });

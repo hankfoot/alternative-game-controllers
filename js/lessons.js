@@ -22,6 +22,7 @@ export const LESSONS = [
       'Clip the other end to a square of foil. Tape the foil to anything you like.',
       'Copy the code, download it, and press Connect. Keep your hands off the foil for a second while it connects.',
       'Touch the foil: the row below goes to 1.',
+      'Stuck on 1, or moved the foil? Take your hands off it and press A and B together — the board shows a small diamond while it relearns.',
     ],
     image: { src: 'assets/lesson-touch.jpg', alt: 'A crocodile clip from P0 to a square of foil' },
     inputs: [{ id: 'p0', mode: 'touch' }],
