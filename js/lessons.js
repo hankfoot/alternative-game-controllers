@@ -23,7 +23,7 @@ export const SECTIONS = [
       {
         id: 'switch',
         title: 'Switch',
-        intro: 'Touching two pieces of conductive material together can complete a circuit just like how a light switch works. This is useful for detecting when two objects come into contact, such as when a lid is put on a jar or when a door is closed.',
+        intro: 'Touching two pieces of conductive material together can complete a circuit just like how a light switch works: when the foils meet, electricity flows from the 3V pin into P0. This is useful for detecting when two objects come into contact, such as when a lid is put on a jar or when a door is closed.',
         steps: [
           'Clip one piece of foil to pin P0.',
           'Clip another piece of foil to the 3V pin.',
@@ -36,7 +36,7 @@ export const SECTIONS = [
       {
         id: 'resistive',
         title: 'Resistive touch',
-        intro: 'Your body conducts electricity, so you can complete a circuit yourself by touching a pin while holding the ground pin. This is how a fruit piano works: anything a little conductive, like a banana or Play-Doh, can become a button.',
+        intro: 'Your body conducts electricity, so you can complete a circuit yourself by touching a pin while holding the ground pin: a tiny current flows from P0, through you, to GND. This is how a fruit piano works: anything a little conductive, like a banana or Play-Doh, can become a button.',
         steps: [
           'Clip one piece of foil to pin P0.',
           'Clip another piece of foil to the GND pin and hold it in one hand.',
@@ -49,7 +49,7 @@ export const SECTIONS = [
       {
         id: 'capacitive',
         title: 'Capacitive touch',
-        intro: 'The micro:bit can also sense your body through a single piece of foil, without you holding anything else. This works like the touchscreen on a phone, and it is useful for buttons that should feel like nothing at all.',
+        intro: 'The micro:bit can also sense your body through a single piece of foil, without you holding anything else: your body holds a little electric charge, so the pin takes longer to charge up while you touch it. This works like the touchscreen on a phone, and it is useful for buttons that should feel like nothing at all.',
         steps: [
           'Fold a piece of foil a few times and clip it to pin P0.',
           UPLOAD + ' Keep your hands off the foil while it starts.',
