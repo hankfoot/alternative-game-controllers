@@ -14,11 +14,25 @@ import { createChannelView } from './visualizer.js';
 
 const CONNECT = 'Press Connect and pick your board — until it pairs it shows an X, a Bluetooth sign and its five-letter name, over and over. Once paired it smiles.';
 
+// The three ways a touch becomes a 1, side by side, at the top of the touch
+// step: they look alike and differ in what closes the circuit.
+export const TOUCH_COMPARISON = {
+  columns: ['Switch', 'Resistive touch', 'Capacitive touch'],
+  rows: [
+    ['Wiring', 'A foil on 3V, a foil on a pin', 'A foil on a pin — and you hold GND', 'One foil on a pin, nothing else'],
+    ['What closes it', 'The two foils touch each other', 'Your body, from the pin to GND', 'Your body’s capacitance slows the pin’s charging'],
+    ['A person needed?', 'No — a door or a jaw can close it', 'Yes, as the wire', 'Yes, as the capacitor'],
+    ['Works through', 'Anything that brings the foils together', 'Fruit, Play-Doh, water, people', 'A fingertip, even through tape'],
+    ['The catch', 'You have to build something that closes', 'Someone has to keep holding GND', 'Learns "untouched" at startup; A+B to relearn'],
+  ],
+};
+
 export const SECTIONS = [
   {
     id: 'touch',
     title: 'Touch',
     intro: 'Three ways to turn a touch into a 1, from the most solid to the most magical. They look alike; what differs is what closes the circuit.',
+    comparison: TOUCH_COMPARISON,
     lessons: [
       {
         id: 'switch',
@@ -182,6 +196,26 @@ export function copyBlock(code, label) {
 
 const LETTERS = 'abcdefghij';
 
+function comparisonTable({ columns, rows }) {
+  const wrap = el('div', 'compare-wrap');
+  const table = el('table', 'compare');
+  const head = el('tr');
+  head.appendChild(el('th', null, ''));
+  for (const column of columns) head.appendChild(el('th', null, column));
+  const thead = el('thead');
+  thead.appendChild(head);
+  const tbody = el('tbody');
+  for (const [label, ...cells] of rows) {
+    const tr = el('tr');
+    tr.appendChild(el('th', null, label));
+    for (const cell of cells) tr.appendChild(el('td', null, cell));
+    tbody.appendChild(tr);
+  }
+  table.append(thead, tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
 function renderExample(lesson, index, signalStore, views) {
   const item = el('li', 'substep');
   item.id = `lesson-${lesson.id}`;
@@ -229,6 +263,7 @@ export function initLessons({ host, signalStore }) {
     const body = el('div', 'step-body');
     body.appendChild(el('h3', null, section.title));
     body.appendChild(el('p', null, section.intro));
+    if (section.comparison) body.appendChild(comparisonTable(section.comparison));
     if (section.lessons.length > 1) {
       const examples = el('ol', 'substeps');
       section.lessons.forEach((lesson, i) => examples.appendChild(renderExample(lesson, i, signalStore, views)));
