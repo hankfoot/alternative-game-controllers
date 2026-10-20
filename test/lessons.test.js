@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { LESSONS, SECTIONS, TOUCH_COMPARISON, lessonChannels, lessonCode } from '../js/lessons.js';
+import { LESSONS, SECTIONS, lessonChannels, lessonCode } from '../js/lessons.js';
 
 const byId = (id) => LESSONS.find((lesson) => lesson.id === id);
 
@@ -20,13 +20,11 @@ test('each lesson streams exactly its own channels', () => {
   }
 });
 
-test('touch, motion and ambient, with the three ways to touch in the first', () => {
+test('touch walks through three ways, motion through three examples, ambient is one', () => {
   assert.deepEqual(SECTIONS.map((s) => s.id), ['touch', 'motion', 'ambient']);
   assert.deepEqual(SECTIONS[0].lessons.map((l) => l.id), ['switch', 'resistive', 'capacitive']);
-  assert.deepEqual(SECTIONS[1].lessons.map((l) => l.id), ['tilt', 'gestures']);
-  assert.deepEqual(SECTIONS[2].lessons.map((l) => l.id), ['light', 'sound', 'temperature']);
-  assert.deepEqual(TOUCH_COMPARISON.columns, ['Switch', 'Resistive touch', 'Capacitive touch']);
-  for (const row of TOUCH_COMPARISON.rows) assert.equal(row.length, 4, `${row[0]} has a cell for each way`);
+  assert.deepEqual(SECTIONS[1].lessons.map((l) => l.id), ['tilt', 'gestures', 'compass']);
+  assert.deepEqual(SECTIONS[2].lessons.map((l) => l.id), ['ambient']);
 });
 
 test('every lesson says what to do, and leaves room for a photo', () => {
@@ -57,11 +55,13 @@ test('the three touch lessons are wired the three different ways', () => {
   assert.ok(capacitive.includes('input.onButtonPressed(Button.AB'), 'with A+B to relearn');
 });
 
-test('motion and ambient lessons need no pins', () => {
-  for (const id of ['tilt', 'gestures', 'light', 'sound', 'temperature']) {
+test('motion and ambient examples need no pins', () => {
+  for (const id of ['tilt', 'gestures', 'compass', 'ambient']) {
     const code = lessonCode(byId(id));
     assert.ok(!code.includes('DigitalPin') && !code.includes('TouchTarget'), `${id} touches no pin`);
   }
   assert.deepEqual(lessonChannels(byId('tilt')), [{ channel: 'pitch', kind: 'number' }, { channel: 'roll', kind: 'number' }]);
-  assert.deepEqual(lessonChannels(byId('sound')).map((c) => c.kind), ['number', 'event']);
+  assert.deepEqual(lessonChannels(byId('ambient')).map((c) => `${c.channel}:${c.kind}`),
+    ['light:number', 'mic:number', 'loud:event', 'temp:number'], 'one program reads all four');
+  assert.ok(lessonCode(byId('compass')).includes('let calibrated = input.compassHeading()'), 'calibrates the compass at startup');
 });

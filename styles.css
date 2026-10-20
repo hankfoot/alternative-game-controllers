@@ -644,20 +644,20 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .step-head h3 { margin: 0; }
 
 /* ---------- Sensing lessons ---------- */
-.lesson-section { margin-top: 48px; }
-.lesson-section:first-child { margin-top: 32px; }
-.lesson-section-title { margin: 0; font-size: 1.35rem; }
-.lesson-section-intro { margin: 8px 0 24px; color: var(--ink-soft); max-width: 62ch; }
-#panel-sensing .lesson-section > .steps { margin-top: 0; }
-/* The touch comparison: three ways side by side. Scrolls sideways inside its
-   own box on a phone rather than widening the page. */
-.compare-wrap { max-width: 760px; overflow-x: auto; margin: 0 0 28px; border: 1px solid var(--line); border-radius: 12px; }
-.compare { width: 100%; border-collapse: collapse; font-size: .84rem; line-height: 1.45; }
-.compare th, .compare td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
-.compare tr:last-child > * { border-bottom: none; }
-.compare thead th { background: var(--bg-soft); color: var(--ink); font-weight: 600; white-space: nowrap; }
-.compare tbody th { color: var(--ink); font-weight: 600; white-space: nowrap; }
-.compare td { color: var(--ink-soft); min-width: 150px; }
+/* Examples inside a step: lettered, set off by a dashed rule, with the same
+   rhythm as a step's own contents. */
+.substeps { list-style: none; margin: 0; padding: 0; }
+.substep { display: grid; grid-template-columns: 26px 1fr; gap: 14px; padding: 24px 0; border-top: 1px dashed var(--line); }
+.substep:last-child { padding-bottom: 0; }
+.substep-num {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; margin-top: 1px;
+  font-weight: 700; font-size: .8rem; color: var(--ink); background: var(--bg-soft); border: 1px solid var(--line);
+}
+.substep-body { min-width: 0; }
+.substep-body h4 { margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.35; }
+.substep-body > :not(:first-child) { margin-top: 14px; }
+.substep-body > h4 + * { margin-top: 6px; }
+.substep-body > .lesson-watch + .lesson-live { margin-top: 10px; }
 .lesson-steps { margin: 0; padding-left: 22px; font-size: .9rem; line-height: 1.55; color: var(--ink-soft); max-width: 60ch; }
 .lesson-steps li + li { margin-top: 6px; }
 .lesson-steps li::marker { color: var(--ink); font-weight: 600; }

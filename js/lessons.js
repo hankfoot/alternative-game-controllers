@@ -1,5 +1,6 @@
-// The Sensing screen: three sections — touch, motion, ambient — of short
-// lessons, each a small program to try and a live view of what it sends.
+// The Sensing screen: three steps — touch, motion, ambient — each walking
+// through a few examples, each example a small program to try and a live view
+// of what it sends.
 //
 // The point of the screen is to see a reading arrive. So every lesson is the
 // same shape — what you are making, how to clip it, the code to download, and
@@ -13,31 +14,17 @@ import { createChannelView } from './visualizer.js';
 
 const CONNECT = 'Press Connect and pick your board — until it pairs it shows an X, a Bluetooth sign and its five-letter name, over and over. Once paired it smiles.';
 
-// The three ways a touch becomes a 1, side by side, at the top of the touch
-// section: they look alike and differ in what closes the circuit.
-export const TOUCH_COMPARISON = {
-  columns: ['Switch', 'Resistive touch', 'Capacitive touch'],
-  rows: [
-    ['Wiring', 'A foil on 3V, a foil on a pin', 'A foil on a pin — and you hold GND', 'One foil on a pin, nothing else'],
-    ['What closes it', 'The two foils touch each other', 'Your body, from the pin to GND', 'Your body’s capacitance slows the pin’s charging'],
-    ['A person needed?', 'No — a door or a jaw can close it', 'Yes, as the wire', 'Yes, as the capacitor'],
-    ['Works through', 'Anything that brings the foils together', 'Fruit, Play-Doh, water, people', 'A fingertip, even through tape'],
-    ['The catch', 'You have to build something that closes', 'Someone has to keep holding GND', 'Learns "untouched" at startup; A+B to relearn'],
-  ],
-};
-
 export const SECTIONS = [
   {
     id: 'touch',
     title: 'Touch',
-    intro: 'Three ways to turn a touch into a 1. They look alike; what differs is what closes the circuit.',
-    comparison: TOUCH_COMPARISON,
+    intro: 'Three ways to turn a touch into a 1, from the most solid to the most magical. They look alike; what differs is what closes the circuit.',
     lessons: [
       {
         id: 'switch',
         title: 'Switch',
         emoji: '🔛',
-        intro: 'Two pieces of foil that meet. While they touch, the circuit is closed and the reading is 1. No person needed.',
+        intro: 'Two pieces of foil that meet. While they touch, the circuit is closed and the reading is 1. No person needed — a door, a jaw or a foot can close it.',
         steps: [
           'Clip a lead from the 3V pad to one piece of foil.',
           'Clip a lead from the P1 pad to a second piece of foil.',
@@ -66,7 +53,7 @@ export const SECTIONS = [
         id: 'capacitive',
         title: 'Capacitive touch',
         emoji: '🫳',
-        intro: 'One wire, one piece of foil. The pin senses your body through the clip — nothing to hold in the other hand.',
+        intro: 'One wire, one piece of foil, nothing to hold. The pin senses your body’s charge through the clip. The most magical, and the most finicky.',
         steps: [
           'Clip one end of a lead to the P0 pad, and the other to a square of foil folded over a few times, so the clip has something to bite.',
           'Copy the code and download it, with your hands off the foil — the board learns what untouched feels like the moment it starts.',
@@ -110,49 +97,40 @@ export const SECTIONS = [
         image: { src: 'assets/lesson-gestures.jpg', alt: 'A micro:bit being shaken' },
         inputs: [{ id: 'shake' }, { id: 'g3' }, { id: 'freefall' }],
       },
+      {
+        id: 'compass',
+        title: 'Compass',
+        emoji: '🧭',
+        intro: 'Which way the board points, in degrees: 0 is north, 90 east. Held flat, it turns like a dial.',
+        steps: [
+          'Copy the code and download it.',
+          'The board asks you to calibrate first: tilt it slowly in every direction until the whole LED grid is lit.',
+          CONNECT,
+          'Hold it flat and turn slowly on the spot: the number follows. Laptops, speakers and steel tables pull it about.',
+        ],
+        image: { src: 'assets/lesson-compass.jpg', alt: 'A micro:bit held flat and turned like a dial' },
+        inputs: [{ id: 'heading' }],
+      },
     ],
   },
   {
     id: 'ambient',
     title: 'Ambient sensing',
-    intro: 'What the board can tell about the room around it.',
+    intro: 'What the board can tell about the room around it — all four at once, in one program.',
     lessons: [
       {
-        id: 'light',
-        title: 'Light',
-        emoji: '💡',
-        intro: 'The LEDs double as a light sensor: 0 in the dark, 255 under a torch.',
+        id: 'ambient',
+        title: 'Light, sound and heat',
+        emoji: '🌤️',
+        intro: 'Light from the LEDs (0 dark, 255 torch), how loud it is (0 to 255), a count of claps, and the chip’s own temperature in °C.',
         steps: [
           'Copy the code and download it. ' + CONNECT,
-          'Cover the LEDs with your hand, then shine a phone torch on them.',
+          'Cover the LEDs with your hand, then shine a phone torch on them: Light follows.',
+          'Talk or hum near the gold logo, where the mic is: Sound rises and falls. Clap once: Loud sound counts one — claps are over too fast for the level to catch every one.',
+          'Hold the board between your thumbs for a minute: Temperature creeps up.',
         ],
-        image: { src: 'assets/lesson-light.jpg', alt: 'A hand cupped over the micro:bit LEDs' },
-        inputs: [{ id: 'light' }],
-      },
-      {
-        id: 'sound',
-        title: 'Sound',
-        emoji: '👏',
-        intro: 'Two ways to hear: how loud it is right now, from 0 to 255, and a single 1 for every clap or shout.',
-        steps: [
-          'Copy the code and download it. ' + CONNECT,
-          'Talk, hum, blow on the board: Sound rises and falls. The mic is beside the gold logo.',
-          'Clap once: Loud sound counts one. Claps are over too fast for the level to catch every one — that is what the count is for.',
-        ],
-        image: { src: 'assets/lesson-sound.jpg', alt: 'Hands clapping next to the micro:bit' },
-        inputs: [{ id: 'mic' }, { id: 'loud' }],
-      },
-      {
-        id: 'temperature',
-        title: 'Temperature',
-        emoji: '🌡️',
-        intro: 'The chip’s own temperature in °C. It moves slowly — room air is around 20.',
-        steps: [
-          'Copy the code and download it. ' + CONNECT,
-          'Hold the board between your thumbs for a minute and watch it creep up.',
-        ],
-        image: { src: 'assets/lesson-temperature.jpg', alt: 'A micro:bit held between two thumbs' },
-        inputs: [{ id: 'temp' }],
+        image: { src: 'assets/lesson-ambient.jpg', alt: 'A hand cupped over the micro:bit next to a phone torch' },
+        inputs: [{ id: 'light' }, { id: 'mic' }, { id: 'loud' }, { id: 'temp' }],
       },
     ],
   },
@@ -202,32 +180,15 @@ export function copyBlock(code, label) {
   return block;
 }
 
-function comparisonTable({ columns, rows }) {
-  const wrap = el('div', 'compare-wrap');
-  const table = el('table', 'compare');
-  const head = el('tr');
-  head.appendChild(el('th', null, ''));
-  for (const column of columns) head.appendChild(el('th', null, column));
-  const thead = el('thead');
-  thead.appendChild(head);
-  const tbody = el('tbody');
-  for (const [label, ...cells] of rows) {
-    const tr = el('tr');
-    tr.appendChild(el('th', null, label));
-    for (const cell of cells) tr.appendChild(el('td', null, cell));
-    tbody.appendChild(tr);
-  }
-  table.append(thead, tbody);
-  wrap.appendChild(table);
-  return wrap;
-}
+const LETTERS = 'abcdefghij';
 
-function renderLesson(lesson, index, signalStore, views) {
-  const item = el('li', 'step');
+function renderExample(lesson, index, signalStore, views) {
+  const item = el('li', 'substep');
   item.id = `lesson-${lesson.id}`;
-  const num = el('span', 'step-num', String(index + 1));
-  const body = el('div', 'step-body');
-  body.appendChild(el('h3', null, `${lesson.emoji} ${lesson.title}`));
+  const letter = el('span', 'substep-num', LETTERS[index]);
+  letter.setAttribute('aria-hidden', 'true');
+  const body = el('div', 'substep-body');
+  body.appendChild(el('h4', null, `${lesson.emoji} ${lesson.title}`));
   body.appendChild(el('p', null, lesson.intro));
 
   const figure = el('figure', 'shot shot-slot');
@@ -242,14 +203,14 @@ function renderLesson(lesson, index, signalStore, views) {
   // The code is copied, not read: what the lesson teaches is the sensor,
   // and a page of scaffold in the way of it would be the wrong thing to
   // look at. It is still there under the fold for anyone curious.
-  body.appendChild(copyBlock(lessonCode(lesson), 'Copy the code for this lesson'));
+  body.appendChild(copyBlock(lessonCode(lesson), 'Copy the code for this example'));
 
   body.appendChild(el('p', 'lesson-watch', 'Paste it over everything in the JavaScript tab, Download, press Connect up top — then:'));
   const live = el('div', 'live-rows lesson-live');
   body.appendChild(live);
   views.push(createChannelView(live, { signalStore, channels: lessonChannels(lesson) }));
 
-  item.append(num, body);
+  item.append(letter, body);
   return item;
 }
 
@@ -258,17 +219,32 @@ export function initLessons({ host, signalStore }) {
   host.textContent = '';
   const views = [];
 
-  for (const section of SECTIONS) {
-    const block = el('section', 'lesson-section');
-    block.id = `sensing-${section.id}`;
-    block.appendChild(el('h2', 'lesson-section-title', section.title));
-    block.appendChild(el('p', 'lesson-section-intro', section.intro));
-    if (section.comparison) block.appendChild(comparisonTable(section.comparison));
-    const list = el('ol', 'steps');
-    section.lessons.forEach((lesson, index) => list.appendChild(renderLesson(lesson, index, signalStore, views)));
-    block.appendChild(list);
-    host.appendChild(block);
-  }
+  // One numbered list — touch, motion, ambient — and inside each step its
+  // examples, lettered, so the page reads as three things to do rather than
+  // three chapters.
+  const list = el('ol', 'steps');
+  SECTIONS.forEach((section, index) => {
+    const item = el('li', 'step');
+    item.id = `sensing-${section.id}`;
+    const body = el('div', 'step-body');
+    body.appendChild(el('h3', null, section.title));
+    body.appendChild(el('p', null, section.intro));
+    if (section.lessons.length > 1) {
+      const examples = el('ol', 'substeps');
+      section.lessons.forEach((lesson, i) => examples.appendChild(renderExample(lesson, i, signalStore, views)));
+      body.appendChild(examples);
+    } else {
+      // A single example needs no letter: its parts sit straight in the step.
+      const only = renderExample(section.lessons[0], 0, signalStore, views);
+      const inner = only.querySelector('.substep-body');
+      inner.querySelector('h4').remove();
+      inner.querySelector('p').remove();
+      body.append(...inner.childNodes);
+    }
+    item.append(el('span', 'step-num', String(index + 1)), body);
+    list.appendChild(item);
+  });
+  host.appendChild(list);
 
   return { destroy: () => views.forEach((view) => view.destroy()) };
 }

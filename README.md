@@ -60,12 +60,13 @@ deployment branch is needed.
 ## The workshop, screen by screen
 
 1. **Setup** — MakeCode, the starter project, flashing, and preparing foil and crocodile clips.
-2. **Sensing** — short lessons, each a small program to download and a live view of what it sends,
-   in three sections. **Touch** compares the three ways a touch becomes a 1 — a switch (two foils
-   that meet), resistive touch (you hold GND and close the circuit through your body) and
-   capacitive touch (one foil, no ground) — then a lesson for each. **Motion** covers tilt and
-   gestures; **ambient sensing** covers light, sound and temperature. Every snippet is built by the
-   same assembler as the controller's program, so the pin fixes are the same ones (`js/lessons.js`).
+2. **Sensing** — three steps, each walking through examples; every example is a small program to
+   download and a live view of what it sends. **Touch** goes through a switch (two foils that
+   meet), resistive touch (you hold GND and close the circuit through your body) and capacitive
+   touch (one foil, no ground). **Motion** goes through tilt, gestures and the compass. **Ambient
+   sensing** is one combined example: light, sound level, claps and temperature. Every snippet is
+   built by the same assembler as the controller's program, so the pin fixes are the same ones
+   (`js/lessons.js`).
 3. **Controls** — pick how the craft moves, then write sentences in dropdowns: *when Button A is
    pressed, flap*; *when light is below 100, hold thrust*; *pitch steers paddle between -40 and
    30*. A reading is drawn live under its sentence with the line it has to cross. The sentences
