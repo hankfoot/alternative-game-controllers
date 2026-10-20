@@ -1,22 +1,22 @@
 // The wire protocol, and the buffering that gets whole lines out of it.
 //
-// Both transports speak exactly the same thing — newline-delimited
-// "<channel>:<number>" — and differ only in how the bytes arrive. So the part
-// that turns bytes into messages lives here, once, rather than being written
-// twice and drifting.
+// The board speaks newline-delimited "<channel>:<number>" readings and
+// "game:…" commands over the Bluetooth UART. This turns the bytes that arrive
+// into messages, kept apart from js/bluetooth.js so it can be tested without
+// a radio.
 //
-// Each transport gets its own buffer rather than sharing one. Two half-lines
-// from two boards interleaving in a single buffer would splice into a line
-// neither of them sent, which is the sort of fault that shows up as one
-// impossible reading an hour into a workshop.
+// A buffer belongs to one connection. Two half-lines from two boards
+// interleaving in a single buffer would splice into a line neither of them
+// sent, which is the sort of fault that shows up as one impossible reading an
+// hour into a workshop.
 
 import { emitInput, emitCommand } from './bus.js';
 
 /**
  * Collects bytes and calls `onLine` for each complete line in them.
  *
- * `push` takes whatever the transport hands over — a DataView from a Bluetooth
- * notification, a Uint8Array from a serial read. Decoding is streaming, so a
+ * `push` takes the DataView from a Bluetooth notification (or any typed array,
+ * which is what the tests hand it). Decoding is streaming, so a
  * multi-byte character split across two chunks survives; with an ASCII protocol
  * that is theory rather than practice, but the non-streaming version quietly
  * corrupts the boundary and there is no reason to keep that around.
@@ -51,11 +51,9 @@ export function createLineBuffer({ onLine = parseLine, midStream = false } = {})
 
       let nl;
       while ((nl = buffer.indexOf('\n')) >= 0) {
-        // Trimmed, which is also what makes CRLF work: `serial.writeLine` on the
-        // micro:bit ends every line with \r\n, so without this every wired
-        // reading would arrive as a number with a carriage return stuck to it
-        // and parse as NaN. Splitting on \n and trimming the rest handles both
-        // endings without having to know which transport it came from.
+        // Trimmed, which is also what makes CRLF work: MakeCode's writeLine
+        // ends a line with \r\n, so without this every reading would arrive
+        // as a number with a carriage return stuck to it and parse as NaN.
         const line = buffer.slice(0, nl).trim();
         buffer = buffer.slice(nl + 1);
         if (line) onLine(line);

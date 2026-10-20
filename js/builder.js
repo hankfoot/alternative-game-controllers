@@ -614,9 +614,9 @@ export function assemble(parts, { extra = [] } = {}) {
     ...setup,
     // Shown once, at startup, rather than from inside the loop. `showString`
     // *blocks* for the length of the scroll — about two seconds for a five
-    // letter name — so a wired session, where `connected` is never true, would
-    // have dropped to one reading every two seconds. The name is only wanted
-    // while you are looking at the Bluetooth chooser anyway.
+    // letter name — so in the loop it would drop the board to one reading
+    // every two seconds. The name is only wanted while you are looking at the
+    // Bluetooth chooser anyway.
     'basic.showString(control.deviceName())',
     ...scanLoop,
     'basic.forever(function () {',

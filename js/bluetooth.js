@@ -166,9 +166,7 @@ export async function connect() {
 
 /** Disconnect the current device, if any. Stops us trying to get it back. */
 export function disconnect() {
-  // Nothing held and nothing pending means nothing to say. The facade tears
-  // down every transport before opening one, so without this the transport you
-  // are *not* using would announce a disconnect over the one you are.
+  // Nothing held and nothing pending means nothing to say.
   if (!device && !retryTimer) return;
   cancelRetry();
   const target = device;
@@ -229,7 +227,7 @@ function onNotify(event) {
   lines.push(event.target.value);
 }
 
-/** Whether this transport currently holds a board. */
+/** Whether a board is currently held. */
 export function isActive() {
   return Boolean(device);
 }

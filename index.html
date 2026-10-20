@@ -426,9 +426,9 @@ basic.forever(function () {
       <section class="block" id="game-design">
         <div class="block-head"><h2>Design your game</h2></div>
         <p class="lead">
-          Controls is where you decide <em>how</em> you fly, using the controller you built.
-          This is where you decide what you are flying through, what it sounds like, and what it
-          says. Nothing here is wired to anything, and none of it changes how the game plays.
+          Controls is where you decide what you fly <em>with</em>. This is where you decide
+          what you are flying through, how the controls feel, what it sounds like, and what it
+          says.
         </p>
 
         <ol class="steps">
@@ -501,15 +501,14 @@ basic.forever(function () {
       <section class="block" id="game-playground">
         <div class="block-head"><h2>Play</h2></div>
         <p class="lead">
-          Fly the craft through the gaps. It answers to whatever you wired up in
+          Fly the craft through the gaps. It answers to the controller you built in
           <button class="link-btn" type="button" data-tab-target="controls">Controls</button>,
-          and to the keys and buttons below either way.
+          over Bluetooth, and to the keys and buttons below either way.
         </p>
 
         <!-- Says what is missing between the controller you built and the game:
-             no inputs picked, nothing wired to what steers, only half of a
-             two-input scheme wired, or a wire whose board has never spoken.
-             Written by js/main.js; hidden entirely once the game is playable. -->
+             a control with nothing triggering it, or half of a two-way scheme.
+             Written by js/game-warning.js; hidden once the game is playable. -->
         <p class="game-warn" id="game-warning" role="status" hidden></p>
 
         <div class="game-shell">

@@ -1,7 +1,8 @@
 // Entry point — wires the UI together.
 
 import { onStatus, onInput } from './bus.js';
-import { activeVia, connect, disconnect, isSupported } from './connection.js';
+// One way to reach a board: Bluetooth, from the browser.
+import { connect, disconnect, isSupported } from './bluetooth.js';
 import { initVisualizer } from './visualizer.js';
 import { initLessons } from './lessons.js';
 import { initGame } from './game.js';
@@ -264,11 +265,9 @@ function paint({ state, message, retrying = false }) {
   disconnectBtn.hidden = !connected && !retrying;
 
   if (state === 'connected') {
-    // e.g. "BBC micro:bit [gapeg] · Bluetooth". The board's own name identifies
-    // *which* board, and the transport says how it is reaching you — which is
-    // the thing that decides whether unplugging the cable ends the session.
-    const via = activeVia();
-    signalLabel.textContent = [message || 'Connected', via].filter(Boolean).join(' · ');
+    // e.g. "BBC micro:bit [gapeg]" — the board's own name, which is what tells
+    // you *which* board in a room full of them.
+    signalLabel.textContent = message || 'Connected';
   } else if (connecting) {
     signalLabel.textContent = retrying ? 'Reconnecting…' : 'Connecting…';
   } else {
@@ -276,7 +275,7 @@ function paint({ state, message, retrying = false }) {
   }
 
   // The chip has room for a state, not for a sentence, so the reason goes to the
-  // banner. Without this the transports were working out exactly why a connection
+  // banner. Without this the connection was working out exactly why it
   // failed and then throwing it away — every failure read "Not Connected",
   // which is the one thing the person already knew.
   if (connectError) {
@@ -310,16 +309,15 @@ setInterval(() => {
 }, 1000);
 
 // --- Connecting --------------------------------------------------------------
-// One way in, so Connect just connects. There was a menu here offering Bluetooth
-// or the USB cable; the cable is gone (see js/connection.js) and a menu with one
-// item is a question with a single answer.
+// One way in, so Connect just connects: Bluetooth, from the browser. The board
+// is still plugged in by USB to flash it, but never to play.
 
 async function start() {
   try {
     await connect();
   } catch (err) {
-    // The chooser being dismissed throws, and is not a failure — the transport
-    // has already put the previous status back.
+    // The chooser being dismissed throws, and is not a failure — the Bluetooth
+    // module has already put the previous status back.
     console.debug('connect cancelled or failed:', err?.message);
   }
 }

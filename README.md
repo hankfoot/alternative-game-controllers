@@ -122,7 +122,8 @@ and downloads.
   binds the Code it section.
 - `js/design.js` is the Design screen — course settings plus the look and sound of the game.
 - `js/theme/` is that look-and-sound layer: drawing, sound, storage, and scene rendering.
-- `js/bluetooth.js`, `js/bus.js`, and `js/visualizer.js` handle the input pipeline.
+- `js/bluetooth.js` is the one connection — Web Bluetooth to the micro:bit's UART; `js/line-protocol.js`
+  turns its bytes into readings and game commands, `js/bus.js` hands them out, and `js/visualizer.js` draws them.
 - `test/` covers wiring migration, persistence, protocol parsing, game rules, themes
   (`test/theme.test.js`), and the game-readiness check (`test/game-warning.test.js`).
 
