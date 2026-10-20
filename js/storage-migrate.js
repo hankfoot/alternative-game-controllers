@@ -1,7 +1,8 @@
 // Moving everything somebody has made into the new namespace.
 //
-// The site used to file its records under `experimental-game-controllers`, and
-// is now called something else. Renaming the keys without moving the values
+// The site has filed its records under two earlier names —
+// `experimental-game-controllers`, then `game-controller-workshop` — and is now
+// called something else. Renaming the keys without moving the values
 // would look, from the outside, exactly like the site forgetting every wire,
 // drawing and setting anybody had — so this runs once, before anything reads a
 // store, and copies them across.
@@ -22,15 +23,26 @@ import { key } from './storage-keys.js';
 // The old names, written out rather than built from a helper. A third rename
 // must rewrite what this file *writes* and leave what it *reads* exactly as it
 // is, and the only way to guarantee that is for these not to be generated.
+//
+// Newest name first: a copy never overwrites, so whichever name is tried first
+// wins, and the most recent record is the one somebody last worked on.
 const MOVED = Object.freeze([
+  ['game-controller-workshop:rules:v1', key('rules', 'v1')],
+  ['game-controller-workshop:request:v1', key('request', 'v1')],
+  ['game-controller-workshop:controls:v1', key('controls', 'v1')],
+  ['game-controller-workshop:game', key('game')],
+  ['game-controller-workshop:theme:v1', key('theme', 'v1')],
   ['experimental-game-controllers:controls:v1', key('controls', 'v1')],
   ['experimental-game-controllers:game', key('game')],
   ['experimental-game-controllers:theme:v1', key('theme', 'v1')],
 ]);
 
 // Assets fall back to a key each when there is no database to put them in, so
-// there is no fixed list of them — only a prefix to sweep.
-const OLD_ASSET_PREFIX = 'experimental-game-controllers:asset:';
+// there is no fixed list of them — only a prefix to sweep. Newest first, as above.
+const OLD_ASSET_PREFIXES = Object.freeze([
+  'game-controller-workshop:asset:',
+  'experimental-game-controllers:asset:',
+]);
 const NEW_ASSET_PREFIX = `${key('asset')}:`;
 
 /** Set once the whole sweep has finished, so the common case is one read. */
@@ -79,16 +91,17 @@ export function migrateStorage(storage) {
 
   // Collected before anything is written: setItem during a live index walk
   // shifts the indices under it, and the sweep would skip keys.
-  let assetKeys = [];
+  let names = [];
   try {
-    assetKeys = Array.from({ length: storage.length }, (_, i) => storage.key(i))
-      .filter((name) => typeof name === 'string' && name.startsWith(OLD_ASSET_PREFIX));
+    names = Array.from({ length: storage.length }, (_, i) => storage.key(i))
+      .filter((name) => typeof name === 'string');
   } catch {
-    assetKeys = [];
+    names = [];
   }
-  for (const from of assetKeys) {
-    const to = NEW_ASSET_PREFIX + from.slice(OLD_ASSET_PREFIX.length);
-    settled = copy(storage, from, to) && settled;
+  for (const prefix of OLD_ASSET_PREFIXES) {
+    for (const from of names.filter((name) => name.startsWith(prefix))) {
+      settled = copy(storage, from, NEW_ASSET_PREFIX + from.slice(prefix.length)) && settled;
+    }
   }
 
   if (!settled) return;

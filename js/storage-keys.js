@@ -14,7 +14,7 @@
 // out literally at the point of use, so a future rename cannot silently rewrite
 // history it was supposed to leave alone.
 
-export const NAMESPACE = 'game-controller-workshop';
+export const NAMESPACE = 'alternative-game-controllers';
 
-/** `key('wiring', 'v3')` → `game-controller-workshop:wiring:v3`. */
+/** `key('rules', 'v1')` → `alternative-game-controllers:rules:v1`. */
 export const key = (...parts) => [NAMESPACE, ...parts].join(':');

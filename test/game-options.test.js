@@ -18,7 +18,7 @@ function fakeHost(gameId = 'flappy') {
   };
 }
 
-const KEY = 'game-controller-workshop:controls:v1';
+const KEY = 'alternative-game-controllers:controls:v1';
 
 test('at boot every option is handed to the game, saved choice or declared default', () => {
   const storage = memoryStorage();

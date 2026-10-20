@@ -95,3 +95,21 @@ test('a first-ever visit is marked done without inventing anything', () => {
 test('no storage at all is not an error', () => {
   assert.doesNotThrow(() => migrateStorage(null));
 });
+
+// The second rename. Records saved under `game-controller-workshop` come
+// across too — and where both earlier names hold a record, the newer one wins,
+// since it is the one somebody last worked on.
+test('the second rename carries everything across, newest name first', () => {
+  const storage = memoryStorage();
+  storage.setItem('game-controller-workshop:rules:v1', '{"flappy":[]}');
+  storage.setItem('game-controller-workshop:request:v1', 'flap on clap');
+  storage.setItem('game-controller-workshop:theme:v1', '{"version":1,"font":"pixel"}');
+  storage.setItem('experimental-game-controllers:theme:v1', '{"version":1,"font":"old"}');
+  storage.setItem('game-controller-workshop:asset:image-2', '{"id":"image-2"}');
+  migrateStorage(storage);
+  assert.equal(storage.getItem(key('rules', 'v1')), '{"flappy":[]}');
+  assert.equal(storage.getItem(key('request', 'v1')), 'flap on clap');
+  assert.equal(storage.getItem(key('theme', 'v1')), '{"version":1,"font":"pixel"}', 'the newer name wins');
+  assert.equal(storage.getItem(`${key('asset')}:image-2`), '{"id":"image-2"}');
+  assert.ok(key('x').startsWith('alternative-game-controllers:'));
+});

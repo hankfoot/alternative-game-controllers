@@ -97,7 +97,8 @@ function openDatabase(factory, timeoutMs) {
 // A database cannot be renamed, so the new name opens empty and every drawing
 // and recording looks like it has been thrown away. This copies them over once.
 
-const OLD_DB_NAME = 'experimental-game-controllers';
+// Newest first; a record already copied is never overwritten.
+const OLD_DB_NAMES = Object.freeze(['game-controller-workshop', 'experimental-game-controllers']);
 const ASSETS_MIGRATED_KEY = key('migrated', 'assets');
 
 /**
@@ -203,8 +204,9 @@ export function createAssetStore({
       return;
     }
 
-    const old = await openExisting(indexedDB, openTimeoutMs, OLD_DB_NAME);
-    if (old) {
+    for (const name of OLD_DB_NAMES) {
+      const old = await openExisting(indexedDB, openTimeoutMs, name);
+      if (!old) continue;
       for (const record of await readAllFrom(old)) {
         const asset = normalizeAsset(record);
         // Never clobber: the same rule the localStorage migration follows, for

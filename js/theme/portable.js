@@ -24,7 +24,11 @@ const BUNDLE_VERSION = 1;
 // downloads folders, and a file that stops opening is a file somebody lost.
 // Nothing is ever exported under it again — this list only grows, and only at
 // the reading end.
-const ACCEPTED_KINDS = Object.freeze([BUNDLE_KIND, 'experimental-game-controllers:theme']);
+const ACCEPTED_KINDS = Object.freeze([
+  BUNDLE_KIND,
+  'game-controller-workshop:theme',
+  'experimental-game-controllers:theme',
+]);
 
 /**
  * Reads out everything, ready to be written to a file.
