@@ -64,12 +64,12 @@ export const SECTIONS = [
   {
     id: 'motion',
     title: 'Motion',
-    intro: 'The micro:bit can feel how it is tilted and moved, and which way it is facing. None of these need any wiring.',
+    intro: 'Inside the micro:bit are tiny sensors that can feel movement. One feels which way gravity is pulling, and another works like a compass. None of these examples need any wiring.',
     lessons: [
       {
         id: 'tilt',
         title: 'Tilt',
-        intro: 'Pitch and roll measure how far the micro:bit is tilted, in degrees. This is useful for steering, like tilting a phone in a racing game.',
+        intro: 'When you tilt the micro:bit, it can tell how far by feeling which way gravity is pulling on it. Tipping it forward and back is called pitch, and tipping it side to side is called roll. Both are measured in degrees. This is useful for steering, like tilting a phone in a racing game.',
         steps: [
           UPLOAD,
           'Tilt the micro:bit forward and back, then side to side.',
@@ -80,7 +80,7 @@ export const SECTIONS = [
       {
         id: 'gestures',
         title: 'Gestures',
-        intro: 'The micro:bit recognizes quick movements like a shake or a fall, and sends a signal each time one happens. This is useful for one-off actions, like jumping when you shake a maraca.',
+        intro: 'The same sensor can also recognize quick movements, like a shake, a bump, or a moment of falling. Each time one happens, the micro:bit sends a single signal. This is useful for one-off actions, like jumping when you shake a maraca.',
         steps: [
           UPLOAD,
           'Shake the micro:bit.',
@@ -92,7 +92,7 @@ export const SECTIONS = [
       {
         id: 'compass',
         title: 'Compass',
-        intro: 'The compass measures which direction the micro:bit is facing, in degrees from north. This is useful for turning, like a steering wheel or a dial.',
+        intro: 'The micro:bit can also feel the Earth’s magnetism, just like the needle of a compass. It reports which way it is facing in degrees, where 0 is north. This is useful for turning, like a steering wheel or a dial. Laptops and speakers have magnets of their own, so keep it away from them.',
         steps: [
           UPLOAD,
           'Tilt the micro:bit around until every LED is lit. This calibrates the compass.',
@@ -106,7 +106,7 @@ export const SECTIONS = [
   {
     id: 'ambient',
     title: 'Ambient sensing',
-    intro: 'The micro:bit can sense the room around it: how bright it is, how loud it is, and how warm it is. This is useful for controls you never touch, like clapping or covering a light.',
+    intro: 'The micro:bit can also sense the room around it. Its lights can measure how bright it is, its microphone can hear how loud it is, and its chip can tell how warm it is. This is useful for controls you never touch, like clapping or covering a light.',
     lessons: [
       {
         id: 'ambient',
