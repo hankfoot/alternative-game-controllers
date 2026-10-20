@@ -177,12 +177,15 @@ function renderExample(lesson, index, signalStore, views) {
   letter.setAttribute('aria-hidden', 'true');
   const body = el('div', 'substep-body');
   body.appendChild(el('h4', null, lesson.title));
-  if (lesson.intro) body.appendChild(el('p', null, lesson.intro));
 
+  // The photo straight under the title: what you are making, before any words
+  // about it.
   const figure = el('figure', 'shot shot-slot');
   figure.setAttribute('aria-label', lesson.image.alt);
   figure.appendChild(document.createComment(` image slot: ${lesson.image.src} — ${lesson.image.alt} `));
   body.appendChild(figure);
+
+  if (lesson.intro) body.appendChild(el('p', null, lesson.intro));
 
   const steps = el('ol', 'lesson-steps');
   for (const step of lesson.steps) steps.appendChild(el('li', null, step));
@@ -249,7 +252,11 @@ export function initLessons({ host, signalStore }) {
       const only = renderExample(section.lessons[0], 0, signalStore, views);
       const inner = only.querySelector('.substep-body');
       inner.querySelector('h4').remove();
-      if (section.lessons[0].intro) inner.querySelector('p').remove();
+      if (section.lessons[0].intro) inner.querySelector(':scope > p').remove();
+      // Its photo goes under the step's own title, ahead of the step's intro.
+      const figure = inner.querySelector(':scope > figure');
+      const title = body.querySelector('h3');
+      title.after(figure);
       body.append(...inner.childNodes);
     }
     item.append(el('span', 'step-num', String(index + 1)), body);
