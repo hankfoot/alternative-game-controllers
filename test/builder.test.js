@@ -42,13 +42,17 @@ test('the flashed program does not touch serial at all', () => {
 // The guard used to wrap every handler body and the loop. `connected` only ever
 // becomes true when a Bluetooth browser attaches, so leaving it in place meant a
 // session over the cable fired every handler and sent nothing at all.
-test('nothing outside send is gated on a Bluetooth browser being attached', () => {
+test('nothing that reads or reports is gated on a Bluetooth browser being attached', () => {
   const program = code(['btna', 'shake', 'pitch', 'light']);
   const lines = program.split('\n');
 
   const sendBody = lines.indexOf('    if (connected) {');
   assert.ok(sendBody > 0, "send's own guard is there");
-  assert.equal(count(program, 'if (connected)'), 1, 'and it is the only one');
+  // The face on the LEDs asks too — it is what shows whether you are paired —
+  // and that is the only other place.
+  const face = program.slice(program.indexOf('basic.forever(function () {\n    if (busy) {'));
+  const rest = program.replace(face, '');
+  assert.equal(count(rest, 'if (connected)'), 1, 'send is the only reader of the readings that asks');
 });
 
 // `showString` blocks for the length of its scroll — about two seconds — so from
@@ -128,19 +132,43 @@ test('a touch pin is not pulled', () => {
 // connection instead, when the thing is built; and only the first, because the
 // link drops and recovers by itself and a hand holding the pad through that
 // would be calibrated in as the baseline.
-test('a touch pin calibrates on the first connection, not at startup', () => {
+test('a touch pin calibrates at startup, straight after the hands-off countdown', () => {
   const program = code(['p0'], { p0: 'touch' });
   const mode = 'pins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)';
-  // Once outside the A+B recalibration, which switches it again on demand.
-  const outside = program.slice(0, program.indexOf('input.onButtonPressed(Button.AB'));
+  // Once at startup, and once more inside the A+B recalibration.
+  const outside = program.slice(0, program.indexOf('input.onButtonPressed(Button.AB'))
+    + program.slice(program.indexOf('\n})\n', program.indexOf('input.onButtonPressed(Button.AB')));
   assert.equal(count(outside, mode), 1);
 
+  const countdownCall = program.indexOf('\ncountdown()\n');
+  assert.ok(countdownCall > 0 && program.indexOf(mode, countdownCall) > countdownCall, 'after the 3-2-1');
+  assert.ok(program.indexOf(mode, countdownCall) < program.indexOf('basic.showString(control.deviceName())'),
+    'and before the name scrolls, so it is done by the time anyone can connect');
   const connectAt = program.indexOf('bluetooth.onBluetoothConnected');
   const connectEnd = program.indexOf('\n})\n', connectAt);
-  const modeAt = program.indexOf(mode);
-  assert.ok(connectAt < modeAt && modeAt < connectEnd, 'inside the connected handler');
-  assert.ok(program.includes('if (!(primed)) {'), 'and guarded to once per boot');
-  assert.ok(modeAt > program.indexOf('if (!(primed)) {'), 'by that guard');
+  assert.ok(!program.slice(connectAt, connectEnd).includes('touchSetMode'), 'not when the browser connects');
+});
+
+// What the LEDs say: 3-2-1 while it is not ready, the name once, then a
+// Bluetooth rune and an X in turn until it pairs, and a smiley once it has.
+// One loop owns them, so nothing draws over anything else.
+test('the LEDs count down at startup, then show whether the board is paired', () => {
+  const program = code(['btna']);
+  const countdown = program.slice(program.indexOf('function countdown () {'));
+  assert.ok(countdown.startsWith('function countdown () {\n    busy = true\n    basic.showNumber(3)\n    basic.showNumber(2)\n    basic.showNumber(1)'));
+  const startup = program.indexOf('\ncountdown()\n');
+  const name = program.indexOf('basic.showString(control.deviceName())');
+  const ready = program.indexOf('busy = false', name);
+  assert.ok(startup > 0 && name > startup && ready > name, 'count, name, then the face takes over');
+
+  const face = program.slice(program.indexOf('basic.forever(function () {\n    if (busy) {'));
+  assert.ok(face.includes('basic.showIcon(IconNames.Happy)'), 'a smiley when paired');
+  assert.ok(face.includes('basic.showIcon(IconNames.No)'), 'an X when not');
+  assert.ok(face.includes('basic.showLeds(`'), 'after a Bluetooth rune');
+  assert.equal(count(program, 'IconNames.Happy'), 1, 'drawn only by the face loop');
+  const connectAt = program.indexOf('bluetooth.onBluetoothConnected');
+  assert.ok(!program.slice(connectAt, program.indexOf('\n})\n', connectAt)).includes('showIcon'),
+    'the connect handler leaves the drawing to the face loop');
 });
 
 // The connected event fires as the link comes up, but the browser only
@@ -155,7 +183,6 @@ test('held inputs report their state only after the browser has had time to subs
     // The first occurrence of each is the one in the connected handler.
     assert.ok(program.indexOf(report) > pause, `${report} comes after the wait`);
   }
-  assert.ok(pause > program.indexOf('touchSetMode'), 'and after the pad has started calibrating');
 });
 
 // A browser attaching mid-hold is told the switch is closed; the scan then has
@@ -256,6 +283,8 @@ test('assemble takes parts of its own, and lines to append', () => {
 test('a touch pad can be recalibrated with A and B, which also releases it', () => {
   const program = code(['p0', 'p2'], { p0: 'touch', p2: 'touch' });
   assert.equal(count(program, 'input.onButtonPressed(Button.AB, function () {'), 1, 'one handler for every pad');
+  const ab = program.slice(program.indexOf('input.onButtonPressed(Button.AB'));
+  assert.ok(ab.indexOf('countdown()') < ab.indexOf('TouchTargetMode.Resistive'), 'counted down first, so hands come off');
   for (const n of [0, 2]) {
     const away = program.indexOf(`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Resistive)`);
     const back = program.indexOf(`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Capacitive)`, away);

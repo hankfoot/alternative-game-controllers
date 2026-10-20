@@ -33,21 +33,15 @@ export const CONNECT_SETTLE_MS = 1500;
 //
 // `report` holds the lines that tell a browser where each held input stands as
 // it attaches — see `edges` for why that has to be said there rather than every
-// tick. `prime` is what must happen once per boot and no earlier than the first
-// browser: a touch pad learning what untouched feels like, which is only worth
-// doing once the thing is built (see `pinInput`). `state` is the top-level
-// variables the scan loop keeps between ticks.
+// tick. `state` is the top-level variables the scan loop keeps between ticks.
 //
 // `send` is the one place a line is written, so nothing else in this file needs
 // to know whether anybody is listening. A named function with a typed parameter
 // still decompiles to blocks, so the promise at the top of this file survives —
 // that is the only reason `send` can exist rather than every call site carrying
 // the guard.
-function scaffoldTop({ state, prime, report }) {
+function scaffoldTop({ state, report }) {
   const connect = [];
-  if (prime.length) {
-    connect.push('if (!(primed)) {', '    primed = true', ...prime.map((l) => '    ' + l), '}');
-  }
   if (report.length) connect.push(`basic.pause(${CONNECT_SETTLE_MS})`, ...report);
   return [
     // Bluetooth only, deliberately.
@@ -60,7 +54,10 @@ function scaffoldTop({ state, prime, report }) {
     // None of it bought anything the radio does not already do.
     'bluetooth.startUartService()',
     'let connected = false',
-    ...(prime.length ? ['let primed = false'] : []),
+    // The face on the LEDs: whether something is being counted down (and
+    // nothing else may draw), and whether the smiley is already up.
+    'let busy = true',
+    'let faceShown = false',
     ...state,
     'function send (line: string) {',
     '    if (connected) {',
@@ -90,13 +87,21 @@ function scaffoldTop({ state, prime, report }) {
     'function gameStart () {',
     '    send("game:start")',
     '}',
+    // A count of three on the LEDs, for the moments the board is not ready
+    // yet: at startup, and when a touch pad is taught again. It is also the
+    // "hands off the foil" signal — a pad calibrates right after it.
+    'function countdown () {',
+    '    busy = true',
+    '    basic.showNumber(3)',
+    '    basic.showNumber(2)',
+    '    basic.showNumber(1)',
+    '    basic.clearScreen()',
+    '}',
     'bluetooth.onBluetoothConnected(function () {',
     '    connected = true',
-    // Drawn here, on the edge, rather than every time round the loop. Redrawing
-    // all 25 LEDs ten times a second for a picture that never changes is real
-    // work on the same processor that has to keep the Bluetooth radio fed, and
-    // starving the radio is what a mystery disconnection usually turns out to be.
-    '    basic.showIcon(IconNames.Yes)',
+    // The smiley is the face loop's to draw (see `faceLoop`), so the two
+    // never draw over each other.
+    '    faceShown = false',
     ...connect.map((line) => '    ' + line),
     '})',
     'bluetooth.onBluetoothDisconnected(function () {',
@@ -235,9 +240,9 @@ function number(channel, expr) {
  *   handlers — top-level event handlers (outside the loop)
  *   setup    — lines run once at startup, after the handlers are registered
  *   state    — top-level variables the scan lines keep between ticks
- *   prime    — lines run once per boot, on the first Bluetooth connection
- *   recalibrate — lines run when A and B are pressed together, to teach a
- *              touch pad what untouched feels like again
+ *   calibrate — lines run at startup, straight after the 3-2-1 countdown
+ *   recalibrate — lines run when A and B are pressed together, after another
+ *              countdown, to teach a touch pad what untouched feels like again
  *   connect  — lines that report the input's level as a browser attaches
  *   build    — one wiring / build-idea note for the "Build it" list
  * Pin inputs have `modes` instead, keyed by mode id.
@@ -273,18 +278,15 @@ function pinInput(n) {
         // silently when it does. Capacitive senses the body's charge through
         // the one wire. V2 only, which the workshop's boards are.
         //
-        // Primed on the first connection rather than at startup, because
-        // setting the mode is also when the pad calibrates: it takes the
-        // highest reading over half a second as "untouched" and fires a little
-        // above that (TouchButton::calibrate). A crocodile clip, a wire and a
-        // sheet of foil add far more than that margin, so a pad calibrated
-        // bare at boot — which is when it used to happen, since the code is
-        // flashed before anything is built — read as touched from the moment
-        // the foil went on and never let go. By the time a browser connects the
-        // thing is built. Once per boot, not per connection: the link drops
-        // and comes back by itself, and recalibrating under a hand that is
-        // holding the pad would teach it that touched is the baseline.
-        prime: [`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Capacitive)`],
+        // Setting the mode is also when the pad calibrates: it takes the
+        // highest of ten readings as "untouched" and fires a little above that
+        // (TouchButton::calibrate). So it happens at startup, straight after the
+        // 3-2-1 on the LEDs that says hands off — and again whenever A and B
+        // are pressed together, for a pad that was built, moved or caught
+        // mid-settle after that. It used to wait for the first browser to
+        // connect, which meant a pad did nothing at all until then, and a test
+        // without the page connected read the pin in the wrong mode entirely.
+        calibrate: [`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Capacitive)`],
         // Learning "untouched" again, on demand. The pad calibrates once, from
         // ten readings, when it is switched into capacitive mode — and a foil
         // square on a lead can be caught mid-settle and learn a level too low,
@@ -305,8 +307,8 @@ function pinInput(n) {
         build:
           `Clip one wire from P${n} to anything conductive — foil, fruit, a spoon. ` +
           `Touching the object sends 1. No second wire to hold: the pin senses your body through the one clip. ` +
-          `Clip everything on <em>before</em> you connect — the pad learns what untouched feels like the first time the browser connects, so keep your hands off it for a second then. ` +
-          `If it ever sticks on, or you change the wiring, take your hands off the foil and press <strong>A and B together</strong> to teach it again.`,
+          `Clip the foil on <em>before</em> the board starts, and keep your hands off it while the board counts down 3-2-1 — that is when it learns what untouched feels like. ` +
+          `If it ever sticks on, or you change the wiring, press <strong>A and B together</strong>: it counts down again and relearns.`,
       },
       switch: {
         label: 'Switch',
@@ -597,7 +599,7 @@ export function assemble(parts, { extra = [] } = {}) {
   const loop = [];
   const scan = [];
   const state = [];
-  const prime = [];
+  const calibrate = [];
   const recalibrate = [];
   const report = [];
   for (const v of parts) {
@@ -607,7 +609,7 @@ export function assemble(parts, { extra = [] } = {}) {
     if (v.loop) loop.push(...v.loop);
     if (v.scan) scan.push(...v.scan);
     if (v.state) state.push(...v.state);
-    if (v.prime) prime.push(...v.prime);
+    if (v.calibrate) calibrate.push(...v.calibrate);
     if (v.recalibrate) recalibrate.push(...v.recalibrate);
     if (v.connect) report.push(...v.connect);
   }
@@ -624,36 +626,65 @@ export function assemble(parts, { extra = [] } = {}) {
     : [];
 
   // A and B together, because neither alone is free: either may be an input
-  // a sentence uses. A diamond while it happens, so there is something to see;
-  // `primed` is set too, so the first connection after it does not repeat it.
+  // a sentence uses. The same 3-2-1 as startup, so hands come off the foil,
+  // then a tick to say it is done before the face comes back.
   const recalibration = recalibrate.length
     ? handler('input.onButtonPressed(Button.AB, function () {', [
-      'basic.showIcon(IconNames.SmallDiamond)',
-      'primed = true',
+      'countdown()',
       ...recalibrate,
-      'basic.pause(300)',
-      'if (connected) {',
-      '    basic.showIcon(IconNames.Yes)',
-      '} else {',
-      '    basic.clearScreen()',
-      '}',
+      'basic.showIcon(IconNames.Yes)',
+      'faceShown = false',
+      'busy = false',
     ])
     : [];
 
+  // The one thing that draws on the LEDs once startup is over, so nothing
+  // draws over anything else. Not connected: a Bluetooth rune and an X, in
+  // turn, which says "waiting to pair" from across a room. Connected: a smiley,
+  // drawn once rather than every time round — redrawing all 25 LEDs for a
+  // picture that never changes is work on the processor that keeps the radio
+  // fed. Its own loop, so the pauses in the animation never hold up a reading.
+  const faceLoop = [
+    'basic.forever(function () {',
+    '    if (busy) {',
+    '        basic.pause(100)',
+    '    } else if (connected) {',
+    '        if (!(faceShown)) {',
+    '            faceShown = true',
+    '            basic.showIcon(IconNames.Happy)',
+    '        }',
+    '        basic.pause(100)',
+    '    } else {',
+    '        basic.showLeds(`',
+    '            . . # # .',
+    '            # . # . #',
+    '            . # # # .',
+    '            # . # . #',
+    '            . . # # .',
+    '            `)',
+    '        if (!(connected) && !(busy)) {',
+    '            basic.showIcon(IconNames.No)',
+    '        }',
+    '    }',
+    '})',
+  ];
+
   return [
-    ...scaffoldTop({ state, prime, report }),
+    ...scaffoldTop({ state, report }),
     ...handlers,
     ...recalibration,
     // Last before the loop: a setup line may block for as long as it takes
     // someone to finish calibrating, so everything that has to be listening by
     // then is already registered above.
     ...setup,
-    // Shown once, at startup, rather than from inside the loop. `showString`
-    // *blocks* for the length of the scroll — about two seconds for a five
-    // letter name — so in the loop it would drop the board to one reading
-    // every two seconds. The name is only wanted while you are looking at the
-    // Bluetooth chooser anyway.
+    // Startup: 3-2-1 (hands off), the touch pads learn "untouched", then the
+    // board's five-letter name once — it is how you pick your board out of the
+    // Bluetooth list — and the face loop takes over the LEDs.
+    'countdown()',
+    ...calibrate,
     'basic.showString(control.deviceName())',
+    'busy = false',
+    ...faceLoop,
     ...scanLoop,
     'basic.forever(function () {',
     // No `if (connected)` here either, for the same reason it left the handlers:

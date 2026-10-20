@@ -41,7 +41,8 @@ test('the four lessons cover touch, switch, analog and events', () => {
 test('the touch and switch lessons carry the pin fixes', () => {
   const touch = lessonCode(byId('touch'));
   assert.ok(touch.includes('pins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)'));
-  assert.ok(touch.includes('if (!(primed)) {'), 'calibrated on the first connection');
+  assert.ok(touch.indexOf('\ncountdown()\n') < touch.lastIndexOf('pins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)'),
+    'calibrated after the startup countdown');
   const sw = lessonCode(byId('switch'));
   assert.ok(sw.includes('pins.setPull(DigitalPin.P1, PinPullMode.PullDown)'));
   assert.ok(sw.includes('loops.everyInterval(20, function () {'), 'scanned, not edge-watched');
