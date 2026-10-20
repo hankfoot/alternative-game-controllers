@@ -40,13 +40,13 @@ test('every lesson says what to do, and leaves room for a photo', () => {
 // that cost a workshop are in every snippet.
 test('the three touch lessons are wired the three different ways', () => {
   const sw = lessonCode(byId('switch'));
-  assert.ok(sw.includes('pins.setPull(DigitalPin.P1, PinPullMode.PullDown)'));
+  assert.ok(sw.includes('pins.setPull(DigitalPin.P0, PinPullMode.PullDown)'));
   assert.ok(sw.includes('loops.everyInterval(20, function () {'), 'scanned, not edge-watched');
   assert.ok(!sw.includes('touchSetMode'));
 
   const resistive = lessonCode(byId('resistive'));
-  assert.ok(resistive.includes('pins.touchSetMode(TouchTarget.P2, TouchTargetMode.Resistive)'));
-  assert.ok(resistive.includes('EventBusSource.MICROBIT_ID_IO_P2, EventBusValue.MICROBIT_BUTTON_EVT_DOWN'));
+  assert.ok(resistive.includes('pins.touchSetMode(TouchTarget.P0, TouchTargetMode.Resistive)'));
+  assert.ok(resistive.includes('EventBusSource.MICROBIT_ID_IO_P0, EventBusValue.MICROBIT_BUTTON_EVT_DOWN'));
   assert.ok(!resistive.includes('Capacitive'), 'nothing capacitive about it');
   assert.ok(!resistive.includes('Button.AB'), 'and nothing to recalibrate');
 

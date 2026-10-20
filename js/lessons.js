@@ -12,51 +12,51 @@
 import { assemble, variantFor } from './builder.js';
 import { createChannelView } from './visualizer.js';
 
-const COPY = 'Copy the code, download it, and press Connect.';
+const UPLOAD = 'Copy and upload the code to your micro:bit.';
 
 export const SECTIONS = [
   {
     id: 'touch',
     title: 'Touch',
-    intro: 'There are three ways to turn a touch into a signal. They differ in what completes the circuit.',
+    intro: 'There are three ways to sense a touch. Each one completes a circuit in a different way.',
     lessons: [
       {
         id: 'switch',
         title: 'Switch',
-        intro: 'Two pieces of foil complete the circuit when they touch each other.',
+        intro: 'Touching two pieces of conductive material together can complete a circuit just like how a light switch works. This is useful for detecting when two objects come into contact, such as when a lid is put on a jar or when a door is closed.',
         steps: [
-          'Clip 3V to one piece of foil and P1 to another.',
-          'Mount them so they can meet, like the two jaws of a puppet.',
-          COPY,
-          'Press the foils together.',
+          'Clip one piece of foil to pin P0.',
+          'Clip another piece of foil to the 3V pin.',
+          UPLOAD,
+          'Touch the foils together.',
         ],
-        image: { src: 'assets/lesson-switch.jpg', alt: 'Two foil pieces on a hinge, one clipped to 3V and one to P1' },
-        inputs: [{ id: 'p1', mode: 'switch' }],
+        image: { src: 'assets/lesson-switch.jpg', alt: 'Two pieces of foil, one clipped to P0 and one to 3V' },
+        inputs: [{ id: 'p0', mode: 'switch' }],
       },
       {
         id: 'resistive',
         title: 'Resistive touch',
-        intro: 'Your body completes the circuit between the pin and ground.',
+        intro: 'Your body conducts electricity, so you can complete a circuit yourself by touching a pin while holding the ground pin. This is how a fruit piano works: anything a little conductive, like a banana or Play-Doh, can become a button.',
         steps: [
-          'Clip P2 to a piece of foil, or to a banana.',
-          'Clip GND to a second piece of foil and hold it in one hand.',
-          COPY,
-          'Touch the P2 foil with your other hand.',
+          'Clip one piece of foil to pin P0.',
+          'Clip another piece of foil to the GND pin and hold it in one hand.',
+          UPLOAD,
+          'Touch the P0 foil with your other hand.',
         ],
-        image: { src: 'assets/lesson-resistive.jpg', alt: 'A hand holding a foil clipped to GND, the other touching a banana clipped to P2' },
-        inputs: [{ id: 'p2', mode: 'resistive' }],
+        image: { src: 'assets/lesson-resistive.jpg', alt: 'A hand holding foil clipped to GND, the other hand touching foil clipped to P0' },
+        inputs: [{ id: 'p0', mode: 'resistive' }],
       },
       {
         id: 'capacitive',
         title: 'Capacitive touch',
-        intro: 'The pin senses your body through a single piece of foil, so there is nothing to hold.',
+        intro: 'The micro:bit can also sense your body through a single piece of foil, without you holding anything else. This works like the touchscreen on a phone, and it is useful for buttons that should feel like nothing at all.',
         steps: [
-          'Fold a piece of foil a few times and clip P0 to it.',
-          COPY + ' Keep your hands off the foil while the board starts up.',
+          'Fold a piece of foil a few times and clip it to pin P0.',
+          UPLOAD + ' Keep your hands off the foil while it starts.',
           'Touch the foil.',
-          'If it gets stuck on, press A and B together to reset it.',
+          'If it stays on after you let go, press A and B together to reset it.',
         ],
-        image: { src: 'assets/lesson-capacitive.jpg', alt: 'A crocodile clip from P0 to a square of folded foil' },
+        image: { src: 'assets/lesson-capacitive.jpg', alt: 'A folded piece of foil clipped to P0' },
         inputs: [{ id: 'p0', mode: 'touch' }],
       },
     ],
@@ -64,26 +64,27 @@ export const SECTIONS = [
   {
     id: 'motion',
     title: 'Motion',
-    intro: 'The board can tell how it is tilted and how it is moving. None of these need any wiring.',
+    intro: 'The micro:bit can feel how it is tilted and moved, and which way it is facing. None of these need any wiring.',
     lessons: [
       {
         id: 'tilt',
         title: 'Tilt',
-        intro: 'Pitch and roll measure the tilt in degrees.',
+        intro: 'Pitch and roll measure how far the micro:bit is tilted, in degrees. This is useful for steering, like tilting a phone in a racing game.',
         steps: [
-          COPY,
-          'Tip the board forward and back, then side to side.',
+          UPLOAD,
+          'Tilt the micro:bit forward and back, then side to side.',
         ],
-        image: { src: 'assets/lesson-tilt.jpg', alt: 'A micro:bit tipped forward in a hand' },
+        image: { src: 'assets/lesson-tilt.jpg', alt: 'A micro:bit tilted forward in a hand' },
         inputs: [{ id: 'pitch' }, { id: 'roll' }],
       },
       {
         id: 'gestures',
         title: 'Gestures',
-        intro: 'Gestures are sent once each time they happen.',
+        intro: 'The micro:bit recognizes quick movements like a shake or a fall, and sends a signal each time one happens. This is useful for one-off actions, like jumping when you shake a maraca.',
         steps: [
-          COPY,
-          'Shake the board, tap it on the table, and toss it gently.',
+          UPLOAD,
+          'Shake the micro:bit.',
+          'Tap it on the table, then toss it gently and catch it.',
         ],
         image: { src: 'assets/lesson-gestures.jpg', alt: 'A micro:bit being shaken' },
         inputs: [{ id: 'shake' }, { id: 'g3' }, { id: 'freefall' }],
@@ -91,11 +92,11 @@ export const SECTIONS = [
       {
         id: 'compass',
         title: 'Compass',
-        intro: 'The compass measures which way the board points, in degrees from north.',
+        intro: 'The compass measures which direction the micro:bit is facing, in degrees from north. This is useful for turning, like a steering wheel or a dial.',
         steps: [
-          'Copy the code and download it.',
-          'Tilt the board around until every LED is lit. This calibrates the compass.',
-          'Press Connect, hold the board flat, and turn around slowly.',
+          UPLOAD,
+          'Tilt the micro:bit around until every LED is lit. This calibrates the compass.',
+          'Hold it flat and turn around slowly.',
         ],
         image: { src: 'assets/lesson-compass.jpg', alt: 'A micro:bit held flat and turned like a dial' },
         inputs: [{ id: 'heading' }],
@@ -105,19 +106,19 @@ export const SECTIONS = [
   {
     id: 'ambient',
     title: 'Ambient sensing',
-    intro: 'The board can measure light, sound, and temperature.',
+    intro: 'The micro:bit can sense the room around it: how bright it is, how loud it is, and how warm it is. This is useful for controls you never touch, like clapping or covering a light.',
     lessons: [
       {
         id: 'ambient',
         title: 'Light, sound and temperature',
         intro: '',
         steps: [
-          COPY,
+          UPLOAD,
           'Cover the LEDs with your hand, then shine a light on them.',
-          'Talk near the board, then clap once.',
-          'Hold the board between your thumbs and watch the temperature rise.',
+          'Talk near the micro:bit, then clap once.',
+          'Hold the micro:bit between your thumbs and watch the temperature rise.',
         ],
-        image: { src: 'assets/lesson-ambient.jpg', alt: 'A hand cupped over the micro:bit next to a phone torch' },
+        image: { src: 'assets/lesson-ambient.jpg', alt: 'A hand cupped over the micro:bit LEDs' },
         inputs: [{ id: 'light' }, { id: 'mic' }, { id: 'loud' }, { id: 'temp' }],
       },
     ],
