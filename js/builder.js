@@ -280,10 +280,10 @@ function pinInput(n) {
         //
         // Setting the mode is also when the pad calibrates: it takes the
         // highest of ten readings as "untouched" and fires a little above that
-        // (TouchButton::calibrate). So it happens at startup, straight after the
-        // 3-2-1 on the LEDs that says hands off — and again whenever A and B
-        // are pressed together, for a pad that was built, moved or caught
-        // mid-settle after that. It used to wait for the first browser to
+        // (TouchButton::calibrate). So it happens at startup, just before the
+        // 3-2-1 on the LEDs that says the board is getting ready — and again
+        // whenever A and B are pressed together, for a pad that was built,
+        // moved or caught mid-settle after that. It used to wait for the first browser to
         // connect, which meant a pad did nothing at all until then, and a test
         // without the page connected read the pin in the wrong mode entirely.
         calibrate: [`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Capacitive)`],
@@ -307,7 +307,7 @@ function pinInput(n) {
         build:
           `Clip one wire from P${n} to anything conductive — foil, fruit, a spoon. ` +
           `Touching the object sends 1. No second wire to hold: the pin senses your body through the one clip. ` +
-          `Clip the foil on <em>before</em> the board starts, and keep your hands off it while the board counts down 3-2-1 — that is when it learns what untouched feels like. ` +
+          `Clip the foil on <em>before</em> the board starts, and keep your hands off it as it starts — it learns what untouched feels like, then counts down 3-2-1. ` +
           `If it ever sticks on, or you change the wiring, press <strong>A and B together</strong>: it counts down again and relearns.`,
       },
       switch: {
@@ -626,12 +626,14 @@ export function assemble(parts, { extra = [] } = {}) {
     : [];
 
   // A and B together, because neither alone is free: either may be an input
-  // a sentence uses. The same 3-2-1 as startup, so hands come off the foil,
-  // then a tick to say it is done before the face comes back.
+  // a sentence uses. The pad relearns first — fingers are on the buttons, not
+  // the foil — and the same 3-2-1 as startup runs while it settles, then a
+  // tick to say it is done before the face comes back.
   const recalibration = recalibrate.length
     ? handler('input.onButtonPressed(Button.AB, function () {', [
-      'countdown()',
+      'busy = true',
       ...recalibrate,
+      'countdown()',
       'basic.showIcon(IconNames.Yes)',
       'faceShown = false',
       'busy = false',
@@ -698,10 +700,12 @@ export function assemble(parts, { extra = [] } = {}) {
     // someone to finish calibrating, so everything that has to be listening by
     // then is already registered above.
     ...setup,
-    // Startup: 3-2-1 (hands off), the touch pads learn "untouched", and the
+    // Startup: the touch pads learn "untouched" — ten readings, done within
+    // the first few milliseconds, and nobody is touching the foil the moment
+    // the board powers on — then the 3-2-1 while everything settles, and the
     // face loop takes over the LEDs.
-    'countdown()',
     ...calibrate,
+    'countdown()',
     'busy = false',
     ...faceLoop,
     ...scanLoop,

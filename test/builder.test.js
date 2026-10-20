@@ -130,7 +130,7 @@ test('a touch pin is not pulled', () => {
 // connection instead, when the thing is built; and only the first, because the
 // link drops and recovers by itself and a hand holding the pad through that
 // would be calibrated in as the baseline.
-test('a touch pin calibrates at startup, straight after the hands-off countdown', () => {
+test('a touch pin calibrates at startup, just before the countdown', () => {
   const program = code(['p0'], { p0: 'touch' });
   const mode = 'pins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)';
   // Once at startup, and once more inside the A+B recalibration.
@@ -139,9 +139,8 @@ test('a touch pin calibrates at startup, straight after the hands-off countdown'
   assert.equal(count(outside, mode), 1);
 
   const countdownCall = program.indexOf('\ncountdown()\n');
-  assert.ok(countdownCall > 0 && program.indexOf(mode, countdownCall) > countdownCall, 'after the 3-2-1');
-  assert.ok(program.indexOf(mode, countdownCall) < program.indexOf('busy = false', countdownCall),
-    'and before the face loop takes over, so it is done by the time anyone can connect');
+  const startupMode = program.lastIndexOf(`\n${mode}\n`);
+  assert.ok(startupMode > 0 && startupMode < countdownCall, 'set just before the 3-2-1, which runs while it settles');
   const connectAt = program.indexOf('bluetooth.onBluetoothConnected');
   const connectEnd = program.indexOf('\n})\n', connectAt);
   assert.ok(!program.slice(connectAt, connectEnd).includes('touchSetMode'), 'not when the browser connects');
@@ -285,7 +284,8 @@ test('a touch pad can be recalibrated with A and B, which also releases it', () 
   const program = code(['p0', 'p2'], { p0: 'touch', p2: 'touch' });
   assert.equal(count(program, 'input.onButtonPressed(Button.AB, function () {'), 1, 'one handler for every pad');
   const ab = program.slice(program.indexOf('input.onButtonPressed(Button.AB'));
-  assert.ok(ab.indexOf('countdown()') < ab.indexOf('TouchTargetMode.Resistive'), 'counted down first, so hands come off');
+  assert.ok(ab.indexOf('TouchTargetMode.Resistive') < ab.indexOf('countdown()'), 'relearns first, then counts down');
+  assert.ok(ab.indexOf('busy = true') < ab.indexOf('TouchTargetMode.Resistive'), 'holding the LEDs from the start');
   for (const n of [0, 2]) {
     const away = program.indexOf(`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Resistive)`);
     const back = program.indexOf(`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Capacitive)`, away);
