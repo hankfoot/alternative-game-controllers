@@ -20,10 +20,10 @@ export const LESSONS = [
     steps: [
       'Clip one end of a crocodile lead to the P0 pad on the board.',
       'Clip the other end to a square of foil. Tape the foil to anything you like.',
-      'Copy the code and download it, with your hands off the foil. The board learns what untouched feels like as it starts, then counts down 3-2-1 while it settles.',
+      'Copy the code and download it, with your hands off the foil — the board learns what untouched feels like the moment it starts.',
       'Press Connect and pick your board. Until it pairs it flashes a Bluetooth sign and an X; once paired it smiles. Hold B to see its five-letter name.',
       'Touch the foil: the row below goes to 1.',
-      'Stuck on 1, or moved the foil? Press A and B together: it counts down again and relearns.',
+      'Stuck on 1, or moved the foil? Press A and B together: it relearns, and shows a tick.',
     ],
     image: { src: 'assets/lesson-touch.jpg', alt: 'A crocodile clip from P0 to a square of foil' },
     inputs: [{ id: 'p0', mode: 'touch' }],

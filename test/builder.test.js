@@ -130,7 +130,7 @@ test('a touch pin is not pulled', () => {
 // connection instead, when the thing is built; and only the first, because the
 // link drops and recovers by itself and a hand holding the pad through that
 // would be calibrated in as the baseline.
-test('a touch pin calibrates at startup, just before the countdown', () => {
+test('a touch pin calibrates once at startup, not when the browser connects', () => {
   const program = code(['p0'], { p0: 'touch' });
   const mode = 'pins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)';
   // Once at startup, and once more inside the A+B recalibration.
@@ -138,24 +138,19 @@ test('a touch pin calibrates at startup, just before the countdown', () => {
     + program.slice(program.indexOf('\n})\n', program.indexOf('input.onButtonPressed(Button.AB')));
   assert.equal(count(outside, mode), 1);
 
-  const countdownCall = program.indexOf('\ncountdown()\n');
   const startupMode = program.lastIndexOf(`\n${mode}\n`);
-  assert.ok(startupMode > 0 && startupMode < countdownCall, 'set just before the 3-2-1, which runs while it settles');
+  assert.ok(startupMode > 0 && startupMode < program.indexOf('\nbusy = false\n'), 'at startup, before the face loop takes over');
   const connectAt = program.indexOf('bluetooth.onBluetoothConnected');
   const connectEnd = program.indexOf('\n})\n', connectAt);
   assert.ok(!program.slice(connectAt, connectEnd).includes('touchSetMode'), 'not when the browser connects');
 });
 
-// What the LEDs say: 3-2-1 while it is not ready, then — until it pairs — a
-// Bluetooth rune for a second and an X for a second, round and round; a smiley
-// once it has paired. One loop owns them. Holding B shows the board's name.
-test('the LEDs count down at startup, then show whether the board is paired', () => {
+// What the LEDs say: until it pairs, a Bluetooth rune for a second and an X
+// for a second, round and round; a smiley once it has paired. One loop owns
+// them. Holding B shows the board's name.
+test('the LEDs show whether the board is paired', () => {
   const program = code(['btna']);
-  const countdown = program.slice(program.indexOf('function countdown () {'));
-  assert.ok(countdown.startsWith('function countdown () {\n    busy = true\n    basic.showNumber(3)\n    basic.showNumber(2)\n    basic.showNumber(1)'));
-  const startup = program.indexOf('\ncountdown()\n');
-  const ready = program.indexOf('busy = false', startup);
-  assert.ok(startup > 0 && ready > startup, 'count, then the face takes over');
+  assert.ok(!program.includes('countdown') && !program.includes('showNumber'), 'no countdown');
 
   const face = program.slice(program.indexOf('basic.forever(function () {\n    if (busy) {'));
   assert.ok(face.includes('basic.showIcon(IconNames.Happy)'), 'a smiley when paired');
@@ -284,7 +279,7 @@ test('a touch pad can be recalibrated with A and B, which also releases it', () 
   const program = code(['p0', 'p2'], { p0: 'touch', p2: 'touch' });
   assert.equal(count(program, 'input.onButtonPressed(Button.AB, function () {'), 1, 'one handler for every pad');
   const ab = program.slice(program.indexOf('input.onButtonPressed(Button.AB'));
-  assert.ok(ab.indexOf('TouchTargetMode.Resistive') < ab.indexOf('countdown()'), 'relearns first, then counts down');
+  assert.ok(ab.indexOf('TouchTargetMode.Resistive') < ab.indexOf('IconNames.Yes'), 'relearns, then a tick');
   assert.ok(ab.indexOf('busy = true') < ab.indexOf('TouchTargetMode.Resistive'), 'holding the LEDs from the start');
   for (const n of [0, 2]) {
     const away = program.indexOf(`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Resistive)`);

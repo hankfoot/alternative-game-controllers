@@ -87,16 +87,6 @@ function scaffoldTop({ state, report }) {
     'function gameStart () {',
     '    send("game:start")',
     '}',
-    // A count of three on the LEDs, for the moments the board is not ready
-    // yet: at startup, and when a touch pad is taught again. It is also the
-    // "hands off the foil" signal — a pad calibrates right after it.
-    'function countdown () {',
-    '    busy = true',
-    '    basic.showNumber(3)',
-    '    basic.showNumber(2)',
-    '    basic.showNumber(1)',
-    '    basic.clearScreen()',
-    '}',
     'bluetooth.onBluetoothConnected(function () {',
     '    connected = true',
     // The smiley is the face loop's to draw (see `faceLoop`), so the two
@@ -240,9 +230,9 @@ function number(channel, expr) {
  *   handlers — top-level event handlers (outside the loop)
  *   setup    — lines run once at startup, after the handlers are registered
  *   state    — top-level variables the scan lines keep between ticks
- *   calibrate — lines run at startup, straight after the 3-2-1 countdown
- *   recalibrate — lines run when A and B are pressed together, after another
- *              countdown, to teach a touch pad what untouched feels like again
+ *   calibrate — lines run once at startup
+ *   recalibrate — lines run when A and B are pressed together, to teach a
+ *              touch pad what untouched feels like again
  *   connect  — lines that report the input's level as a browser attaches
  *   build    — one wiring / build-idea note for the "Build it" list
  * Pin inputs have `modes` instead, keyed by mode id.
@@ -280,10 +270,9 @@ function pinInput(n) {
         //
         // Setting the mode is also when the pad calibrates: it takes the
         // highest of ten readings as "untouched" and fires a little above that
-        // (TouchButton::calibrate). So it happens at startup, just before the
-        // 3-2-1 on the LEDs that says the board is getting ready — and again
-        // whenever A and B are pressed together, for a pad that was built,
-        // moved or caught mid-settle after that. It used to wait for the first browser to
+        // (TouchButton::calibrate), all within a few milliseconds. So it
+        // happens at startup — and again whenever A and B are pressed together,
+        // for a pad that was built, moved or caught mid-settle after that. It used to wait for the first browser to
         // connect, which meant a pad did nothing at all until then, and a test
         // without the page connected read the pin in the wrong mode entirely.
         calibrate: [`pins.touchSetMode(TouchTarget.P${n}, TouchTargetMode.Capacitive)`],
@@ -307,7 +296,7 @@ function pinInput(n) {
         build:
           `Clip one wire from P${n} to anything conductive — foil, fruit, a spoon. ` +
           `Touching the object sends 1. No second wire to hold: the pin senses your body through the one clip. ` +
-          `Clip the foil on <em>before</em> the board starts, and keep your hands off it as it starts — it learns what untouched feels like, then counts down 3-2-1. ` +
+          `Clip the foil on <em>before</em> the board starts, and keep your hands off it as it starts — that is when it learns what untouched feels like. ` +
           `If it ever sticks on, or you change the wiring, press <strong>A and B together</strong>: it counts down again and relearns.`,
       },
       switch: {
@@ -626,21 +615,21 @@ export function assemble(parts, { extra = [] } = {}) {
     : [];
 
   // A and B together, because neither alone is free: either may be an input
-  // a sentence uses. The pad relearns first — fingers are on the buttons, not
-  // the foil — and the same 3-2-1 as startup runs while it settles, then a
-  // tick to say it is done before the face comes back.
+  // a sentence uses. Calibrating takes milliseconds — the fingers are on the
+  // buttons, not the foil — so all there is to see is a tick, held a second,
+  // to say it happened, before the face comes back.
   const recalibration = recalibrate.length
     ? handler('input.onButtonPressed(Button.AB, function () {', [
       'busy = true',
       ...recalibrate,
-      'countdown()',
       'basic.showIcon(IconNames.Yes)',
+      'basic.pause(1000)',
       'faceShown = false',
       'busy = false',
     ])
     : [];
 
-  // The one thing that draws on the LEDs once startup is over, so nothing
+  // The one thing that draws on the LEDs, so nothing
   // draws over anything else. Not connected: a Bluetooth rune for a second,
   // then an X for a second — "waiting to pair". Connected: a smiley,
   // drawn once rather than every time round — redrawing all 25 LEDs for a
@@ -702,10 +691,8 @@ export function assemble(parts, { extra = [] } = {}) {
     ...setup,
     // Startup: the touch pads learn "untouched" — ten readings, done within
     // the first few milliseconds, and nobody is touching the foil the moment
-    // the board powers on — then the 3-2-1 while everything settles, and the
-    // face loop takes over the LEDs.
+    // the board powers on — and the face loop takes over the LEDs.
     ...calibrate,
-    'countdown()',
     'busy = false',
     ...faceLoop,
     ...scanLoop,
