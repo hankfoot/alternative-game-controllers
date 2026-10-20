@@ -18,12 +18,12 @@ export const SECTIONS = [
   {
     id: 'touch',
     title: 'Touch',
-    intro: 'There are three ways to sense a touch. Each one completes a circuit in a different way.',
+    intro: 'Electricity only flows when it has a complete path to travel, called a circuit. Each of these examples gives your micro:bit a different way to notice when that path is completed.',
     lessons: [
       {
         id: 'switch',
         title: 'Switch',
-        intro: 'Touching two pieces of conductive material together can complete a circuit just like how a light switch works. Metal foil conducts electricity very well, so when the foils meet, the full 3V passes straight into P0. This is useful for detecting when two objects come into contact, such as when a lid is put on a jar or when a door is closed.',
+        intro: 'A switch is two pieces of metal that let electricity through only when they touch, like the light switch on a wall. Foil works well because metal carries electricity easily. This is useful for noticing when two things come together, like a lid closing on a jar or a door shutting.',
         steps: [
           'Clip one piece of foil to pin P0.',
           'Clip another piece of foil to the 3V pin.',
@@ -36,7 +36,7 @@ export const SECTIONS = [
       {
         id: 'resistive',
         title: 'Resistive touch',
-        intro: 'Your body conducts electricity too, though much less well than metal. In this mode the micro:bit listens for even a tiny current, so touching P0 while holding the ground pin is enough to complete the circuit through you. This is how a fruit piano works: anything a little conductive, like a banana or Play-Doh, can become a button.',
+        intro: 'Your body carries electricity too, just not as easily as metal. The micro:bit can be set to notice even the tiny amount that passes through a person, so when you hold one foil and touch the other, you become part of the path. This is how a fruit piano works: a banana or a lump of Play-Doh carries enough electricity to become a button.',
         steps: [
           'Clip one piece of foil to pin P0.',
           'Clip another piece of foil to the GND pin and hold it in one hand.',
@@ -49,7 +49,7 @@ export const SECTIONS = [
       {
         id: 'capacitive',
         title: 'Capacitive touch',
-        intro: 'The micro:bit can also sense your body through a single piece of foil, without you holding anything else: your body holds a little electric charge, so the pin takes longer to charge up while you touch it. This works like the touchscreen on a phone, and it is useful for buttons that should feel like nothing at all.',
+        intro: 'Your body also holds a small amount of electric charge, a bit like a sponge holds water. With just one piece of foil, the micro:bit can feel that charge when your finger touches it, so you don’t need to hold anything else. This is how a phone’s touchscreen works, and it is useful for buttons that should feel like nothing at all.',
         steps: [
           'Fold a piece of foil a few times and clip it to pin P0.',
           UPLOAD + ' Keep your hands off the foil while it starts.',
