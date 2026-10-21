@@ -1164,6 +1164,19 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
   position: absolute; z-index: 2; pointer-events: none; box-sizing: border-box;
   border: 1.5px dashed var(--screen);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, .8);
+  transform-origin: center;
+}
+/* The knob that turns the picture, on a stem above its top edge. */
+.paint-rotate {
+  position: absolute; left: 50%; top: -30px; width: 16px; height: 16px; translate: -50% -50%;
+  pointer-events: auto; touch-action: none; cursor: grab;
+  background: var(--screen); border: 2.5px solid #fff; border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(27, 28, 32, .25);
+}
+.paint-rotate:active { cursor: grabbing; }
+.paint-rotate::before {
+  content: ''; position: absolute; left: 50%; top: 100%; width: 1.5px; height: 20px;
+  translate: -50% 0; background: var(--screen); pointer-events: none;
 }
 .paint-frame[hidden] { display: none; }
 .paint-handle {

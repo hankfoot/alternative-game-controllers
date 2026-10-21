@@ -131,16 +131,33 @@ export function createPaintEditor({
     const scale = pick(canvas.width / image.width, canvas.height / image.height);
     return {
       scale,
+      angle: 0,
       x: (canvas.width - image.width * scale) / 2,
       y: (canvas.height - image.height * scale) / 2,
     };
   }
 
+  // `x`, `y` are the top-left of the picture as it would sit unrotated;
+  // `angle` turns it about its centre. Everything that moves it works in those
+  // terms, and only drawing and the frame know about the turn.
+  const centreOf = ({ image, x, y, scale }) => ({ x: x + image.width * scale / 2, y: y + image.height * scale / 2 });
+  const turned = (v, angle) => ({
+    x: v.x * Math.cos(angle) - v.y * Math.sin(angle),
+    y: v.x * Math.sin(angle) + v.y * Math.cos(angle),
+  });
+
   function paintPlacement() {
     if (!placing) return;
     ctx.putImageData(placing.under, 0, 0);
-    const { image, x, y, scale } = placing;
-    ctx.drawImage(image, x, y, image.width * scale, image.height * scale);
+    const { image, scale, angle } = placing;
+    const w = image.width * scale;
+    const h = image.height * scale;
+    const c = centreOf(placing);
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(angle);
+    ctx.drawImage(image, -w / 2, -h / 2, w, h);
+    ctx.restore();
     paintFrame();
   }
 
@@ -174,10 +191,15 @@ export function createPaintEditor({
   function zoomAt(point, factor) {
     if (!placing) return;
     const next = Math.max(0.02, Math.min(20, placing.scale * factor));
-    // Keep whatever is under the pointer under the pointer.
-    placing.x = point.x - (point.x - placing.x) * (next / placing.scale);
-    placing.y = point.y - (point.y - placing.y) * (next / placing.scale);
+    // Keep whatever is under the pointer under the pointer: the centre moves
+    // away from the pointer by the same ratio the picture grows.
+    const c = centreOf(placing);
+    const ratio = next / placing.scale;
+    const cx = point.x + (c.x - point.x) * ratio;
+    const cy = point.y + (c.y - point.y) * ratio;
     placing.scale = next;
+    placing.x = cx - placing.image.width * next / 2;
+    placing.y = cy - placing.image.height * next / 2;
     paintPlacement();
   }
 
@@ -294,31 +316,33 @@ export function createPaintEditor({
       event.preventDefault();
       event.stopPropagation();
       const [sx, sy] = CORNERS[corner];
-      const { image, x, y, scale } = placing;
-      const w = image.width * scale;
-      const h = image.height * scale;
-      // The corner opposite the one in hand, which does not move.
-      placing.pull = {
-        corner, sx, sy,
-        anchor: { x: sx > 0 ? x : x + w, y: sy > 0 ? y : y + h },
-      };
+      const { image, scale, angle } = placing;
+      const c = centreOf(placing);
+      // The corner opposite the one in hand, which does not move — found by
+      // turning the picture's own corner offset by its angle.
+      const offset = turned({ x: -sx * image.width * scale / 2, y: -sy * image.height * scale / 2 }, angle);
+      placing.pull = { corner, sx, sy, anchor: { x: c.x + offset.x, y: c.y + offset.y } };
       handle.setPointerCapture(event.pointerId);
     });
     handle.addEventListener('pointermove', (event) => {
       const pull = placing?.pull;
       if (!pull) return;
       const point = pointFrom(event);
-      const { image } = placing;
-      // How far the pointer has come from the anchor, along the diagonal the
-      // picture grows on: the projection, so dragging straight out along one
-      // edge still reads as a pull on the corner.
-      const dx = (point.x - pull.anchor.x) * pull.sx;
-      const dy = (point.y - pull.anchor.y) * pull.sy;
+      const { image, angle } = placing;
+      // The pointer's pull from the anchor, in the picture's own frame (turned
+      // back by its angle), along the diagonal the picture grows on: the
+      // projection, so dragging straight out along one edge still reads as a
+      // pull on the corner.
+      const v = turned({ x: point.x - pull.anchor.x, y: point.y - pull.anchor.y }, -angle);
+      const dx = v.x * pull.sx;
+      const dy = v.y * pull.sy;
       const along = (dx * image.width + dy * image.height) / (image.width ** 2 + image.height ** 2);
       const next = Math.max(0.02, Math.min(20, along));
+      // The anchor stays where it is; the centre is half a picture in from it.
+      const half = turned({ x: pull.sx * image.width * next / 2, y: pull.sy * image.height * next / 2 }, angle);
       placing.scale = next;
-      placing.x = pull.sx > 0 ? pull.anchor.x : pull.anchor.x - image.width * next;
-      placing.y = pull.sy > 0 ? pull.anchor.y : pull.anchor.y - image.height * next;
+      placing.x = pull.anchor.x + half.x - image.width * next / 2;
+      placing.y = pull.anchor.y + half.y - image.height * next / 2;
       paintPlacement();
     });
     const letGo = () => { if (placing) placing.pull = null; };
@@ -327,16 +351,47 @@ export function createPaintEditor({
     frame.appendChild(handle);
   }
 
+  // A knob on a stem above the top edge, which turns the picture about its
+  // centre. Straight up is the picture's own up, so the knob says which way it
+  // is facing as well as being the thing to turn it with. It settles onto the
+  // four square angles when it comes within a few degrees of one, since
+  // "exactly upright" is the one angle people want and the hardest to hit.
+  const knob = document.createElement('div');
+  knob.className = 'paint-rotate';
+  knob.addEventListener('pointerdown', (event) => {
+    if (!placing) return;
+    event.preventDefault();
+    event.stopPropagation();
+    placing.turn = true;
+    knob.setPointerCapture(event.pointerId);
+  });
+  knob.addEventListener('pointermove', (event) => {
+    if (!placing?.turn) return;
+    const point = pointFrom(event);
+    const c = centreOf(placing);
+    let angle = Math.atan2(point.y - c.y, point.x - c.x) + Math.PI / 2;
+    const quarter = Math.PI / 2;
+    const nearest = Math.round(angle / quarter) * quarter;
+    if (Math.abs(angle - nearest) < (4 * Math.PI) / 180) angle = nearest;
+    placing.angle = angle;
+    paintPlacement();
+  });
+  const settle = () => { if (placing) placing.turn = false; };
+  knob.addEventListener('pointerup', settle);
+  knob.addEventListener('pointercancel', settle);
+  frame.appendChild(knob);
+
   /** Puts the frame where the picture is, in screen pixels over the canvas. */
   function paintFrame() {
     if (!placing || frame.hidden) return;
     const box = canvas.getBoundingClientRect();
     const k = box.width / canvas.width;
-    const { image, x, y, scale } = placing;
+    const { image, x, y, scale, angle } = placing;
     frame.style.left = `${x * k}px`;
     frame.style.top = `${y * k}px`;
     frame.style.width = `${image.width * scale * k}px`;
     frame.style.height = `${image.height * scale * k}px`;
+    frame.style.transform = `rotate(${angle}rad)`;
   }
   window.addEventListener('resize', paintFrame);
 
@@ -597,7 +652,7 @@ export function createPaintEditor({
 
   const placeHint = document.createElement('span');
   placeHint.className = 'theme-note';
-  placeHint.textContent = 'Drag to move. Pull a corner, or scroll, to resize.';
+  placeHint.textContent = 'Drag to move. Pull a corner to resize, the knob to turn.';
 
   const fitButton = button('btn btn-soft', 'Fit', 'Sit the whole picture inside the frame');
   fitButton.addEventListener('click', () => {
