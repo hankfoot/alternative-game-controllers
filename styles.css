@@ -1086,7 +1086,9 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 }
 .paint-shell {
   display: flex; flex-direction: column; gap: 12px;
-  width: min(92vw, 440px); max-height: 92dvh; overflow: auto; padding: 16px;
+  /* Wide enough for the whole toolbar on one row — tools, brush sizes, the
+     colour, and undo, reset and wipe at the far end — with room to spare. */
+  width: min(92vw, 484px); max-height: 92dvh; overflow: auto; padding: 16px;
   background: var(--bg); border-radius: 20px; box-shadow: var(--shadow-md);
 }
 /* Sized by which way the drawing is out of square, since the constraint differs:
@@ -1098,10 +1100,12 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .paint-shell[data-shape="tall"] { width: min(88vw, 312px); }
 .paint-head { display: flex; align-items: center; gap: 12px; }
 .paint-head strong { flex: 1; font-size: 1rem; letter-spacing: -.01em; }
-/* The canvas size, stated quietly — reference rather than a control. */
-.paint-size {
+/* The canvas size, stated quietly — reference rather than a control. Its own
+   class: it shared one with the brush-size buttons for a while, and was being
+   squeezed into a 32px box with a border, three lines tall. */
+.paint-res {
   font-size: .74rem; font-weight: 600; color: var(--ink-faint);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 
 /* Holds the canvas and the ring that rides over it. */
@@ -1177,7 +1181,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
    two things you do to the whole drawing. Grouping is by spacing alone — rules
    between them would be four more lines on a bar that is already the busiest
    thing in the window. */
-.paint-bar { position: relative; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.paint-bar { position: relative; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 /* Measured from the toolbar rather than from the chip: anchored to the chip it
    followed the chip off the screen as soon as the bar wrapped to two rows. */
 .paint-group { display: flex; gap: 4px; }

@@ -351,7 +351,7 @@ export function createPaintEditor({
   // number for everything — the sky is wide, a pillar is tall — and because it
   // is the thing you need to know before bringing a picture in.
   const resolution = document.createElement('span');
-  resolution.className = 'paint-size';
+  resolution.className = 'paint-res';
   resolution.textContent = `${size.width} × ${size.height}`;
 
   const close = button('icon-btn', '✕', 'Close');
