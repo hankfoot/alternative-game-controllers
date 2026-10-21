@@ -322,10 +322,12 @@ em { color: var(--accent); font-style: italic; }
    width and wrap only when they genuinely run out of it. */
 #panel-design .settings-group > .wiring-sentence { align-self: stretch; }
 
-/* Sensing and Design reuse the step list, each in its own color (Setup, the
-   first to have one, is red). */
+/* Every screen with steps numbers them in its own colour — the one its tab
+   wears (Setup, the first to have one, is the red default). */
 #panel-sensing .step-num { background: var(--yellow); }
+#panel-controls .step-num { background: var(--blue); }
 #panel-design .step-num { background: var(--purple); }
+#panel-game .step-num { background: var(--green); }
 
 /* Optional (un-numbered) step */
 .step-num.step-num--opt {
