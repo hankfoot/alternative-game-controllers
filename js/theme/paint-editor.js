@@ -402,7 +402,10 @@ export function createPaintEditor({
   let hover = null;
 
   function paintCursor() {
-    if (!hover) {
+    // While a picture is floating the pointer moves it, so there is no brush
+    // to wear: the ring stepped aside when the picture arrived, and the next
+    // mouse move was putting it straight back.
+    if (!hover || placing) {
       cursor.hidden = true;
       return;
     }
