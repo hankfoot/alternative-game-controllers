@@ -16,7 +16,7 @@ import {
   canDrive, groupedInputChoices, inputChoice, normalizeRule, offered, rulesCode, rulesParts, sentencesFor, usesRange, whenChoicesFor,
 } from './controls-codegen.js';
 import { controlsFor } from './game-facade.js';
-import { describeLoad, streamLoad } from './builder.js';
+import { describeLoad, streamLoad, variantFor } from './builder.js';
 import { channelInfo } from './channels.js';
 import { loadRules, saveRules } from './rules-store.js';
 import { createChannelView } from './visualizer.js';
@@ -85,7 +85,7 @@ const PHRASES = {
 const controlPhrase = (rule) => PHRASES[rule.control] ?? rule.control;
 
 export function initControlsUI({ elements, gameHost, signalStore, storage }) {
-  const { list, code, warn, tips } = elements;
+  const { list, code, warn } = elements;
   if (!list || !code || !gameHost || !signalStore) return null;
 
   const listeners = new Set();
@@ -214,6 +214,17 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     line.appendChild(ending);
     row.appendChild(line);
 
+    // How to build this input and what its numbers mean, under the sentence
+    // that uses it. It sat in step 3 under the code, a list for every input
+    // at once; the moment it is wanted is while the sentence is being
+    // written, with the numbers right there to fill in.
+    const variant = variantFor(choice.catalogue, choice.mode);
+    if (variant?.build) {
+      const tip = el('p', 'rule-tip');
+      tip.innerHTML = variant.build;
+      row.appendChild(tip);
+    }
+
     // The reading, live, with the line it has to cross drawn on it. Only a
     // number has a line; a press is a press.
     if (choice.family === 'number') {
@@ -262,22 +273,6 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
         warn.dataset.level = load.level;
         warn.textContent = `⚡ ${load.text}`;
       }
-    }
-    if (tips) {
-      tips.textContent = '';
-      const used = parts().filter((part) => part.build);
-      if (!used.length) return;
-      const ul = el('ul', 'build-list');
-      for (const part of used) {
-        const li = el('li');
-        const name = el('strong', null, `${channelInfo(part.channels[0]).emoji} ${channelInfo(part.channels[0]).label}${part.label ? ` · ${part.label}` : ''}: `);
-        li.appendChild(name);
-        const text = el('span');
-        text.innerHTML = part.build;
-        li.appendChild(text);
-        ul.appendChild(li);
-      }
-      tips.appendChild(ul);
     }
   }
 

@@ -106,7 +106,6 @@ const controls = gameHost
       list: document.getElementById('rule-list'),
       code: document.getElementById('controls-code'),
       warn: document.getElementById('controls-warning'),
-      tips: document.getElementById('controls-tips'),
     },
     gameHost,
     signalStore,
