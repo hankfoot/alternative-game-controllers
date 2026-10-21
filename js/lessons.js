@@ -96,7 +96,7 @@ export const SECTIONS = [
       {
         id: 'gestures',
         title: 'Gestures',
-        intro: 'The same sensor can also recognize quick movements, like a shake, a bump, or a moment of falling, and which way up the board is being held. Each time one happens, the micro:bit sends a single signal. This is useful for one-off actions, like jumping when you shake a maraca.',
+        intro: 'Out of all that movement, the micro:bit also picks out particular moves, like a shake, a bump, or a moment of falling, and which way up it is being held. Each time one happens, it sends a single signal. This is useful for one-off actions, like jumping when you shake a maraca.',
         steps: [
           UPLOAD,
           'Shake the micro:bit, then tap it on the table.',
