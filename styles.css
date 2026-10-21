@@ -1087,8 +1087,14 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .paint-shell {
   display: flex; flex-direction: column; gap: 12px;
   /* Wide enough for the whole toolbar on one row — tools, brush sizes, the
-     colour, and undo, reset and wipe at the far end — with room to spare. */
-  width: min(92vw, 484px); max-height: 92dvh; overflow: auto; padding: 16px;
+     colour, and undo, reset and wipe at the far end — with room to spare.
+     And never so wide that the canvas, at the drawing's own proportion, runs
+     off the bottom of the screen: the last term is the width at which the
+     canvas plus the chrome above and below it (about 190px) exactly fills the
+     height, and a tall pillar is sized by that rather than by its cap. */
+  --chrome: 190px;
+  --fit: calc((92dvh - var(--chrome)) * var(--ratio, 1) + 32px);
+  width: min(92vw, 484px, var(--fit)); max-height: 92dvh; overflow: auto; padding: 16px;
   background: var(--bg); border-radius: 20px; box-shadow: var(--shadow-md);
 }
 /* Sized by which way the drawing is out of square, since the constraint differs:
@@ -1096,8 +1102,16 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
    720px box that fits a sky makes a 2:3 pillar over a thousand pixels tall and
    leaves it scrolling. Both are chosen so the canvas, the toolbar and the footer
    clear `max-height` together on a laptop. */
-.paint-shell[data-shape="wide"] { width: min(94vw, 720px); }
+.paint-shell[data-shape="wide"] { width: min(94vw, 720px, var(--fit)); }
+/* A tall drawing is fitted the other way round: narrowing the shell to fit
+   its height only wraps the toolbar into more rows, which eats the height
+   that was saved. So the shell keeps a width the toolbar is tidy at, and the
+   canvas is capped by height instead, sitting centred in its stage. */
 .paint-shell[data-shape="tall"] { width: min(88vw, 312px); }
+.paint-shell[data-shape="tall"] .paint-stage { width: fit-content; max-width: 100%; margin-inline: auto; }
+.paint-shell[data-shape="tall"] .paint-canvas {
+  width: auto; max-width: 100%; max-height: calc(92dvh - 250px); min-height: 240px;
+}
 .paint-head { display: flex; align-items: center; gap: 12px; }
 .paint-head strong { flex: 1; font-size: 1rem; letter-spacing: -.01em; }
 /* The canvas size, stated quietly — reference rather than a control. Its own

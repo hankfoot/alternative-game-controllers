@@ -77,6 +77,10 @@ export function createPaintEditor({
   // A whole sky in a 408px box is not editable, and a pillar in a 720px one is
   // a wall. Marked rather than measured, so the stylesheet keeps the widths.
   if (shape) shell.dataset.shape = shape;
+  // The drawing's own proportion, for the stylesheet to size the whole box by
+  // height as well as width: a tall drawing has to fit on the screen whole,
+  // and only the stylesheet knows how tall the screen is.
+  shell.style.setProperty('--ratio', `${size.width / size.height}`);
 
   // --- The canvas -----------------------------------------------------------
   const canvas = makeCanvas(size);
