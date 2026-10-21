@@ -51,8 +51,8 @@ const CHANNELS = {
              desc: 'Tipped left or right: 0° is level, ±90° is on its side.' },
   // Acceleration, in thousandths of g. Gravity is always in there, so a board
   // at rest reads about 1000 on the strength and on whichever axis points down.
-  accel:   { label: 'Acceleration', emoji: '🚀', kind: 'number', min: 0, max: 2500, subject: 'the jolt',
-             desc: 'How hard the board is moving, all directions together: about 1000 at rest, more with every jolt.' },
+  accel:   { label: 'Acceleration (total)', emoji: '🚀', kind: 'number', min: 0, max: 2500, subject: 'the jolt',
+             desc: 'How hard the board is moving, the three directions combined: about 1000 at rest, more with every jolt.' },
   accelx:  { label: 'Acceleration X', emoji: '↔️', kind: 'number', min: -2048, max: 2048, subject: 'the sideways jolt',
              desc: 'Movement along the row of pins: left is negative, right is positive.' },
   accely:  { label: 'Acceleration Y', emoji: '↕️', kind: 'number', min: -2048, max: 2048, subject: 'the lengthways jolt',
