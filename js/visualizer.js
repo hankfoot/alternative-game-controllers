@@ -138,13 +138,22 @@ export function createChannelView(host, { signalStore, channels = null, markers 
   // --- Drawing --------------------------------------------------------------
 
   // Size a canvas to its displayed box. Returns false if it has no size (hidden).
+  //
+  // Sized from the same measurement the drawing uses (clientWidth, inside the
+  // border) rather than from getBoundingClientRect, which includes the border.
+  // Sized from the latter, the bitmap was two pixels wider than the area that
+  // got cleared each frame, and the sliver past the edge kept every height the
+  // trace had ever reached there: a dashed tick standing at the right edge.
   function fit(canvas, ctx) {
-    const r = canvas.getBoundingClientRect();
-    if (r.width === 0) return false;
+    const cw = canvas.clientWidth;
+    const ch = canvas.clientHeight;
+    if (cw === 0) return false;
     const dpr = window.devicePixelRatio || 1;
-    const w = Math.max(1, Math.round(r.width * dpr));
-    const h = Math.max(1, Math.round(r.height * dpr));
+    const w = Math.max(1, Math.round(cw * dpr));
+    const h = Math.max(1, Math.round(ch * dpr));
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, w, h);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     return true;
   }
@@ -172,15 +181,25 @@ export function createChannelView(host, { signalStore, channels = null, markers 
     // left edge rather than starting part-way across.
     const { samples } = row;
     while (samples.length > 1 && samples[1].t <= now - WINDOW_MS) samples.shift();
+    // Where the line crosses the left edge: between the sample that fell out of
+    // the window and the first one inside it. Drawn from the old sample's true
+    // position it was off the canvas by however old it was — minutes, for a
+    // reading that arrived once and then held — and the segment from there to
+    // the first real point ran flat across the whole plot.
+    const edge = () => {
+      const [a, b] = samples;
+      if (!b || a.t >= now - WINDOW_MS) return yOf(a.v);
+      const f = (now - WINDOW_MS - a.t) / (b.t - a.t);
+      return yOf(a.v + (b.v - a.v) * Math.min(1, f));
+    };
     // Through every reading at the moment it arrived, then flat to the right
     // edge: the latest reading holds until the board says otherwise.
     const trace = () => {
       ctx.beginPath();
-      samples.forEach((s, i) => (i ? ctx.lineTo(xOf(s.t), yOf(s.v)) : ctx.moveTo(Math.min(0, xOf(s.t)), yOf(s.v))));
+      ctx.moveTo(samples[0].t > now - WINDOW_MS ? xOf(samples[0].t) : 0, edge());
+      for (const s of samples) if (s.t > now - WINDOW_MS) ctx.lineTo(xOf(s.t), yOf(s.v));
       ctx.lineTo(w, yOf(samples[samples.length - 1].v));
     };
-
-    ctx.clearRect(0, 0, w, h);
 
     if (marker && typeof marker.low === 'number' && typeof marker.high === 'number') {
       const top = yOf(Math.max(marker.low, marker.high));
