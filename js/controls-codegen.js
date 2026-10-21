@@ -89,6 +89,18 @@ export function offersPin(choice, slot, current = null) {
   return choice.pin === `p${Math.min(slot, 2)}`;
 }
 
+// What the sentences leave out, to keep the list short: the board's own
+// buttons and logo, which are not part of a controller you build, and a pin
+// read as a voltage, which needs a drawn resistor to mean anything. Still in
+// the catalogue for the Sensing page and for code written by hand; a saved
+// sentence that uses one keeps it.
+const NOT_OFFERED = new Set(['btna', 'btnb', 'logo']);
+export function offered(choice, slot, current = null) {
+  if (choice.id === current) return true;
+  if (NOT_OFFERED.has(choice.catalogue) || choice.mode === 'analog') return false;
+  return offersPin(choice, slot, current);
+}
+
 /** The kind of control a `when` can drive. */
 export function actionKind(when) {
   if (when === 'held' || when === 'while-above' || when === 'while-below') return 'hold';
@@ -142,9 +154,11 @@ export function normalizeRule(rule, targets) {
 
 // Where a sentence starts before anybody has touched it: something that works
 // with no wiring at all, so a fresh controller flies from the first download.
+// A touch pad on the sentence's own pin (P0, or P1 for the second control):
+// one foil and one clip, the simplest thing that is also real wiring.
 function starter(control, index) {
-  if (control.kind === 'press') return { input: 'btna', when: 'pressed' };
-  if (control.kind === 'hold') return { input: index % 2 ? 'btnb' : 'btna', when: 'held' };
+  if (control.kind === 'press') return { input: `p${Math.min(index, 2)}:touch`, when: 'pressed' };
+  if (control.kind === 'hold') return { input: `p${Math.min(index, 2)}:touch`, when: 'held' };
   return { input: 'pitch', when: 'between', low: -40, high: 40 };
 }
 

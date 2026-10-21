@@ -13,7 +13,7 @@
 // selects and the stored rules, and keeps the code block current.
 
 import {
-  canDrive, groupedInputChoices, inputChoice, normalizeRule, offersPin, rulesCode, rulesParts, sentencesFor, whenChoicesFor,
+  canDrive, groupedInputChoices, inputChoice, normalizeRule, offered, rulesCode, rulesParts, sentencesFor, whenChoicesFor,
 } from './controls-codegen.js';
 import { controlsFor } from './game-facade.js';
 import { describeLoad, streamLoad } from './builder.js';
@@ -113,8 +113,9 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
   /**
    * The inputs a sentence may start with, in their groups: the ones that can
    * drive its control, with one pin on offer — P0 for the first sentence, P1
-   * for the second (see `offersPin`) — minus the other ways of reading a pin
-   * another sentence already reads.
+   * for the second — and without the board's own buttons or an analog pin
+   * (see `offered`), minus the other ways of reading a pin another sentence
+   * already reads.
    */
   function inputGroupsFor(rule) {
     const kind = kindOf(rule);
@@ -125,7 +126,7 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
       if (other !== rule && choice?.pin && !taken.has(choice.pin)) taken.set(choice.pin, choice.mode);
     }
     return groupedInputChoices((choice) => canDrive(choice, kind)
-      && offersPin(choice, slot, rule.input)
+      && offered(choice, slot, rule.input)
       && (!choice.pin || !taken.has(choice.pin) || taken.get(choice.pin) === choice.mode))
       .map(([label, choices]) => [label, choices.map((choice) => [choice.id, choice.label])]);
   }

@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import {
   INPUT_CHOICES, WHEN_CHOICES, actionKind, canDrive, controlChoices, groupedInputChoices, inputChoice, normalizeRule,
-  offersPin, ownedHandlers, rulesCode, rulesParts, sentencesFor, whenChoicesFor,
+  offered, offersPin, ownedHandlers, rulesCode, rulesParts, sentencesFor, whenChoicesFor,
 } from '../js/controls-codegen.js';
 import { streamLoad } from '../js/builder.js';
 import { findGame } from '../js/games/index.js';
@@ -157,12 +157,12 @@ test('sentences are kept per scheme and come back whole', () => {
 // --- The sentences a scheme needs ------------------------------------------------
 
 // A scheme needs exactly the controls it steers with, already filled in with
-// something that works with no wiring, so a fresh controller flies at once.
+// a touch pad on its own pin, so one foil and one clip gets a controller flying.
 test('each scheme comes with its sentences, one per control, ready to fly', () => {
   const ids = (id) => sentencesFor(findGame(id)).map((r) => `${r.control}:${r.input}:${r.when}`);
-  assert.deepEqual(ids('flappy'), ['flap:btna:pressed']);
-  assert.deepEqual(ids('jetpack'), ['thrust:btna:held']);
-  assert.deepEqual(ids('spaceship'), ['up:btna:held', 'down:btnb:held']);
+  assert.deepEqual(ids('flappy'), ['flap:p0:touch:pressed']);
+  assert.deepEqual(ids('jetpack'), ['thrust:p0:touch:held']);
+  assert.deepEqual(ids('spaceship'), ['up:p0:touch:held', 'down:p1:touch:held']);
   assert.deepEqual(ids('brickbreaker'), ['paddle:pitch:between']);
   for (const id of ['flappy', 'jetpack', 'spaceship', 'brickbreaker']) {
     const game = findGame(id);
@@ -178,7 +178,7 @@ test('a saved sentence is kept when it fits, and a stray one is not added', () =
     { input: 'loud', when: 'happens', control: 'advance' },
     { input: 'light', when: 'pressed', control: 'up' },
   ]);
-  assert.deepEqual(rules.map((r) => `${r.id}=${r.control}:${r.input}`), ['slide.up=up:btna', 'slide.down=down:p0:touch']);
+  assert.deepEqual(rules.map((r) => `${r.id}=${r.control}:${r.input}`), ['slide.up=up:p0:touch', 'slide.down=down:p0:touch']);
 });
 
 test('the input list comes in groups, holding only what can drive the control', () => {
@@ -203,4 +203,13 @@ test('a sentence is offered one pin, by its place in the list', () => {
   assert.ok(!offersPin(p0, 1) && offersPin(p1, 1));
   assert.ok(offersPin(inputChoice('btna'), 0) && offersPin(inputChoice('pitch'), 1), 'nothing else is held back');
   assert.ok(offersPin(p2, 0, 'p2:analog'), 'a saved build keeps the pin it already reads');
+});
+
+// Shorter still: the sentences leave out the board's own buttons and logo,
+// and a pin read as a voltage. The catalogue keeps them for Sensing and for
+// code written by hand.
+test('the sentences do not offer the buttons, the logo, or an analog pin', () => {
+  for (const id of ['btna', 'btnb', 'logo', 'p0:analog']) assert.ok(!offered(inputChoice(id), 0), `${id} is off the list`);
+  for (const id of ['p0:touch', 'p0:switch', 'pitch', 'shake', 'loud']) assert.ok(offered(inputChoice(id), 0), `${id} is on it`);
+  assert.ok(offered(inputChoice('btna'), 0, 'btna'), 'but a saved sentence keeps its button');
 });
