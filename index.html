@@ -281,11 +281,12 @@
             <span class="step-num">1</span>
             <div class="step-body">
               <h3>Choose how it moves</h3>
-              <!-- #game-picker and #game-tagline are filled by js/game.js. -->
+              <!-- #game-picker is filled by js/game.js: one card per way of moving,
+                   as a radio group, so each can carry its name, its scheme and a
+                   line on how it plays — a <select> could hold only the name. -->
               <div class="game-picker mode-switch" id="game-picker-block">
-                <label class="game-picker-label" for="game-picker">Movement</label>
-                <select id="game-picker"></select>
-                <p class="game-tagline" id="game-tagline"></p>
+                <span class="game-picker-label" id="game-picker-label">Movement</span>
+                <div class="game-cards" id="game-picker" role="radiogroup" aria-labelledby="game-picker-label"></div>
               </div>
             </div>
           </li>

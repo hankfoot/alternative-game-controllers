@@ -35,7 +35,6 @@ export function initGame({ look = null, audio = null, musicWhen = null } = {}) {
     canvas: byId('game-canvas'),
     panel: byId('panel-game'),
     picker: byId('game-picker'),
-    tagline: byId('game-tagline'),
     buttons: byId('game-buttons'),
     reset: byId('game-reset'),
     scheme: byId('game-scheme'),
@@ -279,17 +278,28 @@ export function initGame({ look = null, audio = null, musicWhen = null } = {}) {
     }
   }
 
-  // One choice out of four, and picking it rewrites the controls listed under
-  // it — so it reads as the heading of that list rather than a gallery of cards
-  // competing with the board for attention.
+  // One choice out of four, as a row of cards that each say how that way of
+  // moving plays — the name, the scheme and the tagline together, which is
+  // what you are choosing between. A radio group, so the arrow keys move the
+  // choice the way they would in a list.
   function renderPicker() {
     ui.picker.replaceChildren();
     for (const game of GAMES) {
-      const option = document.createElement('option');
-      option.value = game.id;
-      option.textContent = `${game.emoji}  ${game.label} · ${game.scheme}`;
-      option.selected = game.id === current?.game.id;
-      ui.picker.appendChild(option);
+      const chosen = game.id === current?.game.id;
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'game-card';
+      card.dataset.game = game.id;
+      card.setAttribute('role', 'radio');
+      card.setAttribute('aria-checked', String(chosen));
+      card.tabIndex = chosen ? 0 : -1;
+      card.innerHTML = `
+        <span class="game-card-emoji" aria-hidden="true">${game.emoji}</span>
+        <span class="game-card-text">
+          <span class="game-card-name">${game.label}<span class="game-card-scheme">${game.scheme}</span></span>
+          <span class="game-card-tagline">${game.tagline}</span>
+        </span>`;
+      ui.picker.appendChild(card);
     }
   }
 
@@ -402,7 +412,18 @@ export function initGame({ look = null, audio = null, musicWhen = null } = {}) {
     current.engine.reset();
   });
 
-  ui.picker.addEventListener('change', (event) => selectGame(event.target.value));
+  ui.picker.addEventListener('click', (event) => {
+    const card = event.target.closest('.game-card');
+    if (card) selectGame(card.dataset.game);
+  });
+  ui.picker.addEventListener('keydown', (event) => {
+    const dir = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+    if (!dir) return;
+    event.preventDefault();
+    const index = GAMES.findIndex((game) => game.id === current?.game.id);
+    selectGame(GAMES[(index + dir + GAMES.length) % GAMES.length].id);
+    ui.picker.querySelector('[aria-checked="true"]')?.focus();
+  });
 
   window.addEventListener('resize', resize);
 
@@ -420,7 +441,6 @@ export function initGame({ look = null, audio = null, musicWhen = null } = {}) {
     heard = null;
 
     ui.canvas.setAttribute('aria-label', `Sidescroller. ${game.scheme} controls — ${game.label}.`);
-    ui.tagline.textContent = game.tagline;
     ui.scheme.textContent = game.scheme;
     renderPicker();
     renderControls();

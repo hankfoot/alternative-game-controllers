@@ -915,17 +915,31 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
   display: block; margin-bottom: 7px;
   font-size: .85rem; font-weight: 700; color: var(--ink);
 }
-#game-picker {
-  width: 100%; padding: 8px 10px; font: inherit; font-size: .8rem; font-weight: 600;
-  color: var(--ink); background: var(--bg-soft);
-  border: 1px solid var(--line); border-radius: 9px; cursor: pointer;
-  transition: border-color .15s;
+/* The ways of moving, as cards. Each says what you would be choosing: the
+   name, the scheme it plays by, and a line on how that feels. The chosen one
+   takes the screen's colour; the rest wait in the card's quiet grey. */
+.game-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px; }
+.game-card {
+  display: flex; align-items: flex-start; gap: 12px; text-align: left;
+  padding: 12px 14px; font: inherit; color: var(--ink); cursor: pointer;
+  background: var(--bg); border: 1.5px solid var(--line); border-radius: 11px;
+  transition: border-color .15s, background .15s, box-shadow .15s;
 }
-#game-picker:hover { border-color: var(--screen); }
-#game-picker:focus-visible { outline: 2px solid var(--screen); outline-offset: 1px; }
-.game-tagline {
-  margin: 7px 1px 0; color: var(--ink-soft); font-size: .73rem; line-height: 1.45;
+.game-card:hover { border-color: color-mix(in srgb, var(--screen) 55%, var(--line)); }
+.game-card:focus-visible { outline: 2px solid var(--screen); outline-offset: 2px; }
+.game-card[aria-checked="true"] {
+  border-color: var(--screen); background: var(--screen-soft);
+  box-shadow: 0 0 0 1px var(--screen) inset;
 }
+.game-card-emoji { font-size: 1.5rem; line-height: 1.2; flex: none; }
+.game-card-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.game-card-name { font-weight: 700; font-size: .95rem; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.game-card-scheme {
+  font-weight: 600; font-size: .72rem; padding: 1px 8px; border-radius: 999px;
+  color: var(--ink-soft); background: var(--bg-soft); border: 1px solid var(--line);
+}
+.game-card[aria-checked="true"] .game-card-scheme { color: var(--screen-ink); background: var(--bg); border-color: color-mix(in srgb, var(--screen) 45%, var(--line)); }
+.game-card-tagline { font-size: .8rem; line-height: 1.4; color: var(--ink-soft); }
 
 /* Fills its column. It used to be capped at 520px, which suited the field back
    when that was taller than it was wide; a widescreen one boxed into the same
