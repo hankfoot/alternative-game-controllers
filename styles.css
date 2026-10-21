@@ -613,17 +613,23 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .chan-label, .chan-desc { display: none; }
 
 /* Many one-off inputs at once — the gestures example — as tiles rather than a
-   column of rows, so all of them fit on a screen together. Each tile leads
-   with the gesture's name in words, with its wire name small beside it and
-   what it means underneath; the dot and the count sit along the bottom. */
-.lesson-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
-.lesson-grid .chan { flex-direction: column; align-items: stretch; gap: 6px; padding: 12px 14px; }
-.lesson-grid .chan-id { width: auto; flex-wrap: wrap; gap: 6px 8px; }
-.lesson-grid .chan-emoji { font-size: 1.25rem; }
-.lesson-grid .chan-label { display: block; font-weight: 600; font-size: .92rem; color: var(--ink); }
-.lesson-grid .chan-id code { order: 3; flex-basis: 100%; width: fit-content; font-size: .7rem; color: var(--ink-faint); }
-.lesson-grid .chan-desc { display: block; font-size: .8rem; line-height: 1.4; color: var(--ink-soft); flex: 1; }
-.lesson-grid .chan-viz { justify-content: space-between; flex-direction: row-reverse; padding-top: 2px; }
+   column of rows, so all of them fit on a screen together. Each tile is one
+   line of name, with the count at its end, and one line of what sets it off;
+   the wire name is in the tooltip, where the code-curious can find it. */
+.lesson-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 6px; }
+.lesson-grid .chan { flex-direction: column; align-items: stretch; gap: 3px; padding: 8px 10px; min-height: 0; }
+.lesson-grid .chan-id { width: auto; gap: 6px; }
+.lesson-grid .chan-emoji { font-size: 1rem; }
+.lesson-grid .chan-label { display: block; flex: 1; font-weight: 600; font-size: .84rem; color: var(--ink); white-space: nowrap; }
+.lesson-grid .chan-id code { display: none; }
+.lesson-grid .chan-desc { display: block; font-size: .72rem; line-height: 1.35; color: var(--ink-soft); }
+/* The dot and count ride on the name line: pulled up into it by the row's
+   order, since the viz is the last child. */
+.lesson-grid .chan-viz { order: -1; position: absolute; top: 8px; right: 10px; gap: 6px; }
+.lesson-grid .chan { position: relative; }
+.lesson-grid .chan-id { padding-right: 56px; }
+.lesson-grid .chan-flash { width: 14px; height: 14px; }
+.lesson-grid .chan-count { font-size: .72rem; }
 
 .chan-spark {
   flex: 1; min-width: 0; height: 30px; display: block;

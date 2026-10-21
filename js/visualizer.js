@@ -64,6 +64,8 @@ export function createChannelView(host, { signalStore, channels = null, markers 
       row.el.className = 'chan';
       row.el.dataset.kind = kind;
       row.el.dataset.heard = 'false';
+      // The wire name, for a tile that has no room to print it.
+      row.el.title = info.desc ? `${name} — ${info.desc}` : name;
       row.el.innerHTML = `
         <span class="chan-id"><span class="chan-emoji">${info.emoji}</span><code>${name}</code><span class="chan-label">${info.label ?? name}</span></span>
         <span class="chan-desc">${info.desc ?? ''}</span>
