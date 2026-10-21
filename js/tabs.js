@@ -2,7 +2,9 @@
 // Also makes in-page links (e.g. the setup steps that point at #sensors or
 // #visualizer) switch to the tab that contains their target, then scroll to it.
 
-export function initTabs() {
+// `onActivate(panel)` is told each time a screen is shown, with its panel —
+// the sidebar lists what is on the screen, and has to be told which one it is.
+export function initTabs({ onActivate = null } = {}) {
   const tabs = [...document.querySelectorAll('[role="tab"]')];
   if (!tabs.length) return;
 
@@ -18,6 +20,7 @@ export function initTabs() {
     });
     if (focus) tab.focus();
     if (setHash) history.replaceState(null, '', '#' + keyOf(tab));
+    onActivate?.(panelOf(tab));
   }
 
   // Screens that have been renamed, by the name they used to answer to. A link

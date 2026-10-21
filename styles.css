@@ -1371,3 +1371,84 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .rule-note { flex-basis: 100%; font-size: .85rem; color: var(--ink-faint); }
 .rule-note[hidden] { display: none; }
 
+
+/* ---------- On this page (the sidebar) ---------- */
+/* One piece of markup, two shapes. On a narrow window it is a closed box at the
+   top of the screen, opened to jump; on a wide one it is a column beside the
+   content that stays put while the screen scrolls past it. `main` says whether
+   there is one (`data-toc`) and which screen it is for (`data-screen`), and
+   the step numbers in it take that screen's colour, so they match the ones
+   drawn on the page. */
+main[data-screen="setup"]    { --toc-color: var(--red);    --toc-ink: var(--red-ink);    --toc-soft: var(--red-soft); }
+main[data-screen="sensing"]  { --toc-color: var(--yellow); --toc-ink: var(--yellow-ink); --toc-soft: var(--yellow-soft); }
+main[data-screen="controls"] { --toc-color: var(--blue);   --toc-ink: var(--blue-ink);   --toc-soft: var(--blue-soft); }
+main[data-screen="design"]   { --toc-color: var(--purple); --toc-ink: var(--purple-ink); --toc-soft: var(--purple-soft); }
+main[data-screen="game"]     { --toc-color: var(--green);  --toc-ink: var(--green-ink);  --toc-soft: var(--green-soft); }
+main { --toc-color: var(--gray); --toc-ink: var(--gray-ink); --toc-soft: var(--gray-soft); }
+
+.toc { margin: 8px 0 24px; font-size: .88rem; }
+.toc[hidden] { display: none; }
+.toc details {
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-soft);
+}
+.toc summary {
+  cursor: pointer; padding: 10px 14px; list-style: none;
+  font-weight: 600; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ink-soft); display: flex; align-items: center; justify-content: space-between;
+}
+.toc summary::-webkit-details-marker { display: none; }
+/* The disclosure mark: a chevron that turns when the box opens. */
+.toc summary::after {
+  content: ''; width: 7px; height: 7px; margin-right: 3px;
+  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px); transition: transform .18s ease;
+}
+.toc details[open] summary::after { transform: rotate(-135deg) translateY(-2px); }
+.toc ol { list-style: none; margin: 0; padding: 2px 8px 10px; }
+.toc a {
+  display: flex; align-items: baseline; gap: 9px; padding: 5px 6px; border-radius: 7px;
+  color: var(--ink-soft); text-decoration: none; line-height: 1.35;
+}
+.toc a:hover { color: var(--ink); background: var(--bg); }
+.toc a[aria-current] { color: var(--toc-ink); font-weight: 600; }
+.toc-h2 a { font-weight: 700; color: var(--ink); }
+.toc-h2 + .toc-h2, .toc-h3 + .toc-h2 { margin-top: 10px; }
+.toc-h3 a { padding-left: 6px; }
+/* The same disc as on the page, at the size of the type beside it. */
+.toc-num {
+  flex: none; width: 18px; height: 18px; border-radius: 50%; align-self: center;
+  font-size: .68rem; font-weight: 700; color: #fff; background: var(--toc-color);
+  display: grid; place-items: center; line-height: 1;
+}
+/* An un-numbered step keeps its place in the row, so the titles line up. */
+.toc-h3 a:not(:has(.toc-num))::before {
+  content: ''; flex: none; width: 18px; height: 18px; align-self: center;
+}
+/* Narrow: the sidebar is sticky under the bar on wide windows, and a jump from
+   it has to land the step under the bar as well. */
+.block, .step, .block-head h2, .step-body h3 { scroll-margin-top: calc(var(--topbar-h, 0px) + 16px); }
+
+@media (min-width: 1220px) {
+  /* Wide enough for a column beside the 940px the content has always had. The
+     bar and the footer widen with it, so the sidebar starts under the wordmark
+     and the content keeps its left edge against the sidebar's right. */
+  .wrap { max-width: 1172px; }
+  main { display: grid; grid-template-columns: 200px minmax(0, 940px); column-gap: 32px; }
+  main > .panel { grid-column: 2; }
+  /* A screen with nothing to list stays centred on the page, as it always was. */
+  main[data-toc="false"] { grid-template-columns: minmax(0, 940px); justify-content: center; }
+  main[data-toc="false"] > .panel { grid-column: 1; }
+
+  .toc {
+    grid-column: 1; grid-row: 1 / -1; align-self: start;
+    position: sticky; top: calc(var(--topbar-h, 0px) + 28px);
+    margin: 28px 0 0; max-height: calc(100vh - var(--topbar-h, 0px) - 44px); overflow-y: auto;
+  }
+  .toc details { border: 0; background: none; border-radius: 0; }
+  .toc summary { padding: 0 6px 8px; pointer-events: none; color: var(--ink-faint); }
+  .toc summary::after { display: none; }
+  .toc ol { padding: 0; border-left: 1px solid var(--line); }
+  .toc a { border-radius: 0 7px 7px 0; margin-left: -1px; border-left: 2px solid transparent; }
+  .toc a:hover { background: var(--bg-soft); }
+  .toc a[aria-current] { border-left-color: var(--toc-color); background: var(--toc-soft); }
+}

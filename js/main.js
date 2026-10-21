@@ -10,6 +10,7 @@ import { initGame } from './game.js';
 import { initGameWarning } from './game-warning.js';
 import { createSignalStore } from './signal-store.js';
 import { initTabs } from './tabs.js';
+import { initToc } from './toc.js';
 import { initControlsUI } from './controls-ui.js';
 import { createCommandBridge } from './game-commands.js';
 import { initCodeUI } from './code-ui.js';
@@ -22,8 +23,19 @@ import { createAudio } from './theme/audio.js';
 import { SOUND_FILES } from './theme/defaults.js';
 import { migrateStorage } from './storage-migrate.js';
 
-// --- Tabs ------------------------------------------------------------------
-initTabs();
+// --- Tabs, and the sidebar that lists the screen -------------------------------
+const toc = initToc({ host: document.getElementById('toc') });
+initTabs({ onActivate: (panel) => toc?.show(panel) });
+
+// How tall the sticky bar is, for everything that has to clear it: the sidebar
+// sits under it, and a step scrolled to has to land below it rather than
+// behind it. Its height changes when the tabs wrap onto their own row.
+const topbar = document.querySelector('.topbar');
+if (topbar) {
+  const measure = () => document.documentElement.style.setProperty('--topbar-h', `${topbar.offsetHeight}px`);
+  if (typeof ResizeObserver === 'function') new ResizeObserver(measure).observe(topbar);
+  measure();
+}
 
 // --- How the game looks and sounds ------------------------------------------
 // Built before the game host, which reads the theme on every frame. The images
@@ -83,6 +95,8 @@ if (setupCode) setupCode.textContent = starterCode();
 // --- Sensing lessons ---------------------------------------------------------
 // Rendered before the copy buttons below are bound, since each lesson has one.
 initLessons({ host: document.getElementById('lesson-list'), signalStore });
+// The sidebar read the screen before these existed, if Sensing was the first screen up.
+toc?.refresh();
 
 // --- Consumers -------------------------------------------------------------
 initVisualizer(signalStore);
