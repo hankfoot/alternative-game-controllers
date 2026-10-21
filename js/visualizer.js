@@ -18,7 +18,15 @@
 
 import { channelInfo } from './channels.js';
 
-const HISTORY = 120;
+// How much of the past a plot shows. The trace is drawn against time rather
+// than as one point per frame: a reading arrives whenever the board has
+// something new to say — every forty milliseconds while it moves, half a
+// second apart while it sits — and a plot that pushed the latest value every
+// frame held each reading for two or three frames and then jumped to the
+// next, a staircase that read as choppy however fast the board was. Plotted
+// at the moment it arrived, with a straight line to the reading before, the
+// trace slides left at a steady pace and a change is a slope, not a step.
+const WINDOW_MS = 2000;
 
 const fmt = (v) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
@@ -45,7 +53,7 @@ export function createChannelView(host, { signalStore, channels = null, markers 
       flashUntil: 0,
       min: info.min ?? 0,
       max: info.max ?? 1,
-      history: new Array(HISTORY).fill(null),
+      samples: [], // [{ t, v }] within the window, oldest first
       heard: false,
       el: null, vizEl: null, canvas: null, ctx: null,
     };
@@ -122,6 +130,7 @@ export function createChannelView(host, { signalStore, channels = null, markers 
     } else {
       row.min = signal.min;
       row.max = signal.max;
+      row.samples.push({ t: performance.now(), v: value });
       row.vizEl?.querySelector('.chan-num')?.replaceChildren(fmt(value));
     }
   });
@@ -143,7 +152,7 @@ export function createChannelView(host, { signalStore, channels = null, markers 
   const cssColor = (name, fallback) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 
-  function drawTrace(row, color, markerColor) {
+  function drawTrace(row, color, markerColor, now) {
     const { canvas, ctx } = row;
     if (!fit(canvas, ctx)) return;
     const w = canvas.clientWidth;
@@ -157,9 +166,19 @@ export function createChannelView(host, { signalStore, channels = null, markers 
       if (typeof v === 'number' && Number.isFinite(v)) { min = Math.min(min, v); max = Math.max(max, v); }
     }
     const span = max - min || 1;
-    const stepX = w / (HISTORY - 1);
     const yOf = (v) => h - ((v - min) / span) * (h - pad * 2) - pad;
-    const pt = (i) => ({ x: i * stepX, y: yOf(row.history[i] ?? min) });
+    const xOf = (t) => w - ((now - t) / WINDOW_MS) * w;
+    // The one sample older than the window stays, so the line enters from the
+    // left edge rather than starting part-way across.
+    const { samples } = row;
+    while (samples.length > 1 && samples[1].t <= now - WINDOW_MS) samples.shift();
+    // Through every reading at the moment it arrived, then flat to the right
+    // edge: the latest reading holds until the board says otherwise.
+    const trace = () => {
+      ctx.beginPath();
+      samples.forEach((s, i) => (i ? ctx.lineTo(xOf(s.t), yOf(s.v)) : ctx.moveTo(Math.min(0, xOf(s.t)), yOf(s.v))));
+      ctx.lineTo(w, yOf(samples[samples.length - 1].v));
+    };
 
     ctx.clearRect(0, 0, w, h);
 
@@ -170,21 +189,21 @@ export function createChannelView(host, { signalStore, channels = null, markers 
       ctx.fillRect(0, top, w, Math.max(1, bottom - top));
     }
 
-    // fill under the trace
-    ctx.beginPath();
-    for (let i = 0; i < HISTORY; i++) { const p = pt(i); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); }
-    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
-    ctx.fillStyle = color + '18';
-    ctx.fill();
+    if (samples.length) {
+      // fill under the trace
+      trace();
+      ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+      ctx.fillStyle = color + '18';
+      ctx.fill();
 
-    // the trace
-    ctx.beginPath();
-    for (let i = 0; i < HISTORY; i++) { const p = pt(i); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); }
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.75;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.stroke();
+      // the trace
+      trace();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.75;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
 
     if (marker && typeof marker.threshold === 'number') {
       const y = yOf(marker.threshold);
@@ -209,9 +228,7 @@ export function createChannelView(host, { signalStore, channels = null, markers 
         continue;
       }
       if (row.kind !== 'number') continue;
-      row.history.push(row.heard ? row.current : null);
-      row.history.shift();
-      if (row.canvas) drawTrace(row, color, markerColor);
+      if (row.canvas) drawTrace(row, color, markerColor, now);
     }
 
     requestAnimationFrame(frame);
