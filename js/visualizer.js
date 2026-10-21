@@ -249,7 +249,10 @@ export function createChannelView(host, { signalStore, channels = null, markers 
         if (now > row.flashUntil) row.vizEl?.querySelector('.chan-flash')?.classList.remove('flash');
         continue;
       }
-      if (row.kind !== 'number') continue;
+      // A bearing is a number on the wire and on a plot; it is only in a
+      // sentence that it is asked about differently. Skipped here, the compass
+      // had a readout and an empty box beside it.
+      if (row.kind !== 'number' && row.kind !== 'bearing') continue;
       if (row.canvas) drawTrace(row, color, markerColor, now);
     }
 
