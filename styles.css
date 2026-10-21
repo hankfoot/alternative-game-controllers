@@ -1415,7 +1415,10 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .font-picker, .font-picker option { font-size: .84rem; }
 
 /* ---------- Controls: the sentences ---------- */
-.mode-switch { max-width: 560px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-soft); }
+/* Fills the step like the sentence cards under it. It was capped at 560px
+   back when it held one dropdown, and a box of four cards narrower than the
+   boxes below read as a mistake. */
+.mode-switch { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-soft); }
 .rule-list { display: flex; flex-direction: column; gap: 14px; max-width: 720px; }
 .rule { padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
 .rule-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 6px; margin: 0; }
