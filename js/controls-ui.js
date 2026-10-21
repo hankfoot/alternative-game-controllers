@@ -220,8 +220,12 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     // written, with the numbers right there to fill in.
     const variant = variantFor(choice.catalogue, choice.mode);
     if (variant?.build) {
+      const info = channelInfo(choice.catalogue);
       const tip = el('p', 'rule-tip');
-      tip.innerHTML = variant.build;
+      tip.appendChild(el('strong', null, `${info.emoji} ${info.label}${variant.label ? ` · ${variant.label}` : ''}: `));
+      const text = el('span');
+      text.innerHTML = variant.build;
+      tip.appendChild(text);
       row.appendChild(tip);
     }
 

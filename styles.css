@@ -1423,7 +1423,11 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .rule-empty { margin: 12px 0 0; font-size: .9rem; color: var(--ink-faint); }
 .rule-control { color: var(--ink); }
 /* How to build the input the sentence reads, and what its numbers mean. */
-.rule-tip { margin: 10px 0 0; font-size: .86rem; line-height: 1.5; color: var(--ink-soft); max-width: 62ch; }
+.rule-tip {
+  margin: 12px 0 0; padding: 10px 14px; font-size: .86rem; line-height: 1.5; color: var(--ink-soft);
+  background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px;
+}
+.rule-tip strong { color: var(--ink); }
 .rule-meter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
 .rule-live { flex: 1 1 260px; min-width: 0; max-height: none; }
 .rule-use { flex: none; padding: 6px 11px; font-size: .85rem; }
