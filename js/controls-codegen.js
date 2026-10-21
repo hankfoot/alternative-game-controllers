@@ -139,14 +139,23 @@ export function normalizeRule(rule, targets) {
   const whens = WHEN_CHOICES[choice.family].map(([id]) => id);
   if (!whens.includes(rule.when)) return null;
   if (!controlChoices(targets, rule.when).some((control) => control.name === rule.control)) return null;
-  const num = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
   const info = channelInfo(choice.catalogue);
   const span = { min: info.min ?? 0, max: info.max ?? 1 };
+  // A number is kept if it is one, and clamped to what the input can read:
+  // a strength never goes below 0, a light level never above 255, and a low
+  // end carried over from some other input would otherwise sit off the end
+  // of this one's plot.
+  const num = (value, fallback) => {
+    const n = Number.isFinite(Number(value)) ? Number(value) : fallback;
+    return Math.min(span.max, Math.max(span.min, n));
+  };
   const normalized = { id: String(rule.id ?? ''), input: choice.id, when: rule.when, control: rule.control };
   if (choice.family === 'number') {
     if (usesRange(rule.when)) {
-      normalized.low = num(rule.low, span.min);
-      normalized.high = num(rule.high, span.max);
+      const low = num(rule.low, span.min);
+      const high = num(rule.high, span.max);
+      normalized.low = Math.min(low, high);
+      normalized.high = Math.max(low, high);
     } else {
       normalized.threshold = num(rule.threshold, (span.min + span.max) / 2);
     }

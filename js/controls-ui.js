@@ -55,12 +55,19 @@ function groupedSelect(groups, value, onPick) {
   return node;
 }
 
-function numberInput(value, onCommit) {
+// A number field held to what its input can read. Typing is not clamped
+// mid-keystroke — "-2" on the way to "-20" would be snapped to 0 — but the
+// value handed on is, and the field is corrected once it is left.
+function numberInput(value, { min, max }, onCommit) {
   const node = el('input');
   node.type = 'number';
   node.step = 'any';
+  node.min = String(min);
+  node.max = String(max);
   node.value = String(value);
-  node.addEventListener('input', () => onCommit(node.value));
+  const clamp = (v) => Math.min(max, Math.max(min, Number(v)));
+  node.addEventListener('input', () => { if (node.value !== '' && Number.isFinite(Number(node.value))) onCommit(clamp(node.value)); });
+  node.addEventListener('change', () => { if (node.value !== '' && Number.isFinite(Number(node.value))) node.value = String(clamp(node.value)); });
   return node;
 }
 
@@ -134,6 +141,12 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
   function setInput(rule, inputId) {
     const choice = inputChoice(inputId);
     rule.input = inputId;
+    // A number that suited the old input is meaningless for the new one — a
+    // light level's 100 is nothing on an acceleration — so the sentence
+    // starts again from the new input's range.
+    delete rule.low;
+    delete rule.high;
+    delete rule.threshold;
     const whens = whenChoicesFor(choice.family, kindOf(rule)).map(([id]) => id);
     setWhen(rule, whens.includes(rule.when) ? rule.when : whens[0]);
   }
@@ -179,13 +192,14 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     if (choice.family === 'number') {
       const info = channelInfo(channel);
       const unit = info.unit ? ` ${info.unit}` : '';
+      const span = { min: info.min ?? 0, max: info.max ?? 1 };
       if (usesRange(rule.when)) {
-        const low = numberInput(rule.low, (value) => { rule.low = Number(value); persist(); });
-        const high = numberInput(rule.high, (value) => { rule.high = Number(value); persist(); });
+        const low = numberInput(rule.low, span, (value) => { rule.low = value; persist(); });
+        const high = numberInput(rule.high, span, (value) => { rule.high = value; persist(); });
         line.append(' ', low, ' to ', high, unit);
         marker = () => ({ low: rule.low, high: rule.high });
       } else {
-        const threshold = numberInput(rule.threshold, (value) => { rule.threshold = Number(value); persist(); });
+        const threshold = numberInput(rule.threshold, span, (value) => { rule.threshold = value; persist(); });
         line.append(' ', threshold, unit);
         marker = () => ({ threshold: rule.threshold });
       }

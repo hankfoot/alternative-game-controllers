@@ -248,3 +248,16 @@ test('goes between and goes outside fire once, on the way in or out of a band', 
   assert.ok(outof.includes('if (lightNow < 50 || lightNow > 150) {'));
   assert.ok(outof.includes('} else if (lightNow >= 58 && lightNow <= 142) {'));
 });
+
+// A number is held to what its input can read, and a band is low-to-high
+// whichever way round it was typed.
+test('a sentence\'s numbers are clamped to the input\'s range', () => {
+  const band = normalizeRule({ input: 'accel', when: 'while-between', control: 'thrust', low: -2048, high: 9000 }, jetpack);
+  assert.deepEqual([band.low, band.high], [0, 2500]);
+  const flipped = normalizeRule({ input: 'light', when: 'while-between', control: 'thrust', low: 200, high: 20 }, jetpack);
+  assert.deepEqual([flipped.low, flipped.high], [20, 200]);
+  const line = normalizeRule({ input: 'light', when: 'above', control: 'flap', threshold: 999 }, flappy);
+  assert.equal(line.threshold, 255);
+  const degrees = normalizeRule({ input: 'pitch', when: 'below', control: 'flap', threshold: -120 }, flappy);
+  assert.equal(degrees.threshold, -90);
+});
