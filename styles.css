@@ -1157,6 +1157,26 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .paint-place[hidden], .paint-bar[hidden] { display: none; }
 /* The canvas is a thing you drag now, not a thing you draw on. */
 .paint-canvas[data-placing] { cursor: move; }
+/* Where the picture's edges are, with a handle on each corner to pull. The
+   outline lets the pointer through to the canvas, so the picture still drags
+   from anywhere inside it; only the handles catch the pointer. */
+.paint-frame {
+  position: absolute; z-index: 2; pointer-events: none; box-sizing: border-box;
+  border: 1.5px dashed var(--screen);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .8);
+}
+.paint-frame[hidden] { display: none; }
+.paint-handle {
+  position: absolute; width: 16px; height: 16px; translate: -50% -50%;
+  pointer-events: auto; touch-action: none;
+  background: #fff; border: 2.5px solid var(--screen); border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(27, 28, 32, .25);
+}
+.paint-handle:hover { background: var(--screen-soft, var(--bg-soft)); }
+.paint-handle[data-corner="nw"] { left: 0; top: 0; cursor: nwse-resize; }
+.paint-handle[data-corner="se"] { left: 100%; top: 100%; cursor: nwse-resize; }
+.paint-handle[data-corner="ne"] { left: 100%; top: 0; cursor: nesw-resize; }
+.paint-handle[data-corner="sw"] { left: 0; top: 100%; cursor: nesw-resize; }
 
 /* The drawing sits in a well: a hairline and a faint inset shadow, so it reads
    as a surface you are marking rather than another panel in the stack. */

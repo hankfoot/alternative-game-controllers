@@ -141,6 +141,7 @@ export function createPaintEditor({
     ctx.putImageData(placing.under, 0, 0);
     const { image, x, y, scale } = placing;
     ctx.drawImage(image, x, y, image.width * scale, image.height * scale);
+    paintFrame();
   }
 
   function beginPlacing(image) {
@@ -272,7 +273,74 @@ export function createPaintEditor({
   const cursor = document.createElement('div');
   cursor.className = 'paint-cursor';
   cursor.hidden = true;
-  stage.append(canvas, cursor);
+
+  // --- The frame around a floating picture ------------------------------------
+  // A dashed outline where the picture's edges are, with a handle on each
+  // corner. Scrolling to resize is fine once you know, and nothing on the
+  // screen said so; a corner you can pull is the same control stated in the
+  // picture's own terms. A corner scales about the one opposite, so the far
+  // side stays put and only the side you are holding moves, and the picture
+  // keeps its shape — the pointer's pull is read along the picture's diagonal.
+  const frame = document.createElement('div');
+  frame.className = 'paint-frame';
+  frame.hidden = true;
+  const CORNERS = { nw: [-1, -1], ne: [1, -1], sw: [-1, 1], se: [1, 1] };
+  for (const corner of Object.keys(CORNERS)) {
+    const handle = document.createElement('div');
+    handle.className = 'paint-handle';
+    handle.dataset.corner = corner;
+    handle.addEventListener('pointerdown', (event) => {
+      if (!placing) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const [sx, sy] = CORNERS[corner];
+      const { image, x, y, scale } = placing;
+      const w = image.width * scale;
+      const h = image.height * scale;
+      // The corner opposite the one in hand, which does not move.
+      placing.pull = {
+        corner, sx, sy,
+        anchor: { x: sx > 0 ? x : x + w, y: sy > 0 ? y : y + h },
+      };
+      handle.setPointerCapture(event.pointerId);
+    });
+    handle.addEventListener('pointermove', (event) => {
+      const pull = placing?.pull;
+      if (!pull) return;
+      const point = pointFrom(event);
+      const { image } = placing;
+      // How far the pointer has come from the anchor, along the diagonal the
+      // picture grows on: the projection, so dragging straight out along one
+      // edge still reads as a pull on the corner.
+      const dx = (point.x - pull.anchor.x) * pull.sx;
+      const dy = (point.y - pull.anchor.y) * pull.sy;
+      const along = (dx * image.width + dy * image.height) / (image.width ** 2 + image.height ** 2);
+      const next = Math.max(0.02, Math.min(20, along));
+      placing.scale = next;
+      placing.x = pull.sx > 0 ? pull.anchor.x : pull.anchor.x - image.width * next;
+      placing.y = pull.sy > 0 ? pull.anchor.y : pull.anchor.y - image.height * next;
+      paintPlacement();
+    });
+    const letGo = () => { if (placing) placing.pull = null; };
+    handle.addEventListener('pointerup', letGo);
+    handle.addEventListener('pointercancel', letGo);
+    frame.appendChild(handle);
+  }
+
+  /** Puts the frame where the picture is, in screen pixels over the canvas. */
+  function paintFrame() {
+    if (!placing || frame.hidden) return;
+    const box = canvas.getBoundingClientRect();
+    const k = box.width / canvas.width;
+    const { image, x, y, scale } = placing;
+    frame.style.left = `${x * k}px`;
+    frame.style.top = `${y * k}px`;
+    frame.style.width = `${image.width * scale * k}px`;
+    frame.style.height = `${image.height * scale * k}px`;
+  }
+  window.addEventListener('resize', paintFrame);
+
+  stage.append(canvas, frame, cursor);
 
   // Where the pointer last was, so picking a fatter brush resizes the ring
   // under a hand that hasn't moved.
@@ -529,7 +597,7 @@ export function createPaintEditor({
 
   const placeHint = document.createElement('span');
   placeHint.className = 'theme-note';
-  placeHint.textContent = 'Drag to move, scroll to resize.';
+  placeHint.textContent = 'Drag to move. Pull a corner, or scroll, to resize.';
 
   const fitButton = button('btn btn-soft', 'Fit', 'Sit the whole picture inside the frame');
   fitButton.addEventListener('click', () => {
@@ -558,6 +626,8 @@ export function createPaintEditor({
     const busy = Boolean(placing);
     canvas.toggleAttribute('data-placing', busy);
     if (busy) cursor.hidden = true;
+    frame.hidden = !busy;
+    if (busy) paintFrame();
     placeBar.hidden = !busy;
     upload.hidden = busy;
     done.hidden = busy;
