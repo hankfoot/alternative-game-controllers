@@ -454,7 +454,7 @@ const SECTIONS = [
   {
     id: 'motion',
     title: 'Tilt & direction',
-    desc: 'How the board is angled or pointed, streamed as a live number whenever it changes.',
+    desc: 'How the board is angled or pointed, and how hard it is moving, streamed as a live number whenever it changes.',
     inputs: [
       {
         id: 'pitch', emoji: '📐', name: 'Pitch',
@@ -469,6 +469,39 @@ const SECTIONS = [
         channels: ['roll'],
         ...reading('roll', 'input.rotation(Rotation.Roll)'),
         build: 'Attach the micro:bit and its battery to your object, then tip it from side to side.',
+      },
+      // How hard the board is moving, as opposed to how it is held. Pitch and
+      // roll are steady while the board sits still at an angle; these jump
+      // when it is swung, punched or stamped, and settle back. Thousandths of
+      // g, so sitting still reads about 1000 on the strength and on whichever
+      // axis points down.
+      {
+        id: 'accel', emoji: '🚀', name: 'Acceleration',
+        kind: 'number',
+        channels: ['accel'],
+        ...reading('accel', 'input.acceleration(Dimension.Strength)'),
+        build: 'Attach the micro:bit to something you swing or stamp. The number sits near 1000 at rest and jumps with every jolt.',
+      },
+      {
+        id: 'accelx', emoji: '↔️', name: 'Acceleration X',
+        kind: 'number',
+        channels: ['accelx'],
+        ...reading('accelx', 'input.acceleration(Dimension.X)'),
+        build: 'Jerk the micro:bit left and right, along the row of pins.',
+      },
+      {
+        id: 'accely', emoji: '↕️', name: 'Acceleration Y',
+        kind: 'number',
+        channels: ['accely'],
+        ...reading('accely', 'input.acceleration(Dimension.Y)'),
+        build: 'Jerk the micro:bit up and down, from the logo towards the pins.',
+      },
+      {
+        id: 'accelz', emoji: '🔃', name: 'Acceleration Z',
+        kind: 'number',
+        channels: ['accelz'],
+        ...reading('accelz', 'input.acceleration(Dimension.Z)'),
+        build: 'Jerk the micro:bit towards you and away, straight through the LED display.',
       },
       {
         id: 'heading', emoji: '🧭', name: 'Compass',
@@ -528,6 +561,16 @@ const SECTIONS = [
         event: 'input.onSound(DetectedSound.Loud, function () {',
         handlers: handler('input.onSound(DetectedSound.Loud, function () {', ['send("loud:1")']),
         build: 'Happens once each time the microphone hears a clap or a shout. The microphone is next to the gold logo.',
+      },
+      {
+        // The other half of the same detector: it fires once when the room
+        // has gone quiet after being loud. A pause in the music, a held breath.
+        id: 'quiet', emoji: '🤫', name: 'Quiet',
+        kind: 'event',
+        channels: ['quiet'],
+        event: 'input.onSound(DetectedSound.Quiet, function () {',
+        handlers: handler('input.onSound(DetectedSound.Quiet, function () {', ['send("quiet:1")']),
+        build: 'Happens once each time the room goes quiet after being noisy. Make a noise, then stop.',
       },
     ],
   },

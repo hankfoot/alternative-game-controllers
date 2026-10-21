@@ -24,7 +24,7 @@ test('each lesson streams exactly its own channels', () => {
 test('touch walks through three ways, motion through three examples, ambient is one', () => {
   assert.deepEqual(SECTIONS.map((s) => s.id), ['touch', 'motion', 'ambient']);
   assert.deepEqual(SECTIONS[0].lessons.map((l) => l.id), ['switch', 'resistive', 'capacitive']);
-  assert.deepEqual(SECTIONS[1].lessons.map((l) => l.id), ['tilt', 'gestures', 'compass']);
+  assert.deepEqual(SECTIONS[1].lessons.map((l) => l.id), ['tilt', 'acceleration', 'gestures', 'compass']);
   assert.deepEqual(SECTIONS[2].lessons.map((l) => l.id), ['ambient']);
 });
 
@@ -57,13 +57,13 @@ test('the three touch lessons are wired the three different ways', () => {
 });
 
 test('motion and ambient examples need no pins', () => {
-  for (const id of ['tilt', 'gestures', 'compass', 'ambient']) {
+  for (const id of ['tilt', 'acceleration', 'gestures', 'compass', 'ambient']) {
     const code = lessonCode(byId(id));
     assert.ok(!code.includes('DigitalPin') && !code.includes('TouchTarget'), `${id} touches no pin`);
   }
   assert.deepEqual(lessonChannels(byId('tilt')), [{ channel: 'pitch', kind: 'number' }, { channel: 'roll', kind: 'number' }]);
   assert.deepEqual(lessonChannels(byId('ambient')).map((c) => `${c.channel}:${c.kind}`),
-    ['light:number', 'mic:number', 'loud:event', 'temp:number'], 'one program reads all four');
+    ['light:number', 'mic:number', 'loud:event', 'quiet:event', 'temp:number'], 'one program reads all five');
   assert.ok(lessonCode(byId('compass')).includes('let calibrated = input.compassHeading()'), 'calibrates the compass at startup');
 });
 
@@ -71,10 +71,23 @@ test('motion and ambient examples need no pins', () => {
 // every one the board knows: the point is to find out what each means in
 // your hand, and a tile per gesture is how.
 test('the gestures example shows every gesture there is', () => {
-  const gestures = INPUTS.filter((input) => input.kind === 'event' && input.id !== 'loud').map((input) => input.id);
+  const gestures = INPUTS.filter((input) => input.kind === 'event' && !['loud', 'quiet'].includes(input.id)).map((input) => input.id);
   const lesson = LESSONS.find((l) => l.id === 'gestures');
   assert.deepEqual(lesson.inputs.map((input) => input.id), gestures);
   assert.ok(gestures.length >= 10, `${gestures.length} gestures`);
   assert.ok(lesson.grid, 'laid out as tiles');
   for (const id of gestures) assert.ok(lessonCode(lesson).includes(`send("${id}:1")`), `${id} reported`);
+});
+
+test('acceleration is four live numbers, and quiet sits with the ambient senses', () => {
+  const accel = LESSONS.find((l) => l.id === 'acceleration');
+  assert.deepEqual(accel.inputs.map((i) => i.id), ['accel', 'accelx', 'accely', 'accelz']);
+  const code = lessonCode(accel);
+  for (const dim of ['Strength', 'X', 'Y', 'Z']) assert.ok(code.includes(`input.acceleration(Dimension.${dim})`), dim);
+  assert.ok(code.includes('send("accel:" + accelNow)'));
+
+  const ambient = LESSONS.find((l) => l.id === 'ambient');
+  assert.ok(ambient.inputs.some((i) => i.id === 'quiet'));
+  assert.ok(lessonCode(ambient).includes('input.onSound(DetectedSound.Quiet, function () {'));
+  assert.ok(lessonCode(ambient).includes('send("quiet:1")'));
 });

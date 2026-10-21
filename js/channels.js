@@ -49,6 +49,16 @@ const CHANNELS = {
              desc: 'Tipped forward or back: 0° is flat, ±90° is straight up or down.' },
   roll:    { label: 'Roll',        emoji: '📐', kind: 'number', min: -180, max: 180, unit: '°',
              desc: 'Tipped left or right: 0° is level, ±90° is on its side.' },
+  // Acceleration, in thousandths of g. Gravity is always in there, so a board
+  // at rest reads about 1000 on the strength and on whichever axis points down.
+  accel:   { label: 'Acceleration', emoji: '🚀', kind: 'number', min: 0, max: 2500, subject: 'the jolt',
+             desc: 'How hard the board is moving, all directions together: about 1000 at rest, more with every jolt.' },
+  accelx:  { label: 'Acceleration X', emoji: '↔️', kind: 'number', min: -2048, max: 2048, subject: 'the sideways jolt',
+             desc: 'Movement along the row of pins: left is negative, right is positive.' },
+  accely:  { label: 'Acceleration Y', emoji: '↕️', kind: 'number', min: -2048, max: 2048, subject: 'the lengthways jolt',
+             desc: 'Movement from the logo towards the pins and back.' },
+  accelz:  { label: 'Acceleration Z', emoji: '🔃', kind: 'number', min: -2048, max: 2048, subject: 'the jolt through the board',
+             desc: 'Movement straight through the LED display: about -1000 lying face up at rest.' },
   // A heading is a circle, so it gets its own kind rather than riding along as a
   // number. Everything a number offers is measured along a line: a level would
   // snap end to end as the board passed north, and a threshold would be crossed
@@ -87,6 +97,8 @@ const CHANNELS = {
   // never does.
   loud:      { label: 'Loud sound', emoji: '👏', kind: 'event', phrase: 'a loud sound is heard',
                desc: 'Fires once each time the mic hears something sharp — a clap, a shout, a slammed door.' },
+  quiet:     { label: 'Quiet',      emoji: '🤫', kind: 'event', phrase: 'the room goes quiet',
+               desc: 'Fires once when the mic hears the room go quiet after some noise.' },
 };
 
 /** Metadata for a channel name, with a generic fallback for unknown channels. */

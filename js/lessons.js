@@ -12,7 +12,7 @@
 import { INPUTS, assemble, variantFor } from './builder.js';
 
 // The one-off gestures, in the catalogue's order.
-const GESTURE_INPUTS = INPUTS.filter((input) => input.kind === 'event' && input.id !== 'loud');
+const GESTURE_INPUTS = INPUTS.filter((input) => input.kind === 'event' && !['loud', 'quiet'].includes(input.id));
 import { createChannelView } from './visualizer.js';
 
 const UPLOAD = 'Copy and upload the code to your micro:bit.';
@@ -82,6 +82,18 @@ export const SECTIONS = [
         inputs: [{ id: 'pitch' }, { id: 'roll' }],
       },
       {
+        id: 'acceleration',
+        title: 'Acceleration',
+        intro: 'The same sensor can also feel how hard the micro:bit is moving, not just how it is held. The number is in thousandths of the pull of gravity, so a board sitting still reads about 1000, and a jolt sends it much higher. There is one number for the overall jolt and one for each direction. This is useful for how hard, like a punch or a stomp.',
+        steps: [
+          UPLOAD,
+          'Hold the micro:bit still and watch the numbers settle.',
+          'Swing it, then jab it in each direction, and see which number jumps.',
+        ],
+        image: { src: 'assets/lesson-acceleration.jpg', alt: 'A micro:bit being swung in a hand' },
+        inputs: [{ id: 'accel' }, { id: 'accelx' }, { id: 'accely' }, { id: 'accelz' }],
+      },
+      {
         id: 'gestures',
         title: 'Gestures',
         intro: 'The same sensor can also recognize quick movements, like a shake, a bump, or a moment of falling, and which way up the board is being held. Each time one happens, the micro:bit sends a single signal. This is useful for one-off actions, like jumping when you shake a maraca.',
@@ -115,7 +127,7 @@ export const SECTIONS = [
   {
     id: 'ambient',
     title: 'Ambient sensing',
-    intro: 'The micro:bit can also sense the room around it. Its lights can measure how bright it is, its microphone can hear how loud it is, and its chip can tell how warm it is. This is useful for controls you never touch, like clapping or covering a light.',
+    intro: 'The micro:bit can also sense the room around it. Its lights can measure how bright it is, its microphone can hear how loud it is and notice when it goes quiet, and its chip can tell how warm it is. This is useful for controls you never touch, like clapping or covering a light.',
     lessons: [
       {
         id: 'ambient',
@@ -124,11 +136,11 @@ export const SECTIONS = [
         steps: [
           UPLOAD,
           'Cover the LEDs with your hand, then shine a light on them.',
-          'Talk near the micro:bit, then clap once.',
+          'Talk near the micro:bit, then clap once, then go quiet.',
           'Hold the micro:bit between your thumbs and watch the temperature rise.',
         ],
         image: { src: 'assets/lesson-ambient.jpg', alt: 'A hand cupped over the micro:bit LEDs' },
-        inputs: [{ id: 'light' }, { id: 'mic' }, { id: 'loud' }, { id: 'temp' }],
+        inputs: [{ id: 'light' }, { id: 'mic' }, { id: 'loud' }, { id: 'quiet' }, { id: 'temp' }],
       },
     ],
   },
