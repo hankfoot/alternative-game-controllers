@@ -178,7 +178,8 @@ test('a saved sentence is kept when it fits, and a stray one is not added', () =
     { input: 'loud', when: 'happens', control: 'advance' },
     { input: 'light', when: 'pressed', control: 'up' },
   ]);
-  assert.deepEqual(rules.map((r) => `${r.id}=${r.control}:${r.input}`), ['slide.up=up:p0:touch', 'slide.down=down:p0:touch']);
+  // The saved 'down' read P0, which is the first sentence's pin; in the second place it goes back to P1.
+  assert.deepEqual(rules.map((r) => `${r.id}=${r.control}:${r.input}`), ['slide.up=up:p0:touch', 'slide.down=down:p1:touch']);
 });
 
 test('the input list comes in groups, holding only what can drive the control', () => {
@@ -203,7 +204,6 @@ test('a sentence is offered one pin, by its place in the list', () => {
   assert.ok(offersPin(p0, 0) && !offersPin(p1, 0) && !offersPin(p2, 0));
   assert.ok(!offersPin(p0, 1) && offersPin(p1, 1));
   assert.ok(offersPin(inputChoice('btna'), 0) && offersPin(inputChoice('pitch'), 1), 'nothing else is held back');
-  assert.ok(offersPin(p2, 0, 'p2:analog'), 'a saved build keeps the pin it already reads');
 });
 
 // Shorter still: the sentences leave out the board's own buttons and logo,
@@ -212,7 +212,12 @@ test('a sentence is offered one pin, by its place in the list', () => {
 test('the sentences do not offer the buttons, the logo, or an analog pin', () => {
   for (const id of ['btna', 'btnb', 'logo', 'p0:analog']) assert.ok(!offered(inputChoice(id), 0), `${id} is off the list`);
   for (const id of ['p0:touch', 'p0:switch', 'pitch', 'shake', 'loud']) assert.ok(offered(inputChoice(id), 0), `${id} is on it`);
-  assert.ok(offered(inputChoice('btna'), 0, 'btna'), 'but a saved sentence keeps its button');
+  // Not even one that was saved: it goes back to its starter.
+  const kept = sentencesFor(findGame('spaceship'), [
+    { input: 'btna', when: 'held', control: 'up' },
+    { input: 'p2:analog', when: 'while-above', control: 'down', threshold: 500 },
+  ]);
+  assert.deepEqual(kept.map((r) => `${r.control}:${r.input}`), ['up:p0:touch', 'down:p1:touch']);
 });
 
 // A band rather than a line: held while the reading is inside it, or while

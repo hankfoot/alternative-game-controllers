@@ -81,25 +81,23 @@ export const WHEN_CHOICES = {
  * P1, and so on. Twelve pin entries across three sentences was most of the
  * dropdown and all of its confusion — the clip goes on P0 unless there are
  * two controls, in which case the second goes on P1, and that is the whole
- * rule. A sentence that already reads some other pin keeps that choice, so a
- * saved build is never silently rewired.
+ * rule.
  */
-export function offersPin(choice, slot, current = null) {
+export function offersPin(choice, slot) {
   if (!choice.pin) return true;
-  if (choice.id === current) return true;
   return choice.pin === `p${Math.min(slot, 2)}`;
 }
 
 // What the sentences leave out, to keep the list short: the board's own
 // buttons and logo, which are not part of a controller you build, and a pin
 // read as a voltage, which needs a drawn resistor to mean anything. Still in
-// the catalogue for the Sensing page and for code written by hand; a saved
-// sentence that uses one keeps it.
+// the catalogue for the Sensing page and for code written by hand — but never
+// in a Controls menu, not even for a saved sentence that used one: that
+// sentence goes back to its starter instead (see `sentencesFor`).
 const NOT_OFFERED = new Set(['btna', 'btnb', 'logo']);
-export function offered(choice, slot, current = null) {
-  if (choice.id === current) return true;
+export function offered(choice, slot) {
   if (NOT_OFFERED.has(choice.catalogue) || choice.mode === 'analog') return false;
-  return offersPin(choice, slot, current);
+  return offersPin(choice, slot);
 }
 
 /** The whens that take a low and a high rather than one threshold. */
@@ -183,7 +181,11 @@ export function sentencesFor(game, stored = []) {
     const control = controls.find((c) => `${c.node}.${c.port}` === key);
     if (!control) return null;
     const saved = stored.find((rule) => rule?.control === control.name && actionKind(rule.when) === control.kind);
-    const rule = (saved && normalizeRule(saved, game.targets))
+    // A saved sentence on something the menus no longer offer — a button, an
+    // analog pin, the wrong pin for its place — is not kept: it would be the
+    // one entry in the list nobody could pick again.
+    const allowed = saved && inputChoice(saved.input) && offered(inputChoice(saved.input), index);
+    const rule = (allowed ? normalizeRule(saved, game.targets) : null)
       ?? normalizeRule({ ...starter(control, index), control: control.name }, game.targets);
     return rule ? { ...rule, id: key } : null;
   }).filter(Boolean);

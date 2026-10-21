@@ -126,7 +126,7 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
       if (other !== rule && choice?.pin && !taken.has(choice.pin)) taken.set(choice.pin, choice.mode);
     }
     return groupedInputChoices((choice) => canDrive(choice, kind)
-      && offered(choice, slot, rule.input)
+      && offered(choice, slot)
       && (!choice.pin || !taken.has(choice.pin) || taken.get(choice.pin) === choice.mode))
       .map(([label, choices]) => [label, choices.map((choice) => [choice.id, choice.label])]);
   }
