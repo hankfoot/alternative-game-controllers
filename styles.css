@@ -1434,6 +1434,8 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
   background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px;
 }
 .rule-tip strong { color: var(--ink); }
+/* How the control feels, as the game's own sentences, under the one that drives it. */
+.rule-feel { display: flex; flex-direction: column; align-items: start; gap: 6px; margin-top: 12px; }
 .rule-meter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
 .rule-live { flex: 1 1 260px; min-width: 0; max-height: none; }
 .rule-note { flex-basis: 100%; font-size: .85rem; color: var(--ink-faint); }

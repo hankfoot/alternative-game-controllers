@@ -84,7 +84,7 @@ const PHRASES = {
 };
 const controlPhrase = (rule) => PHRASES[rule.control] ?? rule.control;
 
-export function initControlsUI({ elements, gameHost, signalStore, storage }) {
+export function initControlsUI({ elements, gameHost, signalStore, storage, options = null }) {
   const { list, code, warn } = elements;
   if (!list || !code || !gameHost || !signalStore) return null;
 
@@ -229,6 +229,16 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
       row.appendChild(tip);
     }
 
+    // How the control feels — how hard a flap kicks, how the craft falls, how
+    // fast a slide moves — right under the sentence that drives it. The game
+    // declares these on the control's own port, and the options store keeps
+    // the picks per scheme; this is only where they are edited. They sat on
+    // Design under a heading about the course, two screens from the sentence
+    // they modify, and the moment anyone wants them is when the craft feels
+    // floaty or heavy while a sentence is being tuned.
+    const feel = feelFor(rule);
+    if (feel) row.appendChild(feel);
+
     // The input, live: a number with the line it has to cross drawn on it, a
     // press as its on/off pill, a gesture as a flash and a count. Every
     // sentence gets one, so a clip that is not making contact shows up here
@@ -246,6 +256,34 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     row.appendChild(meter);
     return row;
   }
+
+  /** The control's options as sentences, or null if it carries none. */
+  function feelFor(rule) {
+    if (!options) return null;
+    const [node, portId] = rule.id.split('.');
+    const port = (options.targets ?? []).find((target) => target.id === node)?.ports?.find((p) => p.id === portId);
+    if (!port?.options?.length) return null;
+    const block = el('div', 'rule-feel');
+    const picked = options.get(node, portId);
+    for (const option of port.options) {
+      const line = el('p', 'wiring-sentence');
+      if (option.lead) line.appendChild(el('span', null, option.lead));
+      line.appendChild(select(option.choices, picked[option.id], (value) => {
+        settingFeel = true;
+        options.set(node, portId, option.id, value);
+        settingFeel = false;
+      }));
+      if (option.trail) line.appendChild(el('span', null, option.trail));
+      block.appendChild(line);
+    }
+    return block;
+  }
+
+  // A Load rewrites the options underneath the sentences, so they are drawn
+  // again — but not for a pick made here, which would rebuild the select
+  // under the pointer.
+  let settingFeel = false;
+  options?.subscribe?.(() => { if (!settingFeel) render(); });
 
   function render() {
     views.forEach((view) => view.destroy());

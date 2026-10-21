@@ -110,6 +110,7 @@ const controls = gameHost
     gameHost,
     signalStore,
     storage,
+    options: gameOptions,
   })
   : null;
 if (bridge && controls) {

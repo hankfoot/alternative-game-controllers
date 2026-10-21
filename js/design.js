@@ -148,15 +148,14 @@ export function initDesign({
     onThemeApplied?.();
   }
 
-  // --- The course, and how the controls feel -------------------------------
-  // Both are choices the game declares on its own ports. The course cards are
-  // the settings nothing drives; the controls card is the options on the
-  // ports a sentence or a key does drive — how hard a flap kicks, how fast a
-  // slide moves — which used to be reachable only from the patch bay.
+  // --- The course ---------------------------------------------------------
+  // The choices the game declares on ports nothing drives: pace and what you
+  // fly through, the same under every scheme. How the controls feel is a
+  // property of the scheme, and is edited on Controls under each sentence.
   function renderSettings() {
     const host = hosts.settings;
     host.textContent = '';
-    const groups = [...(options.settings ?? []), ...controlsWithOptions()];
+    const groups = options.settings ?? [];
 
     if (!groups.length) {
       const empty = document.createElement('div');
@@ -187,20 +186,6 @@ export function initDesign({
     }
   }
 
-  /** The scheme's controls that carry options, as one card. */
-  function controlsWithOptions() {
-    const ports = (options.targets ?? []).flatMap((target) => (target.ports ?? [])
-      .filter((port) => port.options?.length)
-      .map((port) => ({ ...port, node: target.id, label: target.label })));
-    if (!ports.length) return [];
-    return [{
-      id: 'controls',
-      label: 'How the controls feel',
-      emoji: '🎮',
-      description: 'What each control does with what your controller sends it.',
-      ports,
-    }];
-  }
 
 
   /**
