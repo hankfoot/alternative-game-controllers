@@ -1430,7 +1430,6 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .rule-tip strong { color: var(--ink); }
 .rule-meter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
 .rule-live { flex: 1 1 260px; min-width: 0; max-height: none; }
-.rule-use { flex: none; padding: 6px 11px; font-size: .85rem; }
 .rule-note { flex-basis: 100%; font-size: .85rem; color: var(--ink-faint); }
 .rule-note[hidden] { display: none; }
 

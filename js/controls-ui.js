@@ -238,19 +238,6 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     meter.appendChild(live);
     const view = createChannelView(live, { signalStore, channels: [{ channel, kind: choice.family }], markers: marker });
     views.push(view);
-    if (choice.family === 'number') {
-      const use = el('button', 'btn btn-soft rule-use', usesRange(rule.when) ? 'Use the current reading as the low end' : 'Use the current reading');
-      use.type = 'button';
-      use.addEventListener('click', () => {
-        const now = view.value(channel);
-        if (now == null) return;
-        if (usesRange(rule.when)) rule.low = now;
-        else rule.threshold = now;
-        persist();
-        render();
-      });
-      meter.appendChild(use);
-    }
     const note = el('span', 'rule-note', 'The live reading appears here once the micro:bit is connected.');
     meter.appendChild(note);
     signalStore.subscribe(({ type, signal }) => {
