@@ -171,8 +171,11 @@ if (gameOptions && controls) {
 
 // --- Copy buttons on code blocks -------------------------------------------
 document.querySelectorAll('.code-copy').forEach((btn) => {
-  btn.addEventListener('click', async () => {
-    const code = btn.parentElement.querySelector('code');
+  btn.addEventListener('click', async (e) => {
+    // A button in a fold's <summary> would open and close the fold on every
+    // copy; it copies, and the fold stays as it was.
+    e.preventDefault();
+    const code = (btn.closest('.code-block') ?? btn.parentElement).querySelector('code');
     if (!code) return;
     try {
       await navigator.clipboard.writeText(code.textContent);

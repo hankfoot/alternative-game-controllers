@@ -674,11 +674,36 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .lesson-steps { margin: 0; padding-left: 22px; font-size: 1rem; line-height: 1.6; color: var(--ink-soft); max-width: 60ch; }
 .lesson-steps li + li { margin-top: 6px; }
 .lesson-steps li::marker { color: var(--ink); font-weight: 600; }
-/* A copy button with the code under a fold: the code is for MakeCode, not for reading here. */
-.code-block-folded { max-width: 720px; }
-.code-block-folded .code-copy { position: static; font-size: .9rem; padding: 10px 16px; color: #fff; background: var(--ink); border-color: var(--ink); }
+/* The code, as a card: a row with the fold's label and the copy button, and
+   the code under it once the fold is open. The code is for MakeCode, not for
+   reading here, so the fold starts closed and the button is the loud thing. */
+.code-block-folded { max-width: 720px; border: 1px solid var(--line); border-radius: 11px; background: var(--bg); }
+.code-block-folded .code-details { max-width: none; margin: 0; }
+.code-block-folded summary {
+  list-style: none; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 8px 8px 8px 15px; border-radius: 10px; cursor: pointer;
+}
+.code-block-folded summary::-webkit-details-marker { display: none; }
+.code-block-folded summary:hover { background: var(--bg-soft); }
+.code-block-folded summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.code-block-folded .code-details[open] summary { border-radius: 10px 10px 0 0; }
+/* The same turning marker as the how-to folds, so the two read as one pattern. */
+.code-fold-label { display: flex; align-items: center; gap: 9px; font-size: .9rem; font-weight: 600; color: var(--ink); }
+.code-fold-label::before { content: '▸'; color: var(--ink-faint); font-size: .85rem; transition: transform .15s ease; }
+.code-details[open] .code-fold-label::before { transform: rotate(90deg); }
+.code-block-folded .code-copy {
+  position: static; flex: none; font-size: .84rem; padding: 7px 14px;
+  color: #fff; background: var(--ink); border-color: var(--ink);
+}
 .code-block-folded .code-copy.copied { background: var(--green-ink); border-color: var(--green-ink); color: #fff; }
-.code-block-folded .code-details { margin-top: 10px; }
+.code-block-folded .code-prompt {
+  margin: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0 0 10px 10px;
+}
+@media (max-width: 560px) {
+  /* The long label on Controls has no room beside the button on a phone. */
+  .code-block-folded summary { flex-wrap: wrap; }
+  .code-block-folded .code-copy { flex: 1 1 100%; }
+}
 .lesson-watch { font-size: .85rem; color: var(--ink-soft); }
 .lesson-live { max-width: 720px; max-height: none; }
 .shot-slot { min-height: 160px; max-width: 620px; margin: 0; border: 1px dashed var(--line); border-radius: 10px; background: var(--bg-soft); display: flex; align-items: center; justify-content: center; }

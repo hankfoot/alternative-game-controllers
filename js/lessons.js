@@ -154,19 +154,24 @@ function el(tag, className, text) {
 }
 
 /**
- * A copy button with its code folded away beneath it. The button is a
- * `.code-copy` beside a `code`, so the one handler in main.js binds it.
+ * A card: one row with the fold's label on the left and the copy button on the
+ * right, and the code under it when the fold is open. The button sits inside
+ * the <summary> so the two share a row; the handler in main.js stops its click
+ * from toggling the fold, and finds the `code` by the card rather than the
+ * button's parent.
  */
 export function copyBlock(code, label) {
   const block = el('div', 'code-block code-block-folded');
+  const details = el('details', 'code-details');
+  const summary = el('summary');
+  summary.appendChild(el('span', 'code-fold-label', 'See the code'));
   const copy = el('button', 'code-copy btn', label);
   copy.type = 'button';
-  const details = el('details', 'code-details');
-  details.appendChild(el('summary', null, 'See the code'));
+  summary.appendChild(copy);
   const pre = el('pre', 'code-prompt');
   pre.appendChild(el('code', null, code));
-  details.appendChild(pre);
-  block.append(copy, details);
+  details.append(summary, pre);
+  block.appendChild(details);
   return block;
 }
 
