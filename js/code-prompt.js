@@ -89,11 +89,11 @@ MakeCode's Blocks view allows only one handler per event. Where a handler is nam
 ## Writing MakeCode
 
 - Write the MakeCode flavour of TypeScript that converts to blocks: \`let\` variables at the top level, \`function name () { }\`, \`if\`/\`else\`, \`for\`, \`while\`. No classes, arrow functions, ternaries, \`const\`, \`async\` or imports.
-- Useful calls: \`input.onSound(DetectedSound.Loud, function () { })\` fires once per clap or shout; \`input.onGesture(Gesture.Shake, function () { })\`; \`input.rotation(Rotation.Pitch)\` and \`Rotation.Roll\` in degrees; \`input.acceleration(Dimension.X)\`; \`input.lightLevel()\` 0–255; \`input.soundLevel()\` 0–255; \`input.compassHeading()\`; \`pins.digitalReadPin(DigitalPin.P2)\`; \`pins.analogReadPin(AnalogPin.P2)\` 0–1023; \`loops.everyInterval(100, function () { })\`; \`basic.pause(ms)\`; \`Math.abs\`, \`Math.min\`, \`Math.max\`, \`Math.round\`.
+- Useful calls: \`input.onSound(DetectedSound.Loud, function () { })\` fires once per clap or shout; \`input.onGesture(Gesture.Shake, function () { })\`; \`input.rotation(Rotation.Pitch)\` and \`Rotation.Roll\` in degrees; \`input.acceleration(Dimension.X)\`; \`input.lightLevel()\` 0–255; \`input.soundLevel()\` 0–255; \`input.compassHeading()\`; \`pins.digitalReadPin(DigitalPin.P2)\`; \`pins.analogReadPin(AnalogPin.P2)\` 0–1023; \`loops.everyInterval(40, function () { })\`; \`basic.pause(ms)\`; \`Math.abs\`, \`Math.min\`, \`Math.max\`, \`Math.round\`.
 - Buttons: \`input.onButtonPressed\` fires when the button is *released*. For the instant it goes down use \`control.onEvent(EventBusSource.MICROBIT_ID_BUTTON_A, EventBusValue.MICROBIT_BUTTON_EVT_DOWN, function () { })\`, and \`MICROBIT_BUTTON_EVT_UP\` for the release.
 - Whatever calls \`gameHold(…, true)\` must have a matching path to \`gameHold(…, false)\`, or the control sticks.
 - Do not draw on the LED display (\`basic.showIcon\`, \`showLeds\`, \`showNumber\`, \`showString\`, \`led.plot\`…) and do not use A+B: the program already uses the LEDs to show whether it is connected, and A+B to recalibrate touch pads.
-- Read a level in \`loops.everyInterval(100, …)\` and call \`gameSet\` only when the value has moved by more than a little since the last call — Bluetooth carries about thirty lines a second in total, shared with everything else the board sends.
+- Read a level in \`loops.everyInterval(40, …)\` and call \`gameSet\` only when the value has moved by more than a little since the last call — Bluetooth carries about thirty lines a second in total, shared with everything else the board sends.
 - Put every number the person might want to tweak in an UPPER_CASE \`let\` at the top, with a comment saying what it does.
 - Declare every variable at the top level, above the handlers that use it.
 - To show a reading of your own on the game's Controls page, \`send("name:" + value)\` with a lowercase name; it appears there as an input.
@@ -126,7 +126,7 @@ let LOW = -40
 let HIGH = 30
 
 let lastHeight = -1
-loops.everyInterval(100, function () {
+loops.everyInterval(40, function () {
     let height = (input.rotation(Rotation.Pitch) - LOW) / (HIGH - LOW)
     height = Math.min(1, Math.max(0, height))
     if (Math.abs(height - lastHeight) > 0.02) {

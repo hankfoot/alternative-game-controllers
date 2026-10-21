@@ -211,9 +211,46 @@ export function switchScan(channel, n, { onClose = [], onOpen = [] } = {}) {
   ];
 }
 
-/** Line that reports a numeric reading as "<channel>:<n>". */
-function number(channel, expr) {
-  return [`send("${channel}:" + ${expr})`];
+// How often the loop reads its live inputs. Forty milliseconds — twenty-five
+// times a second — rather than the hundred it was. At ten readings a second a
+// tilt waited fifty milliseconds on average just to be noticed, and the game
+// then had to smooth so hard to hide the steps that it felt like steering
+// through syrup. The radio can afford it because a reading is only sent when
+// it changes (see `reading`), and because `send` blocks until the line is
+// acknowledged, so a loop that asks for more than the link can carry simply
+// runs at the link's pace, always sending the newest value, never a backlog.
+export const POLL_MS = 40;
+
+// A reading that has not changed is still sent this many ticks after the last
+// one went out — about every half second — so the browser can tell a board
+// that is holding still from one that has gone quiet.
+export const KEEPALIVE_TICKS = 12;
+
+/**
+ * A live number: read every tick into `<channel>Now`, and sent as
+ * "<channel>:<n>" when it differs from the last value sent, or when it has
+ * been a while. Tilt and sound change on nearly every tick in a hand; light in
+ * a still room and temperature hardly ever do, and cost the radio nothing
+ * until they move.
+ */
+export function reading(channel, expr) {
+  const now = `${channel}Now`;
+  const last = `${channel}Last`;
+  const age = `${channel}Age`;
+  return {
+    read: expr,
+    // Starts past the keepalive, so the first tick reports whatever it finds.
+    state: [`let ${now} = 0`, `let ${last} = 0`, `let ${age} = ${KEEPALIVE_TICKS}`],
+    loop: [
+      `${now} = ${expr}`,
+      `${age} += 1`,
+      `if (${now} != ${last} || ${age} >= ${KEEPALIVE_TICKS}) {`,
+      `    ${last} = ${now}`,
+      `    ${age} = 0`,
+      `    send("${channel}:" + ${now})`,
+      `}`,
+    ],
+  };
 }
 
 // --- The inputs -------------------------------------------------------------
@@ -348,11 +385,10 @@ function pinInput(n) {
         label: 'Analog',
         kind: 'number', form: 'analog',
         channels: [ch],
-        // A voltage, read as 0–1023, ten times a second. A strip of pencil
+        // A voltage, read as 0–1023, sent whenever it changes. A strip of pencil
         // graphite between 3V and GND, with the pin on a clip you slide along
         // it, makes a potentiometer out of a drawing.
-        read: `pins.analogReadPin(AnalogPin.P${n})`,
-        loop: number(ch, `pins.analogReadPin(AnalogPin.P${n})`),
+        ...reading(ch, `pins.analogReadPin(AnalogPin.P${n})`),
         build:
           `Pin P${n} reads a number from 0 to 1023, depending on how much electricity reaches it. Draw a thick pencil line, clip 3V to one end and GND to the other, and slide a clip from P${n} along the line.`,
       },
@@ -418,22 +454,20 @@ const SECTIONS = [
   {
     id: 'motion',
     title: 'Tilt & direction',
-    desc: 'How the board is angled or pointed, streamed as a live number every tick.',
+    desc: 'How the board is angled or pointed, streamed as a live number whenever it changes.',
     inputs: [
       {
         id: 'pitch', emoji: '📐', name: 'Pitch',
         kind: 'number',
         channels: ['pitch'],
-        read: 'input.rotation(Rotation.Pitch)',
-        loop: number('pitch', 'input.rotation(Rotation.Pitch)'),
+        ...reading('pitch', 'input.rotation(Rotation.Pitch)'),
         build: 'Attach the micro:bit and its battery to your object, then tip it forward and back.',
       },
       {
         id: 'roll', emoji: '📐', name: 'Roll',
         kind: 'number',
         channels: ['roll'],
-        read: 'input.rotation(Rotation.Roll)',
-        loop: number('roll', 'input.rotation(Rotation.Roll)'),
+        ...reading('roll', 'input.rotation(Rotation.Roll)'),
         build: 'Attach the micro:bit and its battery to your object, then tip it from side to side.',
       },
       {
@@ -451,8 +485,7 @@ const SECTIONS = [
         // alone as a statement is not a shape MakeCode can turn back into
         // blocks — it compiles, but it drops the whole program to JavaScript.
         setup: ['let calibrated = input.compassHeading()'],
-        read: 'input.compassHeading()',
-        loop: number('heading', 'input.compassHeading()'),
+        ...reading('heading', 'input.compassHeading()'),
         build: 'Attach the micro:bit to your object and turn it like a dial. When it starts, tilt it until every light is on to calibrate the compass, and do this once your controller is fully built. Keep it away from laptops and speakers, which have magnets inside.',
       },
     ],
@@ -487,8 +520,8 @@ const SECTIONS = [
       {
         // Lives with the gestures because it costs what they cost: one line
         // when it happens, nothing otherwise. The alternative, counting peaks
-        // off the streamed sound level, misses claps shorter than the 100 ms
-        // between samples — which is most of them.
+        // off the streamed sound level, misses claps shorter than the gap
+        // between samples — which is many of them.
         id: 'loud', emoji: '👏', name: 'Loud sound',
         kind: 'event',
         channels: ['loud'],
@@ -507,24 +540,21 @@ const SECTIONS = [
         id: 'light', emoji: '💡', name: 'Light',
         kind: 'number',
         channels: ['light'],
-        read: 'input.lightLevel()',
-        loop: number('light', 'input.lightLevel()'),
+        ...reading('light', 'input.lightLevel()'),
         build: 'Cover the lights on the front with your hand, or shine a light on them. The number goes from 0 in the dark to 255 in bright light.',
       },
       {
         id: 'temp', emoji: '🌡️', name: 'Temperature',
         kind: 'number',
         channels: ['temp'],
-        read: 'input.temperature()',
-        loop: number('temp', 'input.temperature()'),
+        ...reading('temp', 'input.temperature()'),
         build: 'Warm the micro:bit between your thumbs. The temperature changes slowly.',
       },
       {
         id: 'mic', emoji: '🎤', name: 'Sound',
         kind: 'number',
         channels: ['mic'],
-        read: 'input.soundLevel()',
-        loop: number('mic', 'input.soundLevel()'),
+        ...reading('mic', 'input.soundLevel()'),
         build: 'Talk, clap, or blow near the microphone, which is next to the gold logo. The number goes from 0 when it is quiet to 255 when it is loud.',
       },
     ],
@@ -544,8 +574,9 @@ function variantOf(input, pinModes) {
 /**
  * What a build asks of the micro:bit's radio, split by the shape of it.
  *
- * `streamed` is a line per channel per 100 ms tick, for as long as the board is
- * on: the steady load, and what the caps below are really about. `pressed` is a
+ * `streamed` is a channel read every POLL_MS and sent whenever it changes — up
+ * to twenty-five lines a second while it moves, and a tilt in a hand moves on
+ * nearly every tick: the steady load, and what the caps below are really about. `pressed` is a
  * line per change — a button sends one going down and one coming up, and
  * nothing at all while it sits still, and a scanned switch is the same — so a
  * couple of them cost nothing next to a live reading, and a wall of them all
@@ -564,7 +595,7 @@ export function streamLoad(parts) {
     else if (v.handlers || v.scan) pressed += n;
   }
   // A contact worked as hard as a person can work one is worth roughly a third
-  // of a reading polled ten times a second. Rounded up, so a controller made
+  // of a reading that is moving. Rounded up, so a controller made
   // entirely of buttons still eventually earns the warning.
   return { streamed, pressed, weight: streamed + Math.ceil(pressed / 3) };
 }
@@ -732,7 +763,7 @@ export function assemble(parts, { extra = [] } = {}) {
     // No `if (connected)` here either, for the same reason it left the handlers:
     // `send` already knows what to do.
     ...loop.map((l) => '    ' + l),
-    '    basic.pause(100)',
+    `    basic.pause(${POLL_MS})`,
     '})',
     ...extra,
   ].join('\n');
@@ -750,18 +781,19 @@ export function generateCode(selected, pinModes = {}) {
 // Every line is its own indication, and the board waits for the browser to
 // confirm each one before the next goes out (MicroBitUARTService::send), so the
 // radio moves roughly one line per connection interval — somewhere between
-// thirty and sixty lines a second depending on the laptop. Five readings polled
-// ten times a second is that whole budget with nothing left for a press. These
-// are set low enough to warn before anybody notices rather than after; tune
-// them down if a build inside them still feels late.
-export const STREAM_BUSY = 3; // gentle heads-up
-export const STREAM_HEAVY = 5; // stronger warning
+// thirty and sixty lines a second depending on the laptop. Two tilt readings
+// moving together at twenty-five a second is most of that budget; four is past
+// it, and the loop falls to the radio's pace with nothing left for a press.
+// These are set low enough to warn before anybody notices rather than after;
+// tune them down if a build inside them still feels late.
+export const STREAM_BUSY = 2; // gentle heads-up
+export const STREAM_HEAVY = 4; // stronger warning
 
 /** The words for a load, for a warning on whichever screen is building a program. */
 export function describeLoad({ streamed, pressed, weight }) {
   if (weight < STREAM_BUSY) return null;
   const parts = [];
-  if (streamed) parts.push(`${streamed} live reading${streamed > 1 ? 's' : ''} streaming ten times a second`);
+  if (streamed) parts.push(`${streamed} live reading${streamed > 1 ? 's' : ''} streaming up to twenty-five times a second`);
   if (pressed) parts.push(`${pressed} on/off input${pressed > 1 ? 's' : ''} reporting every press and release`);
   const load = parts.join(' and ');
   return weight >= STREAM_HEAVY

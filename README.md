@@ -139,5 +139,6 @@ written before the browser subscribes). Buttons, touch pads and the logo report 
 the instant they happen; switch pins are scanned every 20 ms because their raw edge events are
 undebounced and the event bus drops any beyond ten; touch pads calibrate at startup, and again
 whenever A and B are pressed together. Readings with no edges — tilt, compass, light, sound, analog
-pins — are polled every 100 ms, and the page warns when too many of those may overwhelm the
-Bluetooth UART.
+pins — are polled every 40 ms and sent only when they change (and every half second regardless,
+so a still board can be told from a silent one), and the page warns when too many of those may
+overwhelm the Bluetooth UART.

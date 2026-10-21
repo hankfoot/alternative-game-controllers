@@ -3,7 +3,10 @@ import test from 'node:test';
 
 const MODES = { p0: 'touch', p1: 'touch', p2: 'touch' };
 
-import { CONNECT_SETTLE_MS, INPUTS, SCAN_MS, assemble, generateCode, starterCode, streamLoad, variantFor } from '../js/builder.js';
+import {
+  CONNECT_SETTLE_MS, INPUTS, KEEPALIVE_TICKS, POLL_MS, SCAN_MS,
+  assemble, generateCode, starterCode, streamLoad, variantFor,
+} from '../js/builder.js';
 
 const load = (ids, modes = MODES) => streamLoad(ids.map((id) => variantFor(id, modes[id])));
 
@@ -62,7 +65,7 @@ test('the board name scrolls only in the LED loop, never in the loop that reads'
   const program = code(['pitch']);
   assert.equal(count(program, 'control.deviceName()'), 1);
   const face = program.indexOf('basic.forever(function () {\n    if (busy) {');
-  const readings = program.indexOf('basic.forever(function () {\n    send("pitch:');
+  const readings = program.indexOf('basic.forever(function () {\n    pitchNow = input.rotation(Rotation.Pitch)');
   const name = program.indexOf('control.deviceName()');
   assert.ok(face > 0 && name > face && name < readings, 'in the face loop, where its seconds hold up nothing');
   assert.ok(!program.includes('MICROBIT_ID_BUTTON_B, 5'), 'and nothing on holding B');
@@ -220,8 +223,7 @@ test('the four game helpers are always there, and speak the command lines', () =
   assert.equal(count(program, 'bluetooth.uartWriteLine('), 1, 'and all through the one send');
 });
 
-// A clap is over in less than the 100 ms between two samples of the streamed
-// sound level, so counting claps off `mic` lost most of them. The board's own
+// A clap can be over between two samples of the streamed sound level, so counting claps off `mic` lost most of them. The board's own
 // loud-sound event fires once per clap and costs the radio nothing between.
 test('a loud sound is reported as an event off the board, not read off the mic', () => {
   const program = code(['loud']);
@@ -256,7 +258,8 @@ test('load counts polled readings apart from contacts, and gestures not at all',
 
 test('an analog pin streams a voltage and is left unpulled', () => {
   const program = code(['p2'], { p2: 'analog' });
-  assert.ok(program.includes('send("p2:" + pins.analogReadPin(AnalogPin.P2))'));
+  assert.ok(program.includes('p2Now = pins.analogReadPin(AnalogPin.P2)'));
+  assert.ok(program.includes('send("p2:" + p2Now)'));
   assert.ok(!program.includes('setPull'));
   assert.equal(load(['p2'], { p2: 'analog' }).streamed, 1);
 });
@@ -308,4 +311,21 @@ test('the Setup starter is Bluetooth and the waiting face, and nothing else', ()
   // The same face as every other program, so Setup shows what they all show.
   const face = (text) => text.slice(text.indexOf('        basic.showIcon(IconNames.No)'), text.indexOf('basic.showString(control.deviceName())'));
   assert.equal(face(program).replaceAll(' && !(busy)', ''), face(code(['btna'])).replaceAll(' && !(busy)', ''));
+});
+
+// --- Live readings --------------------------------------------------------------
+
+// Ten readings a second made a tilt wait fifty milliseconds on average just to
+// be noticed. The loop runs faster now, and pays for it by only sending a
+// reading that has changed — with a keepalive so a still board is not a silent
+// one.
+test('a live reading is polled quickly and sent only when it changes', () => {
+  const program = code(['pitch']);
+  assert.ok(program.includes(`    basic.pause(${POLL_MS})\n})`), 'the reading loop runs at POLL_MS');
+  assert.ok(POLL_MS <= 50, 'at least twenty times a second');
+  assert.ok(program.includes('pitchNow = input.rotation(Rotation.Pitch)'));
+  assert.ok(program.includes(`if (pitchNow != pitchLast || pitchAge >= ${KEEPALIVE_TICKS}) {`));
+  assert.equal(count(program, 'send("pitch:" + pitchNow)'), 1);
+  assert.ok(program.includes(`let pitchAge = ${KEEPALIVE_TICKS}`), 'so the first tick reports');
+  assert.ok(KEEPALIVE_TICKS * POLL_MS <= 1000, 'a still board still speaks every second');
 });

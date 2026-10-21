@@ -49,11 +49,12 @@ export const RULES = Object.freeze({
   slideSpeed: 340, // pixels per second a held slide input moves the craft
   maxFallSpeed: 430,
   // How fast the craft chases a steered height. Tuned against the rate a board
-  // actually sends at: at 18 the craft settled in about 55ms, well inside the
-  // 100ms between samples, so it arrived and then sat still until the next one
-  // — which reads as stepping rather than as steering. Slower than the sample
-  // interval, the steps blend into a glide.
-  trackBlend: 7,
+  // actually sends at: at 18 the craft settles in about 55ms. When the board
+  // sent ten readings a second that was well inside the gap between them, so
+  // the craft arrived and then sat still until the next one, which read as
+  // stepping, and this was 7 to blend the steps into a glide. At twenty-five
+  // readings a second the gap is shorter than the settle, so it just follows.
+  trackBlend: 18,
   manualSpeed: 0.95, // range units per second when using keys instead of a dial
   wakeDelta: 0.12, // how far a wired dial must move to start the round
   barSkirt: 8, // how far an obstacle runs past the edge, so it has no visible end
@@ -281,8 +282,8 @@ export class SidescrollerGame extends BaseGame {
     }
   }
 
-  // How long a wired reading keeps the mouse out. Long enough to cover the gap
-  // between samples from a board polling ten times a second, short enough that
+  // How long a wired reading keeps the mouse out. Longer than the board's
+  // keepalive, so a dial held still keeps the mouse out, short enough that
   // unplugging hands control straight back.
   static STEER_HOLD_MS = 600;
 

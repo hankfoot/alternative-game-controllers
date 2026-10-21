@@ -264,13 +264,14 @@ export function rulesParts(rules, targets) {
         parts.push({ ...variant, scan: switchScan(channel, variant.pin, { onClose: down, onOpen: up }) });
       }
     } else {
+      // The catalogue's own loop reads the value into `<channel>Now` and sends
+      // it when it has changed; the sentences read the same variable after.
       const now = `${channel}Now`;
       parts.push({
         ...variant,
-        state: [...(variant.state ?? []), `let ${now} = 0`, ...entries.flatMap(({ rule, name }) => numberRuleState(rule, name))],
+        state: [...variant.state, ...entries.flatMap(({ rule, name }) => numberRuleState(rule, name))],
         loop: [
-          `${now} = ${variant.read}`,
-          `send("${channel}:" + ${now})`,
+          ...variant.loop,
           ...entries.flatMap(({ rule, name }) => numberRuleLines(rule, name, now, channel)),
         ],
       });

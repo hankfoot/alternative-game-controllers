@@ -82,8 +82,9 @@ const CHANNELS = {
                desc: 'A big 8g impact — a hard slam, nothing accidental.' },
   // Not a gesture, but it behaves like one: the board fires it the once, when
   // the mic hears something sharp, and sends nothing in between. The streamed
-  // sound level is sampled ten times a second and a clap is over in less than
-  // that, so counting claps off `mic` meant missing some; this never does.
+  // sound level is sampled a few dozen times a second and a clap can fall
+  // between two samples, so counting claps off `mic` meant missing some; this
+  // never does.
   loud:      { label: 'Loud sound', emoji: '👏', kind: 'event', phrase: 'a loud sound is heard',
                desc: 'Fires once each time the mic hears something sharp — a clap, a shout, a slammed door.' },
 };
