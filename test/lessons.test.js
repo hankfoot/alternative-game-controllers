@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { INPUTS } from '../js/builder.js';
 import { LESSONS, SECTIONS, lessonChannels, lessonCode } from '../js/lessons.js';
 
 const byId = (id) => LESSONS.find((lesson) => lesson.id === id);
@@ -64,4 +65,16 @@ test('motion and ambient examples need no pins', () => {
   assert.deepEqual(lessonChannels(byId('ambient')).map((c) => `${c.channel}:${c.kind}`),
     ['light:number', 'mic:number', 'loud:event', 'temp:number'], 'one program reads all four');
   assert.ok(lessonCode(byId('compass')).includes('let calibrated = input.compassHeading()'), 'calibrates the compass at startup');
+});
+
+// Gestures cost the radio nothing between happenings, so the example shows
+// every one the board knows: the point is to find out what each means in
+// your hand, and a tile per gesture is how.
+test('the gestures example shows every gesture there is', () => {
+  const gestures = INPUTS.filter((input) => input.kind === 'event' && input.id !== 'loud').map((input) => input.id);
+  const lesson = LESSONS.find((l) => l.id === 'gestures');
+  assert.deepEqual(lesson.inputs.map((input) => input.id), gestures);
+  assert.ok(gestures.length >= 10, `${gestures.length} gestures`);
+  assert.ok(lesson.grid, 'laid out as tiles');
+  for (const id of gestures) assert.ok(lessonCode(lesson).includes(`send("${id}:1")`), `${id} reported`);
 });

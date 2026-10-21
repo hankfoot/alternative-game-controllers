@@ -65,7 +65,8 @@ export function createChannelView(host, { signalStore, channels = null, markers 
       row.el.dataset.kind = kind;
       row.el.dataset.heard = 'false';
       row.el.innerHTML = `
-        <span class="chan-id"><span class="chan-emoji">${info.emoji}</span><code>${name}</code></span>
+        <span class="chan-id"><span class="chan-emoji">${info.emoji}</span><code>${name}</code><span class="chan-label">${info.label ?? name}</span></span>
+        <span class="chan-desc">${info.desc ?? ''}</span>
         <div class="chan-viz"></div>
       `;
       row.vizEl = row.el.querySelector('.chan-viz');

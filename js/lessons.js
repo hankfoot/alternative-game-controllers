@@ -9,7 +9,10 @@
 // are the same ones. A snippet per lesson rather than one program for all,
 // because each download is also the lesson: paste, flash, watch.
 
-import { assemble, variantFor } from './builder.js';
+import { INPUTS, assemble, variantFor } from './builder.js';
+
+// The one-off gestures, in the catalogue's order.
+const GESTURE_INPUTS = INPUTS.filter((input) => input.kind === 'event' && input.id !== 'loud');
 import { createChannelView } from './visualizer.js';
 
 const UPLOAD = 'Copy and upload the code to your micro:bit.';
@@ -81,14 +84,19 @@ export const SECTIONS = [
       {
         id: 'gestures',
         title: 'Gestures',
-        intro: 'The same sensor can also recognize quick movements, like a shake, a bump, or a moment of falling. Each time one happens, the micro:bit sends a single signal. This is useful for one-off actions, like jumping when you shake a maraca.',
+        intro: 'The same sensor can also recognize quick movements, like a shake, a bump, or a moment of falling, and which way up the board is being held. Each time one happens, the micro:bit sends a single signal. This is useful for one-off actions, like jumping when you shake a maraca.',
         steps: [
           UPLOAD,
-          'Shake the micro:bit.',
-          'Tap it on the table, then toss it gently and catch it.',
+          'Shake the micro:bit, then tap it on the table.',
+          'Tip it to each side, stand it up, turn it over, and toss it gently and catch it. Watch which gesture lights up each time.',
         ],
         image: { src: 'assets/lesson-gestures.jpg', alt: 'A micro:bit being shaken' },
-        inputs: [{ id: 'shake' }, { id: 'g3' }, { id: 'freefall' }],
+        // Every gesture the board knows. They cost the radio nothing between
+        // happenings, so there is no reason to show only a few, and the point
+        // of the example is to find out what each one means in your hand.
+        inputs: GESTURE_INPUTS.map((input) => ({ id: input.id })),
+        // Eleven rows would be a wall; as tiles they fit on a screen together.
+        grid: true,
       },
       {
         id: 'compass',
@@ -204,7 +212,7 @@ function renderExample(lesson, index, signalStore, views) {
   body.appendChild(copyBlock(lessonCode(lesson), 'Copy the code'));
 
   body.appendChild(el('p', 'lesson-watch', 'Readings appear here once the board is connected.'));
-  const live = el('div', 'live-rows lesson-live');
+  const live = el('div', lesson.grid ? 'live-rows lesson-live lesson-grid' : 'live-rows lesson-live');
   body.appendChild(live);
   views.push(createChannelView(live, { signalStore, channels: lessonChannels(lesson) }));
 
