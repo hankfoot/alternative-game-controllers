@@ -340,15 +340,22 @@
               <p>
                 Write one sentence about what should happen, then click the button. It copies your sentence along with instructions that explain this game to the AI. Paste it into any AI chatbot.
               </p>
-              <div class="code-request">
-                <input id="code-request" type="text" autocomplete="off" spellcheck="false"
-                  placeholder="flap every third clap" aria-label="What you want the controller to do" />
-                <button class="btn" id="code-copy" type="button">Copy for your AI</button>
+              <!-- The same card as every code block: the sentence to write in
+                   its top band, then the fold's label and the copy button on
+                   one row, and what gets copied under the fold. -->
+              <div class="code-block code-block-folded code-ask">
+                <div class="code-request">
+                  <input id="code-request" type="text" autocomplete="off" spellcheck="false"
+                    placeholder="flap every third clap" aria-label="What you want the controller to do" />
+                </div>
+                <details class="code-details">
+                  <summary>
+                    <span class="code-fold-label">See what gets copied</span>
+                    <button class="btn" id="code-copy" type="button">Copy for your AI</button>
+                  </summary>
+                  <pre class="code-prompt"><code id="code-prompt"></code></pre>
+                </details>
               </div>
-              <details class="code-details">
-                <summary>What gets copied</summary>
-                <pre class="code-prompt"><code id="code-prompt"></code></pre>
-              </details>
             </div>
           </li>
           <li class="step">

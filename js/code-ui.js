@@ -42,7 +42,9 @@ export function initCodeUI({ elements, bridge, controls, gameHost, storage }) {
   // Copied rather than shown: nobody needs to read a page of reference to use
   // it, and the sentence they typed is the only part that is theirs. The text
   // is still there, folded away, for anyone who wants to see it.
-  copy.addEventListener('click', async () => {
+  copy.addEventListener('click', async (event) => {
+    // In the fold's <summary>, where a click would also open and close it.
+    event.preventDefault();
     if (!request.value.trim()) {
       request.focus();
       return;
