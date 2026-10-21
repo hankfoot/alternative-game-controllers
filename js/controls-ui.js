@@ -79,7 +79,6 @@ const PHRASES = {
   up: 'move up',
   down: 'move down',
   paddle: 'sets how high the craft flies',
-  shift: 'shift the speed',
   advance: 'start the game',
 };
 const controlPhrase = (rule) => PHRASES[rule.control] ?? rule.control;

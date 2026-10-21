@@ -4,7 +4,7 @@
 // lift.thrust, paddle.y — which reads fine on a card with a cable plugged into
 // it. A line of code, or a command coming up the wire from the board, has to
 // carry the whole meaning alone, so this layer names each port for what it
-// does: `flap`, `thrust`, `up`, `down`, `paddle`, `shift`, `advance`. Names
+// does: `flap`, `thrust`, `up`, `down`, `paddle`, `advance`. Names
 // are resolved when called, against whichever scheme is picked right then, so
 // switching scheme mid-game just makes the old names unknown — which is
 // reported, not thrown.
@@ -13,9 +13,8 @@
 // js/game-commands.js), and anyone with the console open (`workshop.game`).
 
 // A port whose own id only says what *type* of jack it is takes its card's
-// name instead: flap.trigger is `flap`, paddle.y is `paddle`, shift.hold and
-// shift.level are both `shift` (told apart by the verb), while slide.up stays
-// `up` and ui.advance stays `advance`.
+// name instead: flap.trigger is `flap` and paddle.y is `paddle`, while
+// slide.up stays `up` and ui.advance stays `advance`.
 const GENERIC_PORT_IDS = ['trigger', 'y', 'hold', 'level'];
 
 // The port types are the wiring board's words; these are the controls'.

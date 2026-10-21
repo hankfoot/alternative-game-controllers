@@ -25,8 +25,6 @@ test('the prompt names every control of the picked scheme, with the helper that 
   const text = buildPrompt({ inputs: [], controls, schemeName: game.label, schemeTagline: game.tagline });
   assert.match(text, /\(scheme: Breaker\)/);
   assert.match(text, /- `paddle` \(level\): .* → `gameSet\("paddle", 0\.5\)`/);
-  assert.match(text, /- `shift` \(hold\): .* → `gameHold\("shift", true\)`/);
-  assert.match(text, /- `shift` \(level\): .* → `gameSet\("shift", 0\.5\)`/);
   assert.match(text, /- `advance` \(press\): starts a round.*`gameStart\(\)`/);
   assert.ok(text.includes(game.tagline));
 });

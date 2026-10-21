@@ -53,20 +53,14 @@ test('every scheme carries the same extras and course settings', () => {
     for (const setting of ['speed.pace', 'world.obstacles']) {
       assert.ok(settings.includes(setting), `${game.id} is missing ${setting}`);
     }
-    // The pace is a setting and the modifiers are controls: one is what the
-    // course is like, the other is something your object does to it. Neither
-    // should turn up on the other's screen.
+    // The pace is a setting, not a control: it is what the course is like,
+    // not something your object does to it, so it never turns up on the
+    // wiring board.
     assert.ok(
       !portsOf(game).some((port) => port.startsWith('speed.')),
       `${game.id} puts the pace setting back on the wiring board`,
     );
-    for (const jack of ['shift.hold', 'shift.level']) {
-      assert.ok(portsOf(game).includes(jack), `${game.id} is missing ${jack}`);
-    }
-    assert.ok(
-      !settings.some((setting) => setting.startsWith('shift.')),
-      `${game.id} puts a modifier on the Design screen`,
-    );
+    assert.ok(!portsOf(game).some((port) => port.startsWith('shift.')), `${game.id} still carries a speed modifier`);
   }
 });
 
@@ -454,70 +448,6 @@ test('the course settings resolve to numbers the preview can run on', () => {
 
   assert.equal(courseFrom({ shape: 'slalom' }).shape, 'slalom');
   assert.equal(courseFrom({}).shape, 'columns', 'an unset shape is the plain one');
-});
-
-// Speed modifiers: two jacks that bend the pace while your controller says so.
-// They multiply, so wiring neither leaves the pace exactly as the setting says.
-test('a held modifier bends the world both ways and lets go cleanly', () => {
-  const game = engineFor('flappy');
-  game.restart();
-  const plain = game.speed();
-
-  game.setValue('shift', 'hold', 1);
-  assert.ok(game.speed() < plain, 'the default is a brake');
-
-  game.setValue('shift', 'hold', 0);
-  assert.equal(game.speed(), plain, 'and letting go puts it back exactly');
-
-  // The same jack, the other way round: a multiplier over 1 is a boost, and it
-  // is allowed past the ceiling that scoring alone stops at.
-  game.setControlOptions('shift', 'hold', { change: 'double' });
-  game.setValue('shift', 'hold', 1);
-  assert.equal(game.speed(), plain * 2);
-});
-
-// A dial is read as the two ends it maps between, which is the only way to know
-// what the middle of it does.
-test('a level modifier maps its two ends to the speeds you picked', () => {
-  const game = engineFor('flappy');
-  game.restart();
-  const plain = game.speed();
-  game.setControlOptions('shift', 'level', { low: 'normal', high: 'quadruple' });
-
-  game.setValue('shift', 'level', 0);
-  assert.equal(game.speed(), plain, 'the low end is what you said it was');
-
-  game.setValue('shift', 'level', 1);
-  assert.equal(game.speed(), plain * 4, 'and so is the high end');
-
-  // Half way between 1x and 4x is 2x — these are ratios, so the midpoint is
-  // geometric. A linear reading would put it at 2.5x.
-  game.setValue('shift', 'level', 0.5);
-  assert.ok(Math.abs(game.speed() - plain * 2) < 1e-9);
-});
-
-// The point of naming both ends: a dial set to brake at one end and boost at
-// the other passes through the world's normal pace in the middle, which a
-// single "sweeps all the way to X" could never express.
-test('a dial set to brake and boost runs normally in the middle', () => {
-  const game = engineFor('flappy');
-  game.restart();
-  const plain = game.speed();
-  game.setControlOptions('shift', 'level', { low: 'half', high: 'double' });
-
-  game.setValue('shift', 'level', 0);
-  assert.ok(Math.abs(game.speed() - plain / 2) < 1e-9, 'the low end brakes');
-  game.setValue('shift', 'level', 1);
-  assert.ok(Math.abs(game.speed() - plain * 2) < 1e-9, 'the high end boosts');
-  game.setValue('shift', 'level', 0.5);
-  assert.ok(Math.abs(game.speed() - plain) < 1e-9, 'and the middle is left alone');
-});
-
-test('a modifier never starts a round by itself', () => {
-  const game = engineFor('flappy');
-  game.setValue('shift', 'hold', 1);
-  game.setValue('shift', 'level', 1);
-  assert.equal(game.state.phase, 'ready');
 });
 
 // Your best score, as a line through the world you fly through rather than a

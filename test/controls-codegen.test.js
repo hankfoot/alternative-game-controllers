@@ -25,8 +25,8 @@ test('every input appears once, pins once per way of reading them', () => {
 
 test('a when decides which kind of control may follow', () => {
   assert.deepEqual(controlChoices(flappy, 'pressed').map((c) => c.name), ['flap', 'advance']);
-  assert.deepEqual(controlChoices(jetpack, 'held').map((c) => c.name), ['thrust', 'shift']);
-  assert.deepEqual(controlChoices(breaker, 'between').map((c) => c.name), ['paddle', 'shift']);
+  assert.deepEqual(controlChoices(jetpack, 'held').map((c) => c.name), ['thrust']);
+  assert.deepEqual(controlChoices(breaker, 'between').map((c) => c.name), ['paddle']);
   assert.equal(actionKind('above'), 'press');
   assert.equal(actionKind('while-below'), 'hold');
 });
@@ -45,28 +45,26 @@ test('a rule is checked against the scheme, and its numbers filled in', () => {
 // the one DOWN handler the report already lives in.
 test('two sentences on one button share its handler, after the report', () => {
   const program = rulesCode([
-    { input: 'btna', when: 'pressed', control: 'flap' },
     { input: 'btna', when: 'pressed', control: 'advance' },
-    { input: 'btna', when: 'held', control: 'shift' },
-  ], flappy);
+    { input: 'btna', when: 'held', control: 'thrust' },
+  ], jetpack);
   assert.equal(count(program, 'EventBusValue.MICROBIT_BUTTON_EVT_DOWN'), 1);
   assert.equal(count(program, 'EventBusValue.MICROBIT_BUTTON_EVT_UP'), 1);
   const down = program.slice(program.indexOf('MICROBIT_BUTTON_EVT_DOWN'), program.indexOf('MICROBIT_BUTTON_EVT_UP'));
-  assert.ok(down.indexOf('send("btna:1")') < down.indexOf('gamePress("flap")'));
-  assert.ok(down.includes('gameStart()'), 'advance is the safe start');
-  assert.ok(down.includes('gameHold("shift", true)'));
+  assert.ok(down.indexOf('send("btna:1")') < down.indexOf('gameStart()'), 'the report first, then the safe start');
+  assert.ok(down.includes('gameHold("thrust", true)'));
   const up = program.slice(program.indexOf('MICROBIT_BUTTON_EVT_UP'));
-  assert.ok(up.includes('gameHold("shift", false)'), 'a hold is let go on UP');
+  assert.ok(up.includes('gameHold("thrust", false)'), 'a hold is let go on UP');
 });
 
 test('a switch sentence goes inside the scan, and a touch pad keeps its calibration', () => {
   const program = rulesCode([
-    { input: 'p1:switch', when: 'pressed', control: 'flap' },
-    { input: 'p0:touch', when: 'held', control: 'shift' },
-  ], flappy);
+    { input: 'p1:switch', when: 'pressed', control: 'advance' },
+    { input: 'p0:touch', when: 'held', control: 'thrust' },
+  ], jetpack);
   assert.ok(program.includes('pins.setPull(DigitalPin.P1, PinPullMode.PullDown)'));
   const scan = program.slice(program.indexOf('loops.everyInterval(20'));
-  assert.ok(scan.indexOf('send("p1:1")') < scan.indexOf('gamePress("flap")'));
+  assert.ok(scan.indexOf('send("p1:1")') < scan.indexOf('gameStart()'));
   assert.ok(program.includes('pins.touchSetMode(TouchTarget.P0, TouchTargetMode.Capacitive)'));
   assert.ok(program.includes('EventBusSource.MICROBIT_ID_IO_P0'));
 });
@@ -108,9 +106,9 @@ test('a steer maps the range to 0..1 and only speaks when it has moved', () => {
 
 test('two sentences on one reading read it once', () => {
   const program = rulesCode([
-    { input: 'light', when: 'above', control: 'flap', threshold: 200 },
-    { input: 'light', when: 'while-below', control: 'shift', threshold: 50 },
-  ], flappy);
+    { input: 'light', when: 'above', control: 'advance', threshold: 200 },
+    { input: 'light', when: 'while-below', control: 'thrust', threshold: 50 },
+  ], jetpack);
   assert.equal(count(program, 'lightNow = input.lightLevel()'), 1);
   assert.equal(count(program, 'send("light:" + lightNow)'), 1);
   assert.ok(program.includes('r1Past') && program.includes('r2On'));
@@ -134,14 +132,13 @@ test('the program stays block-shaped, and the load is counted', () => {
   const rules = [
     { input: 'btna', when: 'pressed', control: 'flap' },
     { input: 'light', when: 'above', control: 'flap', threshold: 200 },
-    { input: 'pitch', when: 'while-above', control: 'shift', threshold: 20 },
     { input: 'shake', when: 'happens', control: 'advance' },
   ];
   const program = rulesCode(rules, flappy, { extra: ['// mine'] });
   assert.ok(!program.includes('=>') && !program.includes('?') && !/\bconst\b/.test(program));
   assert.ok(program.endsWith('// mine'));
   const load = streamLoad(rulesParts(rules, flappy));
-  assert.deepEqual({ streamed: load.streamed, pressed: load.pressed }, { streamed: 2, pressed: 1 });
+  assert.deepEqual({ streamed: load.streamed, pressed: load.pressed }, { streamed: 1, pressed: 1 });
 });
 
 test('sentences are kept per scheme and come back whole', () => {

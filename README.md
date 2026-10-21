@@ -89,7 +89,7 @@ sentences, or something an LLM wrote — drives the game:
 | `gameStart()` | `game:start` | starts a round, or retries after a crash |
 
 Control names are the scheme's ports by friendly name (`flap`, `thrust`, `up`/`down`, `paddle`,
-`shift`, `advance`). The browser routes commands straight to the game (`js/game-commands.js`),
+`advance`). The browser routes commands straight to the game (`js/game-commands.js`),
 shows them in a log, and lets go of every held control when the board disconnects. The same
 facade sits on `window.workshop.game` for trying a control from the devtools console. Nothing
 pasted into the page is ever executed.

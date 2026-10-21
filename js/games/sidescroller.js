@@ -102,32 +102,6 @@ const PACE = Object.freeze({ calm: 0.72, normal: 1, quick: 1.34 });
 const RAMP = Object.freeze({ none: 0, gentle: 1, steep: 2.5 });
 const WEIGHT = Object.freeze({ floaty: 0.68, normal: 1, heavy: 1.4 });
 
-// What a speed modifier multiplies the world's pace by. It runs both ways from
-// 1, so the same jack is a brake or a boost depending only on what you chose —
-// and each pair multiplies to 1, so the slow end and the fast end are the same
-// move read the other way round. A multiplier is a ratio, which is why the
-// mirror of 2× is ½ rather than 0.
-const SHIFT = Object.freeze({
-  quarter: 1 / 4,
-  half: 1 / 2,
-  slower: 2 / 3,
-  normal: 1,
-  faster: 3 / 2,
-  double: 2,
-  quadruple: 4,
-});
-
-// The same list, worded as what the *world* does — so one set of choices reads
-// correctly whether it is describing a held brake or one end of a dial.
-const SHIFT_CHOICES = Object.freeze([
-  ['quarter', 'at a quarter of the speed'],
-  ['half', 'at half speed'],
-  ['slower', 'a little slower'],
-  ['normal', 'at its normal speed'],
-  ['faster', 'a little faster'],
-  ['double', 'at double speed'],
-  ['quadruple', 'at four times the speed'],
-]);
 
 // The motions that are subject to gravity, and so the only ones that can fly
 // the craft out of the field. Each one's fall is set on the port that pushes
@@ -199,11 +173,6 @@ export class SidescrollerGame extends BaseGame {
     // and pressed again before it can start the next one.
     this.holdLatch = { thrust: false, up: false, down: false };
     this.manual = { up: false, down: false };
-    // Held rather than latched: a modifier only scales the world's pace, so
-    // there is no round for a parked wire to start by accident. `level` is the
-    // continuous version, which sits at its own neutral until something drives it.
-    this.shifting = false;
-    this.shiftLevel = null;
     // How each control is set up. The wiring screen owns the choices; the game
     // only ever reads the resolved value, so an unset control plays as before.
     this.options = new Map();
@@ -331,8 +300,6 @@ export class SidescrollerGame extends BaseGame {
 
   setValue(node, port, value) {
     // A hold port only ever sends the two ends, so this is reading which end.
-    if (node === 'shift' && port === 'hold') this.shifting = clamp01(value) > 0.5;
-    if (node === 'shift' && port === 'level') this.shiftLevel = clamp01(value);
     if (this.motion === 'thrust' && node === 'lift') this.setHold(port, clamp01(value) > 0.5);
     if (this.motion === 'slide' && node === 'slide') this.setHold(port, clamp01(value) > 0.5);
     if (this.motion === 'track' && node === 'paddle' && port === 'y') {
@@ -496,38 +463,14 @@ export class SidescrollerGame extends BaseGame {
     return RULES.gateSpacing * (SPACING[this.option('world', 'obstacles', 'spacing', 'normal')] ?? 1);
   }
 
-  /**
-   * What the modifiers multiply the pace by right now.
-   *
-   * The held one is all or nothing; the level one sweeps between the same two
-   * ends a dial can reach, so a slider bends the world continuously rather than
-   * flipping it. Both are off by default, and both multiply, so wiring neither
-   * leaves the pace exactly as the setting says.
-   */
-  shiftFactor() {
-    const held = this.shifting
-      ? SHIFT[this.option('shift', 'hold', 'change', 'half')] ?? 1
-      : 1;
-    if (this.shiftLevel == null) return held;
-    // A dial reads as the two ends it maps between, which is the only way to
-    // know what the middle of it does. "Sweeps all the way to double" left the
-    // other end unsaid, and so left the whole control unreadable.
-    const low = SHIFT[this.option('shift', 'level', 'low', 'normal')] ?? 1;
-    const high = SHIFT[this.option('shift', 'level', 'high', 'double')] ?? 1;
-    // Geometric rather than linear, because these are ratios: half way between
-    // ½× and 2× is 1×, not 1.25×, and only the geometric reading puts the
-    // world's normal pace in the middle of a dial set to brake and boost evenly.
-    return held * low * (high / low) ** this.shiftLevel;
-  }
-
   speed() {
     const pace = PACE[this.option('speed', 'pace', 'speed', 'normal')] ?? 1;
     const ramp = RAMP[this.option('speed', 'pace', 'ramp', 'gentle')] ?? 1;
-    // The ceiling applies to what scoring earned, so the settings can push the
-    // world past it deliberately — a slowed "fast" is still quicker than "calm",
-    // and a boost is meant to outrun anything scoring alone could reach.
+    // The ceiling applies to what scoring earned, so the setting can push the
+    // world past it deliberately — "fast" is meant to outrun anything scoring
+    // alone could reach.
     const climbed = RULES.speedStart + this.state.score * RULES.speedPerPoint * ramp;
-    return Math.min(RULES.speedMax, climbed) * pace * this.shiftFactor();
+    return Math.min(RULES.speedMax, climbed) * pace;
   }
 
   // Only the schemes that can fly the craft off the field can crash into it —
@@ -947,70 +890,14 @@ export function courseSettings() {
  * scheme gets these on top of its own control, so a restart wired under one
  * scheme is a restart under all of them.
  *
- * Only the board's jacks live here. How fast the world runs is a choice and not
- * a control, so it is a setting on the Design screen alongside what you are
- * flying through — see `courseSettings`.
+ * How fast the world runs is a choice and not a control, so it is a setting on
+ * the Design screen alongside what you are flying through — see
+ * `courseSettings`. There were speed modifiers here once, a held brake and a
+ * dial that bent the pace; nothing on the Controls screen could drive them,
+ * so they went.
  */
 export function sharedTargets() {
   return [
-    {
-      id: 'shift',
-      label: 'Speed modifiers',
-      emoji: '⏩',
-      description: 'Bend how fast the world comes at you, while your controller says so.',
-      ports: [
-        {
-          id: 'hold',
-          label: 'Hold',
-          type: 'hold',
-          defaultValue: 0,
-          options: [{
-            id: 'change',
-            // The choices are what the *world* does, not what the input is, so
-            // one jack covers the brake and the boost. Listed slowest to
-            // fastest, so each pair sits the same distance either side of the
-            // middle.
-            lead: 'Runs the world',
-            trail: 'while it is held',
-            choices: [
-              ['quarter', 'at a quarter of the speed'],
-              ['half', 'at half speed'],
-              ['slower', 'a little slower'],
-              ['faster', 'a little faster'],
-              ['double', 'at double speed'],
-              ['quadruple', 'at four times the speed'],
-            ],
-            value: 'half',
-          }],
-        },
-        {
-          id: 'level',
-          label: 'Level',
-          type: 'level',
-          // Neutral is the bottom of the range rather than the middle: a dial
-          // resting where it was left should leave the world alone, and the
-          // sweep is toward the end you picked.
-          defaultValue: 0,
-          phrase: 'how far the world is bent',
-          options: [
-            {
-              id: 'low',
-              lead: 'At the low end the world runs',
-              trail: '',
-              choices: SHIFT_CHOICES,
-              value: 'normal',
-            },
-            {
-              id: 'high',
-              lead: 'and at the high end,',
-              trail: '',
-              choices: SHIFT_CHOICES,
-              value: 'double',
-            },
-          ],
-        },
-      ],
-    },
     {
       id: 'ui',
       label: 'UI',

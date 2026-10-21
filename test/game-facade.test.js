@@ -42,10 +42,10 @@ function setup(gameId) {
 // what the instructions tell an LLM to use.
 test('every scheme\'s ports get names code can say', () => {
   const names = (id) => controlsFor(findGame(id).targets).map((c) => `${c.name}:${c.kind}`);
-  assert.deepEqual(names('flappy'), ['flap:press', 'shift:hold', 'shift:level', 'advance:press']);
-  assert.deepEqual(names('jetpack'), ['thrust:hold', 'shift:hold', 'shift:level', 'advance:press']);
-  assert.deepEqual(names('spaceship'), ['up:hold', 'down:hold', 'shift:hold', 'shift:level', 'advance:press']);
-  assert.deepEqual(names('brickbreaker'), ['paddle:level', 'shift:hold', 'shift:level', 'advance:press']);
+  assert.deepEqual(names('flappy'), ['flap:press', 'advance:press']);
+  assert.deepEqual(names('jetpack'), ['thrust:hold', 'advance:press']);
+  assert.deepEqual(names('spaceship'), ['up:hold', 'down:hold', 'advance:press']);
+  assert.deepEqual(names('brickbreaker'), ['paddle:level', 'advance:press']);
   for (const game of GAMES) {
     for (const control of controlsFor(game.targets)) assert.ok(control.description, `${control.name} says what it does`);
   }
@@ -55,16 +55,16 @@ test('press, hold and set reach the game through its actions', () => {
   const { game, host } = setup('brickbreaker');
   assert.equal(game.set('paddle', 0.25), true);
   assert.equal(game.set('paddle', 7), true, 'clamped, not refused');
-  assert.equal(game.hold('shift', true), true);
-  assert.equal(game.hold('shift', false), true);
   assert.equal(game.press('advance'), true);
   assert.deepEqual(host.calls, [
     ['set', 'paddle', 'y', 0.25],
     ['set', 'paddle', 'y', 1],
-    ['set', 'shift', 'hold', 1],
-    ['set', 'shift', 'hold', 0],
     ['fire', 'ui', 'advance'],
   ]);
+  const jet = setup('jetpack');
+  assert.equal(jet.game.hold('thrust', true), true);
+  assert.equal(jet.game.hold('thrust', false), true);
+  assert.deepEqual(jet.host.calls, [['set', 'lift', 'thrust', 1], ['set', 'lift', 'thrust', 0]]);
 });
 
 // The engine paces `advance` on a wire's behalf; a command reaches the port
@@ -100,12 +100,14 @@ test('a wrong name, or the wrong verb for a right one, is explained with the nam
   assert.equal(game.press('thrust'), false);
   assert.match(errors[1], /"thrust" is a hold control — use gameHold\("thrust", true\)/);
 
-  assert.equal(game.press('shift'), false);
-  assert.match(errors[2], /use gameHold\("shift", true\) or gameSet\("shift", 0\.5\)/);
-
-  assert.equal(game.set('shift', 'high'), false);
-  assert.match(errors[3], /needs a number from 0 to 1/);
   assert.deepEqual(host.calls, [], 'and nothing reached the game');
+
+  const breaker = setup('brickbreaker');
+  assert.equal(breaker.game.press('paddle'), false);
+  assert.match(breaker.errors[0], /use gameSet\("paddle", 0\.5\)/);
+  assert.equal(breaker.game.set('paddle', 'high'), false);
+  assert.match(breaker.errors[1], /needs a number from 0 to 1/);
+  assert.deepEqual(breaker.host.calls, []);
 });
 
 test('names are looked up when called, so switching scheme only makes the old ones unknown', () => {
@@ -114,18 +116,16 @@ test('names are looked up when called, so switching scheme only makes the old on
   host.select('jetpack');
   assert.equal(game.press('flap'), false);
   assert.match(errors[0], /Unknown control "flap"/);
-  assert.deepEqual(game.controls().map((c) => c.name), ['thrust', 'shift', 'shift', 'advance']);
+  assert.deepEqual(game.controls().map((c) => c.name), ['thrust', 'advance']);
 });
 
 // A board that walks out of range mid-climb sends no release.
 test('release lets go of what is held and rests every level where the scheme rests it', () => {
   const { game, host } = setup('brickbreaker');
-  game.hold('shift', true);
   game.set('paddle', 0.9);
   host.calls.length = 0;
   game.release();
   assert.deepEqual(host.calls, [
-    ['set', 'shift', 'hold', 0],
     ['set', 'paddle', 'y', 0.5],
   ]);
   host.calls.length = 0;

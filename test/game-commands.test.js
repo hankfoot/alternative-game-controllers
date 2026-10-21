@@ -44,19 +44,19 @@ function setup(gameId) {
 
 test('each command line drives the game, and is remembered', () => {
   const { host, bridge, send } = setup('brickbreaker');
+  send('game:set:paddle:0.1');
   send('game:set:paddle:0.25');
-  send('game:hold:shift:1');
-  send('game:hold:shift:0');
+  send('game:set:paddle:0.5');
   send('game:start');
   assert.deepEqual(host.calls, [
+    ['set', 'paddle', 'y', 0.1],
     ['set', 'paddle', 'y', 0.25],
-    ['set', 'shift', 'hold', 1],
-    ['set', 'shift', 'hold', 0],
+    ['set', 'paddle', 'y', 0.5],
     ['fire', 'ui', 'advance'],
   ]);
   assert.deepEqual(bridge.recent().map((entry) => [entry.level, entry.text]), [
-    ['info', 'game:hold:shift:1'],
-    ['info', 'game:hold:shift:0'],
+    ['info', 'game:set:paddle:0.25'],
+    ['info', 'game:set:paddle:0.5'],
     ['info', 'game:start'],
   ], 'the last few, newest last');
 });
