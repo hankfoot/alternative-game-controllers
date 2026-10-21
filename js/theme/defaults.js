@@ -113,15 +113,18 @@ const SKETCHES = {
       [s * 0.3, s * 0.46], [s * 0.1, s * 0.4], [s * 0.02, s * 0.5],
       [s * 0.12, s * 0.52], [s * 0.28, s * 0.56],
     ], { fill: PALETTE.scarf, width: FINE });
-    // The body: a rounded wedge, nose to the right.
+    // The body: a rounded wedge, nose to the right. Enough points round the
+    // back that the waver reads as a hand-drawn curve rather than a kink.
     scrawl(ctx, [
-      [s * 0.24, s * 0.3], [s * 0.62, s * 0.32], [s * 0.9, s * 0.5],
-      [s * 0.62, s * 0.68], [s * 0.24, s * 0.7], [s * 0.16, s * 0.5],
+      [s * 0.3, s * 0.3], [s * 0.5, s * 0.28], [s * 0.7, s * 0.34], [s * 0.9, s * 0.5],
+      [s * 0.7, s * 0.66], [s * 0.5, s * 0.72], [s * 0.3, s * 0.7],
+      [s * 0.19, s * 0.6], [s * 0.16, s * 0.5], [s * 0.19, s * 0.4],
     ], { fill: PALETTE.body });
-    // A wing folded along the near side, a shade darker so it reads as behind.
+    // A wing swept back along the near side, a shade darker so it reads as
+    // behind. Set back from the eyes: sitting under them it read as a mouth.
     scrawl(ctx, [
-      [s * 0.34, s * 0.52], [s * 0.6, s * 0.54], [s * 0.5, s * 0.72],
-      [s * 0.34, s * 0.68],
+      [s * 0.28, s * 0.46], [s * 0.5, s * 0.48], [s * 0.42, s * 0.62],
+      [s * 0.26, s * 0.6],
     ], { fill: PALETTE.bodyDeep, width: FINE });
 
     const eye = (cx, cy, r) => {
@@ -289,23 +292,31 @@ const SKETCHES = {
   // along with air either side, so it is drawn as one object rather than as a
   // strip that has to join up with itself.
   near(ctx, s) {
+    // The trunk first, so the canopy sits over it.
     scrawl(ctx, [
-      [s * 0.46, s], [s * 0.46, s * 0.5], [s * 0.54, s * 0.5], [s * 0.54, s],
+      [s * 0.45, s * 0.98], [s * 0.45, s * 0.72], [s * 0.55, s * 0.72], [s * 0.55, s * 0.98],
     ], { fill: PALETTE.bark, width: FINE });
-    // Three tiers, widest at the bottom.
-    // The same green as the pillars and the grass: one plant colour for the
-    // whole world. A lit left face on each tier, as on everything else solid.
-    const tier = (y, half, drop) => {
-      scrawl(ctx, [
-        [s * 0.5, y], [s * (0.5 + half), y + drop], [s * (0.5 - half), y + drop],
-      ], { fill: PALETTE.leaf });
-      scrawl(ctx, [
-        [s * 0.5, y + 6], [s * (0.5 - half * 0.55), y + drop - 6], [s * (0.5 - half * 0.85), y + drop - 6],
-      ], { fill: PALETTE.leafLight, stroke: null });
-    };
-    tier(s * 0.52, 0.3, s * 0.16);
-    tier(s * 0.3, 0.26, s * 0.16);
-    tier(s * 0.1, 0.2, s * 0.16);
+    // One silhouette rather than three stacked triangles: a stepped outline
+    // from the tip down each side, so the tree is a single shape with a single
+    // edge — the stack had each tier's outline cutting across the one below
+    // and read as three hats. Drawn without the outline first, then the lit
+    // left face inside it, then the outline on top of both so the highlight
+    // never leaks past the edge.
+    const canopy = [
+      [s * 0.5, s * 0.06],
+      [s * 0.7, s * 0.36], [s * 0.62, s * 0.36],
+      [s * 0.8, s * 0.62], [s * 0.7, s * 0.62],
+      [s * 0.9, s * 0.86], [s * 0.1, s * 0.86],
+      [s * 0.3, s * 0.62], [s * 0.2, s * 0.62],
+      [s * 0.38, s * 0.36], [s * 0.3, s * 0.36],
+    ];
+    scrawl(ctx, canopy, { fill: PALETTE.leaf, stroke: null });
+    scrawl(ctx, [
+      [s * 0.5, s * 0.1], [s * 0.5, s * 0.84], [s * 0.16, s * 0.84],
+      [s * 0.34, s * 0.62], [s * 0.26, s * 0.62],
+      [s * 0.42, s * 0.36], [s * 0.35, s * 0.36],
+    ], { fill: PALETTE.leafLight, stroke: null });
+    scrawl(ctx, canopy, { fill: null });
   },
 
   // A cloud. Also has to pass for a bubble or a speck, being the only one.
