@@ -221,7 +221,7 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     const variant = variantFor(choice.catalogue, choice.mode);
     if (variant?.build) {
       const info = channelInfo(choice.catalogue);
-      const tip = el('p', 'rule-tip');
+      const tip = el('div', 'rule-tip');
       tip.appendChild(el('strong', null, `${info.emoji} ${info.label}${variant.label ? ` · ${variant.label}` : ''}: `));
       const text = el('span');
       text.innerHTML = variant.build;
@@ -229,14 +229,16 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
       row.appendChild(tip);
     }
 
-    // The reading, live, with the line it has to cross drawn on it. Only a
-    // number has a line; a press is a press.
+    // The input, live: a number with the line it has to cross drawn on it, a
+    // press as its on/off pill, a gesture as a flash and a count. Every
+    // sentence gets one, so a clip that is not making contact shows up here
+    // and not as a mystery on the Game screen.
+    const meter = el('div', 'rule-meter');
+    const live = el('div', 'live-rows rule-live');
+    meter.appendChild(live);
+    const view = createChannelView(live, { signalStore, channels: [{ channel, kind: choice.family }], markers: marker });
+    views.push(view);
     if (choice.family === 'number') {
-      const meter = el('div', 'rule-meter');
-      const live = el('div', 'live-rows rule-live');
-      meter.appendChild(live);
-      const view = createChannelView(live, { signalStore, channels: [{ channel, kind: 'number' }], markers: marker });
-      views.push(view);
       const use = el('button', 'btn btn-soft rule-use', usesRange(rule.when) ? 'Use the current reading as the low end' : 'Use the current reading');
       use.type = 'button';
       use.addEventListener('click', () => {
@@ -247,13 +249,14 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
         persist();
         render();
       });
-      const note = el('span', 'rule-note', 'The live reading appears here once the micro:bit is connected.');
-      meter.append(use, note);
-      signalStore.subscribe(({ type, signal }) => {
-        if (type === 'value' && signal.channel === channel) note.hidden = true;
-      });
-      row.appendChild(meter);
+      meter.appendChild(use);
     }
+    const note = el('span', 'rule-note', 'The live reading appears here once the micro:bit is connected.');
+    meter.appendChild(note);
+    signalStore.subscribe(({ type, signal }) => {
+      if (type === 'value' && signal.channel === channel) note.hidden = true;
+    });
+    row.appendChild(meter);
     return row;
   }
 
