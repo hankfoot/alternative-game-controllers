@@ -26,6 +26,12 @@
   --accent-ink: #ffffff;
 
   --radius: 12px;
+  /* Two widths, used everywhere inside a step. Prose stops at a line length
+     that reads well; everything built — a photo, a code block, a live row, a
+     card, a grid of cards — stops at one component width, so the boxes on a
+     page line up down their right edge whatever they hold. */
+  --prose: 60ch;
+  --component: 720px;
   --shadow: 0 1px 2px rgba(24,24,27,.05);
   --shadow-md: 0 6px 22px rgba(24,24,27,.08);
 
@@ -262,7 +268,7 @@ h1 {
 .block { margin-top: 8px; }
 .block-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
 h2 { font-size: 1.5rem; letter-spacing: -.02em; font-weight: 700; margin: 0; }
-.lead { color: var(--ink-soft); margin: 0 0 32px; max-width: 62ch; }
+.lead { color: var(--ink-soft); margin: 0 0 32px; max-width: var(--prose); }
 .block + .block { margin-top: 52px; }
 
 /* An inline jump to another screen, styled as the link it behaves like. */
@@ -298,7 +304,7 @@ em { color: var(--accent); font-style: italic; }
 .step:not(:last-child) .step-body { border-bottom: 1px solid var(--line); margin-bottom: 32px; }
 /* As tall as the number beside it (30px), so the title sits on its middle. */
 .step-body h3 { margin: 0; font-size: 1.05rem; font-weight: 600; line-height: 30px; }
-.step-body p { margin: 0; color: var(--ink-soft); max-width: 60ch; }
+.step-body p { margin: 0; color: var(--ink-soft); max-width: var(--prose); }
 /* One rhythm for whatever a step holds — prose, a photo, a list, a button, a
    live view — so nothing butts against what came before it. Written with two
    classes' weight so it outranks the `p { margin: 0 }` above, which used to
@@ -351,17 +357,17 @@ em { color: var(--accent); font-style: italic; }
   background: var(--bg-soft);
   border: 1px dashed color-mix(in srgb, var(--ink) 18%, var(--line));
   border-radius: 10px;
-  color: var(--ink-soft); font-size: .84rem; max-width: 620px;
+  color: var(--ink-soft); font-size: .84rem; max-width: var(--component);
 }
 .shot-ph::before { content: "🖼"; font-size: 1.3rem; filter: grayscale(1) opacity(.6); }
 .shot-ph::after {
   content: "add " attr(data-file);
   font-family: var(--mono); font-size: .7rem; color: var(--ink-faint);
 }
-.shot img, .shot video { display: block; max-width: 620px; width: 100%; border: 1px solid var(--line); border-radius: 10px; }
+.shot img, .shot video { display: block; max-width: var(--component); width: 100%; border: 1px solid var(--line); border-radius: 10px; }
 
 /* Copy-paste code block */
-.code-block { position: relative; margin-top: 6px; max-width: 560px; }
+.code-block { position: relative; margin-top: 6px; max-width: var(--component); }
 .code-block pre {
   margin: 0; overflow-x: auto;
   background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px;
@@ -422,7 +428,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .pick-head h3::before {
   content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--yellow); flex: none;
 }
-.pick-head p { margin: 0; font-size: .86rem; color: var(--ink-soft); max-width: 64ch; }
+.pick-head p { margin: 0; font-size: .86rem; color: var(--ink-soft); max-width: var(--prose); }
 
 /* ---------- Builder tiles (selectable) ---------- */
 .tile-pick {
@@ -454,7 +460,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 /* ---------- Builder streaming-load warning ---------- */
 .builder-warn {
   margin: 18px 0 0; padding: 12px 16px; border-radius: var(--radius);
-  font-size: .88rem; max-width: 720px;
+  font-size: .88rem; max-width: var(--component);
   background: var(--yellow-soft); border: 1px solid color-mix(in srgb, var(--yellow) 40%, var(--line));
   color: var(--yellow-ink);
 }
@@ -466,14 +472,14 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .builder-warn[hidden] { display: none; }
 
 /* ---------- Code it on Controls ---------- */
-.code-request { display: flex; flex-wrap: wrap; gap: 8px; max-width: 720px; }
+.code-request { display: flex; flex-wrap: wrap; gap: 8px; max-width: var(--component); }
 .code-request input {
   flex: 1 1 260px; min-width: 0; padding: 10px 14px; font: inherit; font-size: .92rem;
   color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
 }
 .code-request input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
 .code-request .btn.copied { background: var(--green-ink); }
-.code-details { max-width: 720px; font-size: .85rem; color: var(--ink-soft); }
+.code-details { max-width: var(--component); font-size: .85rem; color: var(--ink-soft); }
 .code-details summary { cursor: pointer; }
 /* The instructions are prose in a code block, and prose has lines far longer
    than any screen; wrapped, rather than scrolled sideways on a phone. What is
@@ -488,7 +494,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .code-status { font-size: .86rem; color: var(--ink-soft); }
 .code-status[data-status="driven"] { color: var(--green-ink); }
 .code-log {
-  margin: 6px 0 0; max-width: 720px; max-height: 220px; overflow: auto; box-sizing: border-box;
+  margin: 6px 0 0; max-width: var(--component); max-height: 220px; overflow: auto; box-sizing: border-box;
   padding: 10px 14px; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px;
   font-family: var(--mono); font-size: .78rem; line-height: 1.55; color: var(--ink-soft);
   white-space: pre-wrap; word-break: break-word;
@@ -501,7 +507,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
    could wire more", red for "nothing on your controller reaches the game". */
 .game-warn {
   margin: 0 0 18px; padding: 12px 16px; border-radius: var(--radius);
-  font-size: .88rem; max-width: 720px;
+  font-size: .88rem; max-width: var(--component);
   background: var(--yellow-soft); border: 1px solid color-mix(in srgb, var(--yellow) 40%, var(--line));
   color: var(--yellow-ink);
 }
@@ -523,7 +529,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
    and the announcement — and there was no accordion anywhere else in the app to
    match, so inventing a JS one would have been inventing a second pattern. */
 .how {
-  margin-top: 12px; max-width: 720px;
+  margin-top: 12px; max-width: var(--component);
   background: var(--bg); border: 1px solid var(--line); border-radius: 11px;
 }
 .how + .how { margin-top: 8px; }
@@ -560,7 +566,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 }
 
 /* ---------- Builder output ---------- */
-.code-block-wide { max-width: 720px; }
+.code-block-wide { max-width: var(--component); }
 .build-empty { margin: 0; color: var(--ink-faint); font-size: .9rem; }
 
 /* ---------- Protocol cards ---------- */
@@ -689,13 +695,13 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .substep-body > :not(:first-child) { margin-top: 14px; }
 .substep-body > h4 + * { margin-top: 6px; }
 .substep-body > .lesson-watch + .lesson-live { margin-top: 10px; }
-.lesson-steps { margin: 0; padding-left: 22px; font-size: 1rem; line-height: 1.6; color: var(--ink-soft); max-width: 60ch; }
+.lesson-steps { margin: 0; padding-left: 22px; font-size: 1rem; line-height: 1.6; color: var(--ink-soft); max-width: var(--prose); }
 .lesson-steps li + li { margin-top: 6px; }
 .lesson-steps li::marker { color: var(--ink); font-weight: 600; }
 /* The code, as a card: a row with the fold's label and the copy button, and
    the code under it once the fold is open. The code is for MakeCode, not for
    reading here, so the fold starts closed and the button is the loud thing. */
-.code-block-folded { max-width: 720px; border: 1px solid var(--line); border-radius: 11px; background: var(--bg); }
+.code-block-folded { max-width: var(--component); border: 1px solid var(--line); border-radius: 11px; background: var(--bg); }
 .code-block-folded .code-details { max-width: none; margin: 0; }
 .code-block-folded summary {
   list-style: none; display: flex; align-items: center; justify-content: space-between;
@@ -723,8 +729,8 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
   .code-block-folded .code-copy { flex: 1 1 100%; }
 }
 .lesson-watch { font-size: .85rem; color: var(--ink-soft); }
-.lesson-live { max-width: 720px; max-height: none; }
-.shot-slot { min-height: 160px; max-width: 620px; margin: 0; border: 1px dashed var(--line); border-radius: 10px; background: var(--bg-soft); display: flex; align-items: center; justify-content: center; }
+.lesson-live { max-width: var(--component); max-height: none; }
+.shot-slot { min-height: 160px; max-width: var(--component); margin: 0; border: 1px dashed var(--line); border-radius: 10px; background: var(--bg-soft); display: flex; align-items: center; justify-content: center; }
 .shot-slot::after { content: "Photo: " attr(aria-label); font-size: .8rem; color: var(--ink-faint); padding: 12px; text-align: center; }
 
 
@@ -980,7 +986,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .foot-inner { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; font-size: .84rem; color: var(--ink-soft); }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 720px) {
+@media (max-width: var(--component)) {
   /* Nothing to run between the columns once they stack, so the jacks are just
      type markers sitting in their boxes. */
 }
@@ -1294,7 +1300,7 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 /* Once the card is this narrow there is no room to hold both, and squeezing the
    sentence into a 50px column wraps it to five lines. Below here the buttons
    take their own line instead. */
-@media (max-width: 720px) {
+@media (max-width: var(--component)) {
   .sound-head { flex-wrap: wrap; }
   .sound-head .wiring-sentence { flex: 1 1 100%; }
 }
@@ -1415,11 +1421,8 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .font-picker, .font-picker option { font-size: .84rem; }
 
 /* ---------- Controls: the sentences ---------- */
-/* Fills the step like the sentence cards under it. It was capped at 560px
-   back when it held one dropdown, and a box of four cards narrower than the
-   boxes below read as a mistake. */
-.mode-switch { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-soft); }
-.rule-list { display: flex; flex-direction: column; gap: 14px; max-width: 720px; }
+.mode-switch { max-width: var(--component); padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-soft); }
+.rule-list { display: flex; flex-direction: column; gap: 14px; max-width: var(--component); }
 .rule { padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
 .rule-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 6px; margin: 0; }
 .rule-sentence input[type="number"] { width: 5.5em; }
