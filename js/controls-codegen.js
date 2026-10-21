@@ -75,6 +75,20 @@ export const WHEN_CHOICES = {
   event: [['happens', 'happens']],
 };
 
+/**
+ * Which pin a sentence is offered: the first sentence gets P0, the second
+ * P1, and so on. Twelve pin entries across three sentences was most of the
+ * dropdown and all of its confusion — the clip goes on P0 unless there are
+ * two controls, in which case the second goes on P1, and that is the whole
+ * rule. A sentence that already reads some other pin keeps that choice, so a
+ * saved build is never silently rewired.
+ */
+export function offersPin(choice, slot, current = null) {
+  if (!choice.pin) return true;
+  if (choice.id === current) return true;
+  return choice.pin === `p${Math.min(slot, 2)}`;
+}
+
 /** The kind of control a `when` can drive. */
 export function actionKind(when) {
   if (when === 'held' || when === 'while-above' || when === 'while-below') return 'hold';

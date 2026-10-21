@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  INPUT_CHOICES, WHEN_CHOICES, actionKind, canDrive, controlChoices, groupedInputChoices, normalizeRule, ownedHandlers,
-  rulesCode, rulesParts, sentencesFor, whenChoicesFor,
+  INPUT_CHOICES, WHEN_CHOICES, actionKind, canDrive, controlChoices, groupedInputChoices, inputChoice, normalizeRule,
+  offersPin, ownedHandlers, rulesCode, rulesParts, sentencesFor, whenChoicesFor,
 } from '../js/controls-codegen.js';
 import { streamLoad } from '../js/builder.js';
 import { findGame } from '../js/games/index.js';
@@ -191,4 +191,16 @@ test('the input list comes in groups, holding only what can drive the control', 
   assert.ok(forLevel.flatMap(([, c]) => c).every((c) => c.family === 'number'));
   assert.deepEqual(whenChoicesFor('binary', 'hold').map(([id]) => id), ['held']);
   assert.deepEqual(whenChoicesFor('number', 'press').map(([id]) => id), ['above', 'below']);
+});
+
+// One pin per sentence: the clip goes on P0, and a second control's clip on
+// P1. Three pins times four modes in every dropdown was the confusing part.
+test('a sentence is offered one pin, by its place in the list', () => {
+  const p0 = inputChoice('p0:touch');
+  const p1 = inputChoice('p1:switch');
+  const p2 = inputChoice('p2:analog');
+  assert.ok(offersPin(p0, 0) && !offersPin(p1, 0) && !offersPin(p2, 0));
+  assert.ok(!offersPin(p0, 1) && offersPin(p1, 1));
+  assert.ok(offersPin(inputChoice('btna'), 0) && offersPin(inputChoice('pitch'), 1), 'nothing else is held back');
+  assert.ok(offersPin(p2, 0, 'p2:analog'), 'a saved build keeps the pin it already reads');
 });
