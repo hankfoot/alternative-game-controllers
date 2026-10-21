@@ -191,7 +191,7 @@ test('the input list comes in groups, holding only what can drive the control', 
   assert.ok(!forLevel.some(([label]) => label === 'Gestures' || label === 'Buttons & touch'), 'a steer needs a number');
   assert.ok(forLevel.flatMap(([, c]) => c).every((c) => c.family === 'number'));
   assert.deepEqual(whenChoicesFor('binary', 'hold').map(([id]) => id), ['held']);
-  assert.deepEqual(whenChoicesFor('number', 'press').map(([id]) => id), ['above', 'below']);
+  assert.deepEqual(whenChoicesFor('number', 'press').map(([id]) => id), ['above', 'below', 'into', 'outof']);
   assert.deepEqual(whenChoicesFor('number', 'hold').map(([id]) => id), ['while-above', 'while-below', 'while-between', 'while-outside']);
 });
 
@@ -237,4 +237,14 @@ test('is between and is not between hold inside or outside a band', () => {
 
   const rule = normalizeRule({ input: 'light', when: 'while-between', control: 'thrust' }, jetpack);
   assert.deepEqual([rule.low, rule.high], [0, 255], 'a fresh band is the whole range');
+});
+
+test('goes between and goes outside fire once, on the way in or out of a band', () => {
+  const into = rulesCode([{ input: 'light', when: 'into', control: 'flap', low: 50, high: 150 }], flappy);
+  assert.ok(into.includes('if (lightNow >= 50 && lightNow <= 150) {'));
+  assert.ok(into.includes('if (r1Past == 0) {') && into.includes('gamePress("flap")'));
+  assert.ok(into.includes('} else if (lightNow < 42 || lightNow > 158) {'), 'armed again eight past either edge');
+  const outof = rulesCode([{ input: 'light', when: 'outof', control: 'flap', low: 50, high: 150 }], flappy);
+  assert.ok(outof.includes('if (lightNow < 50 || lightNow > 150) {'));
+  assert.ok(outof.includes('} else if (lightNow >= 58 && lightNow <= 142) {'));
 });

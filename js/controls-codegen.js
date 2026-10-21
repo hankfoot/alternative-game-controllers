@@ -69,6 +69,7 @@ export const WHEN_CHOICES = {
   binary: [['pressed', 'is pressed'], ['held', 'is held']],
   number: [
     ['above', 'goes above'], ['below', 'goes below'],
+    ['into', 'goes between'], ['outof', 'goes outside'],
     ['while-above', 'is above'], ['while-below', 'is below'],
     ['while-between', 'is between'], ['while-outside', 'is not between'],
     ['between', 'steers between'],
@@ -101,7 +102,7 @@ export function offered(choice, slot) {
 }
 
 /** The whens that take a low and a high rather than one threshold. */
-export const usesRange = (when) => when === 'between' || when === 'while-between' || when === 'while-outside';
+export const usesRange = (when) => ['between', 'while-between', 'while-outside', 'into', 'outof'].includes(when);
 
 /** The kind of control a `when` can drive. */
 export function actionKind(when) {
@@ -236,6 +237,26 @@ function numberRuleLines(rule, name, now, channel) {
       `    ${hold(rule.control, false)}`,
       `}`,
     );
+  } else if (rule.when === 'into' || rule.when === 'outof') {
+    // Fires once as the reading enters the band (or leaves it), and is armed
+    // again once it has gone back out (or in) by the hysteresis.
+    const h = hysteresis(channel);
+    const inside = `${now} >= ${rule.low} && ${now} <= ${rule.high}`;
+    const outside = `${now} < ${rule.low} || ${now} > ${rule.high}`;
+    const past = rule.when === 'into' ? inside : outside;
+    const back = rule.when === 'into'
+      ? `${now} < ${rule.low - h} || ${now} > ${rule.high + h}`
+      : `${now} >= ${rule.low + h} && ${now} <= ${rule.high - h}`;
+    lines.push(
+      `if (${past}) {`,
+      `    if (${name}Past == 0) {`,
+      `        ${name}Past = 1`,
+      `        ${call(rule.control)}`,
+      `    }`,
+      `} else if (${back}) {`,
+      `    ${name}Past = 0`,
+      `}`,
+    );
   } else if (rule.when === 'while-between' || rule.when === 'while-outside') {
     // Held while the reading is inside the band (or outside it), let go once
     // it has come back out (or in) by the hysteresis, so a reading sitting on
@@ -271,7 +292,7 @@ function numberRuleLines(rule, name, now, channel) {
 }
 
 function numberRuleState(rule, name) {
-  if (rule.when === 'above' || rule.when === 'below') return [`let ${name}Past = 0`];
+  if (actionKind(rule.when) === 'press') return [`let ${name}Past = 0`];
   if (actionKind(rule.when) === 'hold') return [`let ${name}On = 0`];
   return [`let ${name}Level = 0`, `let ${name}Last = -1`];
 }
