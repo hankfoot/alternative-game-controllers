@@ -50,6 +50,27 @@ export const SOUND_FILES = {
 
 const INK = '#1b1c20';
 
+// One palette for every sketch, so the set reads as drawn by one hand with
+// one box of markers: a green for anything that grows (pillars, grass, the
+// tree), a tan for the earth, a blue for you, and a single warm accent for the
+// one thing that is dangerous and alone. Each colour has its lit and shaded
+// neighbour, used the same way on every shape — a highlight down the left,
+// a shadow down the right — and everything is outlined in the same ink at
+// the same weight.
+const PALETTE = Object.freeze({
+  leaf: '#4ac06a', leafLight: '#7fdb97', leafDeep: '#2f9350',
+  earth: '#d9a066', earthDeep: '#c98d4e', pebble: '#b98c33', bark: '#7a4a26',
+  sky: '#8fc4ff', skyPale: '#d8ecff', horizon: '#f4fbf5',
+  haze: '#b3c2d8', hazeLight: '#c9d5e6', hazeLine: '#7f93b0',
+  body: '#5b8cff', bodyDeep: '#3b6bd8', scarf: '#e5484d',
+  ember: '#f2622e', emberLight: '#ff8a5c', emberDeep: '#c4471a',
+  sun: '#ffd76b', sunLine: '#e0a93f',
+  cloudShade: '#dfe8f5',
+});
+// The one outline weight, and the lighter one for details inside a shape.
+const LINE = 7;
+const FINE = 5;
+
 /**
  * Nudges a point off its exact position by a fixed amount for its index, so a
  * shape drawn twice is drawn identically but neither time looks ruled.
@@ -60,7 +81,7 @@ function wobble(index, amount = 3) {
 }
 
 /** A closed shape through the given points, with a hand-drawn waver. */
-function scrawl(ctx, points, { fill, stroke = INK, width = 7, close = true } = {}) {
+function scrawl(ctx, points, { fill, stroke = INK, width = LINE, close = true } = {}) {
   ctx.lineWidth = width;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
@@ -91,24 +112,24 @@ const SKETCHES = {
     scrawl(ctx, [
       [s * 0.3, s * 0.46], [s * 0.1, s * 0.4], [s * 0.02, s * 0.5],
       [s * 0.12, s * 0.52], [s * 0.28, s * 0.56],
-    ], { fill: '#e5484d', width: 5 });
+    ], { fill: PALETTE.scarf, width: FINE });
     // The body: a rounded wedge, nose to the right.
     scrawl(ctx, [
       [s * 0.24, s * 0.3], [s * 0.62, s * 0.32], [s * 0.9, s * 0.5],
       [s * 0.62, s * 0.68], [s * 0.24, s * 0.7], [s * 0.16, s * 0.5],
-    ], { fill: '#5b8cff' });
+    ], { fill: PALETTE.body });
     // A wing folded along the near side, a shade darker so it reads as behind.
     scrawl(ctx, [
       [s * 0.34, s * 0.52], [s * 0.6, s * 0.54], [s * 0.5, s * 0.72],
       [s * 0.34, s * 0.68],
-    ], { fill: '#3b6bd8', width: 5 });
+    ], { fill: PALETTE.bodyDeep, width: FINE });
 
     const eye = (cx, cy, r) => {
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
       ctx.fill();
-      ctx.lineWidth = 5;
+      ctx.lineWidth = FINE;
       ctx.strokeStyle = INK;
       ctx.stroke();
       ctx.beginPath();
@@ -121,35 +142,33 @@ const SKETCHES = {
     eye(s * 0.75, s * 0.47, s * 0.06);
   },
 
-  // A section of pillar. Drawn tall rather than square because it is repeated
-  // *down* a bar: a square drawing tiles into a stack of squares, which reads as
-  // a wall of bricks, where one long segment reads as a pillar with joints.
-  // Flat top and bottom so the stack has no seam.
+  // A pillar, whole: a cap at the top and a shaft running off the bottom of
+  // the drawing. It is drawn once per bar, cap at the gap and the shaft
+  // carrying on past the edge of the field, so the bottom of this drawing is
+  // never seen and the shaft is the part that gets stretched if a bar is
+  // longer than the drawing is. Which is why the shaft is plain below the
+  // last band: a stretched stripe is still a stripe.
   obstacle(ctx, w, h) {
-    ctx.fillStyle = '#4ac06a';
-    ctx.fillRect(0, 0, w, h);
-    // A lit edge down one side and a shadow down the other: enough to make a
-    // flat fill read as something solid rather than as a coloured rectangle.
-    ctx.fillStyle = '#6fd98d';
-    ctx.fillRect(w * 0.08, 0, w * 0.13, h);
-    ctx.fillStyle = '#2f9350';
-    ctx.fillRect(w * 0.79, 0, w * 0.13, h);
-
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = INK;
-    ctx.beginPath();
-    ctx.moveTo(4, 0);
-    ctx.lineTo(4, h);
-    ctx.moveTo(w - 4, 0);
-    ctx.lineTo(w - 4, h);
-    ctx.stroke();
-
-    // Bands across it, so a long segment has some rhythm rather than being a
-    // plain stripe. Inset from both ends so the joint between two copies is the
-    // only line that meets the edge.
-    ctx.lineWidth = 6;
-    for (const y of [0.22, 0.5, 0.78]) {
-      scrawl(ctx, [[w * 0.12, h * y], [w * 0.88, h * y]], { stroke: '#2f9350', close: false });
+    const capH = h * 0.11;
+    const inset = w * 0.1;
+    // The shaft, lit down the left and shaded down the right like everything
+    // else solid in the set.
+    scrawl(ctx, [
+      [inset, capH * 0.8], [w - inset, capH * 0.8], [w - inset, h + 20], [inset, h + 20],
+    ], { fill: PALETTE.leaf });
+    ctx.fillStyle = PALETTE.leafLight;
+    ctx.fillRect(inset + 6, capH, w * 0.12, h);
+    ctx.fillStyle = PALETTE.leafDeep;
+    ctx.fillRect(w - inset - 6 - w * 0.12, capH, w * 0.12, h);
+    // The cap: a lip wider than the shaft, which is what says "pillar" rather
+    // than "stripe" at the end you actually see.
+    scrawl(ctx, [[4, 4], [w - 4, 4], [w - 4, capH], [4, capH]], { fill: PALETTE.leafLight });
+    ctx.fillStyle = PALETTE.leafDeep;
+    ctx.fillRect(4, capH * 0.66, w - 8, capH * 0.3);
+    // Bands down the shaft, then nothing: the plain stretch below is what gets
+    // pulled when a bar runs long.
+    for (const y of [0.3, 0.46, 0.62]) {
+      scrawl(ctx, [[inset + 10, h * y], [w - inset - 10, h * y]], { stroke: PALETTE.leafDeep, width: FINE, close: false });
     }
   },
 
@@ -160,7 +179,12 @@ const SKETCHES = {
   block(ctx, s) {
     scrawl(ctx, [
       [s * 0.12, s * 0.2], [s * 0.88, s * 0.14], [s * 0.9, s * 0.84], [s * 0.1, s * 0.88],
-    ], { fill: '#f2622e', width: 8 });
+    ], { fill: PALETTE.ember });
+    // Lit on the left, shaded on the right, like the pillars and the tree.
+    scrawl(ctx, [[s * 0.16, s * 0.24], [s * 0.26, s * 0.23], [s * 0.25, s * 0.82], [s * 0.15, s * 0.84]],
+      { fill: PALETTE.emberLight, stroke: null });
+    scrawl(ctx, [[s * 0.76, s * 0.18], [s * 0.86, s * 0.17], [s * 0.86, s * 0.82], [s * 0.76, s * 0.83]],
+      { fill: PALETTE.emberDeep, stroke: null });
     // A face, because it is the thing you spend the round dodging.
     ctx.fillStyle = INK;
     for (const x of [0.36, 0.64]) {
@@ -169,28 +193,35 @@ const SKETCHES = {
       ctx.fill();
     }
     scrawl(ctx, [[s * 0.34, s * 0.66], [s * 0.5, s * 0.58], [s * 0.66, s * 0.66]],
-      { stroke: INK, width: 7, close: false });
+      { stroke: INK, width: LINE, close: false });
   },
 
   // A strip of ground: earth with a band of grass on top, and a few tufts. Flat
   // left and right edges so it runs along the floor without a join showing.
   ground(ctx, s) {
-    ctx.fillStyle = '#d9a066';
+    ctx.fillStyle = PALETTE.earth;
     ctx.fillRect(0, 0, s, s);
-    ctx.fillStyle = '#c98d4e';
+    ctx.fillStyle = PALETTE.earthDeep;
     ctx.fillRect(0, s * 0.4, s, s * 0.6);
-    ctx.fillStyle = '#4ac06a';
+    ctx.fillStyle = PALETTE.leaf;
     ctx.fillRect(0, 0, s, s * 0.22);
-    ctx.fillStyle = '#2f9350';
+    ctx.fillStyle = PALETTE.leafDeep;
     ctx.fillRect(0, s * 0.19, s, s * 0.05);
+    // The grass has the same inked edge as everything else, along the line
+    // where it meets the earth; the top edge is the horizon and stays open.
+    ctx.lineWidth = LINE;
+    ctx.strokeStyle = INK;
+    ctx.beginPath();
+    ctx.moveTo(0, s * 0.24);
+    ctx.lineTo(s, s * 0.24);
+    ctx.stroke();
 
-    ctx.lineWidth = 5;
     for (let i = 0; i < 4; i += 1) {
       const x = s * (0.14 + i * 0.24);
-      scrawl(ctx, [[x, s * 0.2], [x + s * 0.03, s * 0.06]], { stroke: '#2f9350', close: false });
+      scrawl(ctx, [[x, s * 0.2], [x + s * 0.03, s * 0.06]], { stroke: PALETTE.leafDeep, width: FINE, close: false });
     }
     // Pebbles, so the earth below the grass isn't a flat slab.
-    ctx.fillStyle = '#b98c33';
+    ctx.fillStyle = PALETTE.pebble;
     for (const [x, y, r] of [[0.2, 0.6, 0.045], [0.55, 0.78, 0.035], [0.82, 0.55, 0.05]]) {
       ctx.beginPath();
       ctx.arc(s * x, s * y, s * r, 0, Math.PI * 2);
@@ -206,9 +237,9 @@ const SKETCHES = {
   // the game, which reads as a bug rather than as a drawing.
   backdrop(ctx, w, h) {
     const sky = ctx.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, '#8fc4ff');
-    sky.addColorStop(0.65, '#d8ecff');
-    sky.addColorStop(1, '#f4fbf5');
+    sky.addColorStop(0, PALETTE.sky);
+    sky.addColorStop(0.65, PALETTE.skyPale);
+    sky.addColorStop(1, PALETTE.horizon);
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
 
@@ -218,10 +249,10 @@ const SKETCHES = {
     const sun = Math.min(w, h) * 0.085;
     ctx.beginPath();
     ctx.arc(w * 0.86, h * 0.16, sun, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffd76b';
+    ctx.fillStyle = PALETTE.sun;
     ctx.fill();
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = '#e0a93f';
+    ctx.lineWidth = FINE;
+    ctx.strokeStyle = PALETTE.sunLine;
     ctx.stroke();
 
     // A far-off ridge, well above where the real scenery sits, so the sky has
@@ -230,7 +261,7 @@ const SKETCHES = {
     scrawl(ctx, [
       [0, h], [0, h * 0.82], [w * 0.18, h * 0.7], [w * 0.34, h * 0.79],
       [w * 0.52, h * 0.66], [w * 0.72, h * 0.78], [w, h * 0.72], [w, h],
-    ], { fill: '#9fb2cc', stroke: null });
+    ], { fill: PALETTE.haze, stroke: null });
     ctx.globalAlpha = 1;
   },
 
@@ -242,16 +273,16 @@ const SKETCHES = {
   // in the picture and a hard black edge on it pulls it forward — it ends up
   // reading as the scenery rather than as the distance behind the scenery.
   far(ctx, s) {
-    const HAZE = '#7f93b0';
+    const HAZE = PALETTE.hazeLine;
     scrawl(ctx, [
       [0, s], [0, s * 0.7], [s * 0.16, s * 0.5], [s * 0.32, s * 0.64],
       [s * 0.52, s * 0.38], [s * 0.72, s * 0.62], [s * 0.86, s * 0.52],
       [s, s * 0.7], [s, s],
-    ], { fill: '#b3c2d8', stroke: HAZE, width: 4 });
+    ], { fill: PALETTE.haze, stroke: HAZE, width: 4 });
     // A lighter face on one side of each peak, for a bit of relief.
     scrawl(ctx, [
       [s * 0.52, s * 0.38], [s * 0.72, s * 0.62], [s * 0.62, s * 0.66],
-    ], { fill: '#c9d5e6', stroke: null });
+    ], { fill: PALETTE.hazeLight, stroke: null });
   },
 
   // A tree, standing on its own. Unlike the band behind it this one is dotted
@@ -260,11 +291,18 @@ const SKETCHES = {
   near(ctx, s) {
     scrawl(ctx, [
       [s * 0.46, s], [s * 0.46, s * 0.5], [s * 0.54, s * 0.5], [s * 0.54, s],
-    ], { fill: '#7a4a26', width: 5 });
+    ], { fill: PALETTE.bark, width: FINE });
     // Three tiers, widest at the bottom.
-    const tier = (y, half, drop) => scrawl(ctx, [
-      [s * 0.5, y], [s * (0.5 + half), y + drop], [s * (0.5 - half), y + drop],
-    ], { fill: '#3f8f4f', width: 6 });
+    // The same green as the pillars and the grass: one plant colour for the
+    // whole world. A lit left face on each tier, as on everything else solid.
+    const tier = (y, half, drop) => {
+      scrawl(ctx, [
+        [s * 0.5, y], [s * (0.5 + half), y + drop], [s * (0.5 - half), y + drop],
+      ], { fill: PALETTE.leaf });
+      scrawl(ctx, [
+        [s * 0.5, y + 6], [s * (0.5 - half * 0.55), y + drop - 6], [s * (0.5 - half * 0.85), y + drop - 6],
+      ], { fill: PALETTE.leafLight, stroke: null });
+    };
     tier(s * 0.52, 0.3, s * 0.16);
     tier(s * 0.3, 0.26, s * 0.16);
     tier(s * 0.1, 0.2, s * 0.16);
@@ -292,7 +330,7 @@ const SKETCHES = {
     ctx.beginPath();
     for (const [x, y, r] of puffs) ctx.arc(s * x, s * y, s * r - 1, 0, Math.PI * 2);
     ctx.clip();
-    ctx.fillStyle = '#dfe8f5';
+    ctx.fillStyle = PALETTE.cloudShade;
     ctx.fillRect(0, s * 0.6, s, s);
     ctx.restore();
   },
@@ -313,13 +351,14 @@ export const SLOTS = Object.freeze([
     id: 'obstacle',
     label: 'Pillars',
     emoji: '🧱',
-    help: 'Repeated down each bar you fly past.',
-    // Taller than it is wide, because it is stacked: one long segment reads as
-    // a pillar where a square one reads as brickwork. Only half again as tall,
-    // though — a bar is drawn at a fixed width, so the segment's own proportion
-    // is exactly how tall each copy comes out, and 2:1 made pillars built from
-    // two enormous slabs.
-    size: Object.freeze({ width: 192, height: 288 }),
+    help: 'Top end at each gap you fly through; the bottom runs off the edge of the field.',
+    // A portrait: a whole pillar, cap at the top, shaft running off the
+    // bottom. Drawn once per bar with the cap at the gap, so the bottom of
+    // the drawing is the end nobody sees — and the end that is stretched when
+    // a bar is longer than the drawing. Two and a half times as tall as wide:
+    // tall enough to cover most bars at a bar's width without a stretch, and
+    // not so tall that the editor can show it only as a sliver.
+    size: Object.freeze({ width: 192, height: 480 }),
   },
   { id: 'block', label: 'Floating blocks', emoji: '🟧', help: 'The one that hangs in mid-air.' },
   { id: 'ground', label: 'The ground', emoji: '🟫', help: 'Repeated along the floor.' },

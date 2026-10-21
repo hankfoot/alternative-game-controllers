@@ -12,7 +12,7 @@ import {
   gateSpan,
   sharedTargets,
   trackY,
-  wholeTiles,
+  pillarPlan,
 } from '../js/games/sidescroller.js';
 
 const frame = 1 / 60;
@@ -606,31 +606,13 @@ test('a floating block leaves both the ceiling and the floor open', () => {
   for (const run of freeRuns(gate)) assert.ok(run > RULES.playerRadius * 2, 'both ways past must fit');
 });
 
-test('a column is laid in whole tiles that land on both its ends', () => {
-  // Any bar length, any drawing: the tiles must come out whole and add up to
-  // exactly the bar, or the column finishes on half a picture.
-  for (const span of [40, 128, 201, 333, 530]) {
-    for (const natural of [17, 48.5, 90, 400]) {
-      const { count, tileHeight } = wholeTiles(span, natural);
-      assert.ok(Number.isInteger(count) && count >= 1, `whole count for ${span}/${natural}`);
-      assert.ok(Math.abs(count * tileHeight - span) < 1e-9, 'the tiles fill the bar exactly');
-      // And where there is room for a tile at all, the stretch stays mild
-      // enough to read as the drawing it is. A bar shorter than half a tile is
-      // the one case with no choice: it gets one tile, squashed to fit.
-      // Rounding puts span/natural within half a tile of the count, so a tile
-      // is never squashed below half its size nor stretched past half again.
-      if (span >= natural / 2) {
-        assert.ok(tileHeight >= natural / 2 - 1e-9 && tileHeight <= natural * 1.5 + 1e-9,
-          `${tileHeight} is not far off ${natural}`);
-      }
-    }
-  }
-});
-
-test('a bar shorter than one tile still draws a whole one', () => {
-  const { count, tileHeight } = wholeTiles(12, 48);
-  assert.equal(count, 1);
-  assert.equal(tileHeight, 12);
+// A pillar is one drawing, cap at the gap, running off the edge of the field —
+// never cut to the bar, and only ever extended, by its shaft, when the bar is
+// longer than the drawing is.
+test('a pillar is drawn whole from the gap, and extended only when the bar runs long', () => {
+  assert.deepEqual(pillarPlan(120, 300), { drawn: 300, extension: 0 }, 'a short bar still gets the whole drawing');
+  assert.deepEqual(pillarPlan(300, 300), { drawn: 300, extension: 0 });
+  assert.deepEqual(pillarPlan(450, 300), { drawn: 300, extension: 150 }, 'the shaft carries the rest');
 });
 
 test('a floating block is its own width, and the bars share theirs', () => {

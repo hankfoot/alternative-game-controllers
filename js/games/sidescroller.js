@@ -59,9 +59,7 @@ export const RULES = Object.freeze({
   wakeDelta: 0.12, // how far a wired dial must move to start the round
   barSkirt: 8, // how far an obstacle runs past the edge, so it has no visible end
   // A floating block is one object rather than a length of something, so it is
-  // square: a column's width by a column's tiling height made a tall slot that
-  // no single drawing fits, and squashing one into it was the reason a block
-  // never looked like a thing you had drawn.
+  // square, and its own drawing.
   blockWidth: 108,
   blockHeight: 108,
 });
@@ -74,15 +72,21 @@ export const RULES = Object.freeze({
 export const gateSpan = (gate) =>
   (gate?.kind === 'floating' ? RULES.blockWidth : RULES.gateWidth);
 
+// How much of the bottom of the pillar drawing is "shaft": the strip that is
+// repeated, stretched, to carry a pillar on past the end of its drawing when
+// a bar runs longer. The built-in sketch keeps that strip plain for the
+// purpose; anyone's drawing gets the same treatment.
+export const PILLAR_SHAFT = 0.2;
+
 /**
- * How to lay a repeating drawing along `span` in whole copies: the nearest
- * count to the drawing's own size, and the height each one is then drawn at.
- * Whole copies rather than a cropped last one, so a column ends where the
- * drawing ends instead of halfway through it.
+ * How a pillar drawing is laid along a bar of `span`, given the height the
+ * whole drawing comes out at a bar's width: the drawing itself from the gap
+ * outward, and then, only if the bar is longer than that, how much further
+ * the shaft has to carry on. Never shorter: a pillar is drawn whole and runs
+ * off the edge of the field rather than being cut to the bar.
  */
-export function wholeTiles(span, natural) {
-  const count = Math.max(1, Math.round(span / Math.max(1, natural)));
-  return { count, tileHeight: span / count };
+export function pillarPlan(span, natural) {
+  return { drawn: natural, extension: Math.max(0, span - natural) };
 }
 
 // What the strength choices multiply their effect by. A kick is a one-off you
@@ -566,22 +570,40 @@ export function createRenderer(ctx, helpers, scheme = {}, look = null) {
   const images = look?.images ?? NO_IMAGES;
 
   /**
-   * Repeats a sprite down a bar, in whole copies.
+   * Draws the pillar once along a bar: its top at the gap, the rest running
+   * away from it and off the edge of the field.
    *
-   * The tile used to be laid at the drawing's own aspect and the last one cut
-   * off wherever the bar ended, which left every column finishing on half a
-   * picture — a face with no chin, a segment with no cap. So the bar picks the
-   * nearest whole number of tiles that fits and stretches them to land exactly
-   * on its ends. That costs a few percent of the drawing's proportions and buys
-   * a column that begins and ends where the drawing does.
+   * It used to be tiled down the bar in whole copies, which turned any drawing
+   * into a stack — three caps down one pillar, a face repeated like wallpaper.
+   * Now a bar hanging from the ceiling gets the drawing turned over so its
+   * cap meets the gap from above; a bar standing on the ground gets it the
+   * right way up. Whichever way, the drawing is laid at its own proportions
+   * from the gap outward and never cut to the bar: past the field's edge is
+   * where it ends. A bar longer than the drawing carries on with the bottom
+   * strip of the drawing stretched to cover the rest, which is why the
+   * built-in pillar keeps that strip plain.
    */
-  function tileDown(image, x, top, bottom) {
-    const span = bottom - top;
+  function drawPillar(image, x, bar) {
+    const span = bar.bottom - bar.top;
     const natural = image.height * (gateWidth / image.width);
-    const { count, tileHeight } = wholeTiles(span, natural);
-    for (let i = 0; i < count; i += 1) {
-      ctx.drawImage(image, x, top + i * tileHeight, gateWidth, tileHeight);
+    const { drawn, extension } = pillarPlan(span, natural);
+    const fromCeiling = bar.top < 0;
+    ctx.save();
+    // Put the gap edge at y = 0 with y growing away from the gap, flipping for
+    // a bar that comes down from the top.
+    if (fromCeiling) {
+      ctx.translate(0, bar.bottom);
+      ctx.scale(1, -1);
+    } else {
+      ctx.translate(0, bar.top);
     }
+    ctx.drawImage(image, x, 0, gateWidth, drawn);
+    if (extension > 0) {
+      const strip = image.height * PILLAR_SHAFT;
+      // Overlapping the drawing by a pixel, so no seam of sky shows between.
+      ctx.drawImage(image, 0, image.height - strip, image.width, strip, x, drawn - 1, gateWidth, extension + 1);
+    }
+    ctx.restore();
   }
 
   /** The drawing itself, filling a box, cropped rather than squashed to fit. */
@@ -596,7 +618,7 @@ export function createRenderer(ctx, helpers, scheme = {}, look = null) {
     ctx.drawImage(image, bx + (bw - sw) / 2, by + (bh - sh) / 2, sw, sh, x, y, width, height);
   }
 
-  // Every shape is bars, so this draws bars — the obstacle sprite tiled down
+  // Every shape is bars, so this draws bars — the pillar drawing standing at
   // each one. Its own art is the shape, which is why there are no lips or
   // outlines left here to argue with whatever you have drawn.
   function drawGate(gate, pillar, block) {
@@ -610,7 +632,7 @@ export function createRenderer(ctx, helpers, scheme = {}, look = null) {
       return;
     }
     if (!pillar) return;
-    for (const bar of gateBars(gate)) tileDown(pillar, gate.x, bar.top, bar.bottom);
+    for (const bar of gateBars(gate)) drawPillar(pillar, gate.x, bar);
   }
 
   /**
