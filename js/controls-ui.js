@@ -13,7 +13,7 @@
 // selects and the stored rules, and keeps the code block current.
 
 import {
-  canDrive, groupedInputChoices, inputChoice, normalizeRule, offered, rulesCode, rulesParts, sentencesFor, whenChoicesFor,
+  canDrive, groupedInputChoices, inputChoice, normalizeRule, offered, rulesCode, rulesParts, sentencesFor, usesRange, whenChoicesFor,
 } from './controls-codegen.js';
 import { controlsFor } from './game-facade.js';
 import { describeLoad, streamLoad } from './builder.js';
@@ -179,7 +179,7 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
     if (choice.family === 'number') {
       const info = channelInfo(channel);
       const unit = info.unit ? ` ${info.unit}` : '';
-      if (rule.when === 'between') {
+      if (usesRange(rule.when)) {
         const low = numberInput(rule.low, (value) => { rule.low = Number(value); persist(); });
         const high = numberInput(rule.high, (value) => { rule.high = Number(value); persist(); });
         line.append(' ', low, ' to ', high, unit);
@@ -208,12 +208,12 @@ export function initControlsUI({ elements, gameHost, signalStore, storage }) {
       meter.appendChild(live);
       const view = createChannelView(live, { signalStore, channels: [{ channel, kind: 'number' }], markers: marker });
       views.push(view);
-      const use = el('button', 'btn btn-soft rule-use', rule.when === 'between' ? 'Use the current reading as the low end' : 'Use the current reading');
+      const use = el('button', 'btn btn-soft rule-use', usesRange(rule.when) ? 'Use the current reading as the low end' : 'Use the current reading');
       use.type = 'button';
       use.addEventListener('click', () => {
         const now = view.value(channel);
         if (now == null) return;
-        if (rule.when === 'between') rule.low = now;
+        if (usesRange(rule.when)) rule.low = now;
         else rule.threshold = now;
         persist();
         render();

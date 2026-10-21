@@ -476,7 +476,7 @@ const SECTIONS = [
       // g, so sitting still reads about 1000 on the strength and on whichever
       // axis points down.
       {
-        id: 'accel', emoji: '🚀', name: 'Acceleration (total)',
+        id: 'accel', emoji: '🚀', name: 'Acceleration (strength)',
         kind: 'number',
         channels: ['accel'],
         ...reading('accel', 'input.acceleration(Dimension.Strength)'),

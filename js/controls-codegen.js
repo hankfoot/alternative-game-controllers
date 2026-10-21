@@ -70,6 +70,7 @@ export const WHEN_CHOICES = {
   number: [
     ['above', 'goes above'], ['below', 'goes below'],
     ['while-above', 'is above'], ['while-below', 'is below'],
+    ['while-between', 'is between'], ['while-outside', 'is not between'],
     ['between', 'steers between'],
   ],
   event: [['happens', 'happens']],
@@ -101,9 +102,13 @@ export function offered(choice, slot, current = null) {
   return offersPin(choice, slot, current);
 }
 
+/** The whens that take a low and a high rather than one threshold. */
+export const usesRange = (when) => when === 'between' || when === 'while-between' || when === 'while-outside';
+
 /** The kind of control a `when` can drive. */
 export function actionKind(when) {
-  if (when === 'held' || when === 'while-above' || when === 'while-below') return 'hold';
+  if (when === 'held' || when === 'while-above' || when === 'while-below'
+    || when === 'while-between' || when === 'while-outside') return 'hold';
   if (when === 'between') return 'level';
   return 'press';
 }
@@ -140,7 +145,7 @@ export function normalizeRule(rule, targets) {
   const span = { min: info.min ?? 0, max: info.max ?? 1 };
   const normalized = { id: String(rule.id ?? ''), input: choice.id, when: rule.when, control: rule.control };
   if (choice.family === 'number') {
-    if (rule.when === 'between') {
+    if (usesRange(rule.when)) {
       normalized.low = num(rule.low, span.min);
       normalized.high = num(rule.high, span.max);
     } else {
@@ -229,6 +234,26 @@ function numberRuleLines(rule, name, now, channel) {
       `    ${hold(rule.control, false)}`,
       `}`,
     );
+  } else if (rule.when === 'while-between' || rule.when === 'while-outside') {
+    // Held while the reading is inside the band (or outside it), let go once
+    // it has come back out (or in) by the hysteresis, so a reading sitting on
+    // either edge does not flicker the control.
+    const h = hysteresis(channel);
+    const inside = `${now} >= ${rule.low} && ${now} <= ${rule.high}`;
+    const outside = `${now} < ${rule.low} || ${now} > ${rule.high}`;
+    const past = rule.when === 'while-between' ? inside : outside;
+    const back = rule.when === 'while-between'
+      ? `${now} < ${rule.low - h} || ${now} > ${rule.high + h}`
+      : `${now} >= ${rule.low + h} && ${now} <= ${rule.high - h}`;
+    lines.push(
+      `if ((${past}) && ${name}On == 0) {`,
+      `    ${name}On = 1`,
+      `    ${hold(rule.control, true)}`,
+      `} else if ((${back}) && ${name}On == 1) {`,
+      `    ${name}On = 0`,
+      `    ${hold(rule.control, false)}`,
+      `}`,
+    );
   } else if (rule.when === 'between') {
     const span = rule.high - rule.low || 1;
     lines.push(
@@ -245,7 +270,7 @@ function numberRuleLines(rule, name, now, channel) {
 
 function numberRuleState(rule, name) {
   if (rule.when === 'above' || rule.when === 'below') return [`let ${name}Past = 0`];
-  if (rule.when === 'while-above' || rule.when === 'while-below') return [`let ${name}On = 0`];
+  if (actionKind(rule.when) === 'hold') return [`let ${name}On = 0`];
   return [`let ${name}Level = 0`, `let ${name}Last = -1`];
 }
 

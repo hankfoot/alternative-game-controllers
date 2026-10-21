@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import {
   INPUT_CHOICES, WHEN_CHOICES, actionKind, canDrive, controlChoices, groupedInputChoices, inputChoice, normalizeRule,
-  offered, offersPin, ownedHandlers, rulesCode, rulesParts, sentencesFor, whenChoicesFor,
+  offered, offersPin, ownedHandlers, usesRange, rulesCode, rulesParts, sentencesFor, whenChoicesFor,
 } from '../js/controls-codegen.js';
 import { streamLoad } from '../js/builder.js';
 import { findGame } from '../js/games/index.js';
@@ -191,6 +191,7 @@ test('the input list comes in groups, holding only what can drive the control', 
   assert.ok(forLevel.flatMap(([, c]) => c).every((c) => c.family === 'number'));
   assert.deepEqual(whenChoicesFor('binary', 'hold').map(([id]) => id), ['held']);
   assert.deepEqual(whenChoicesFor('number', 'press').map(([id]) => id), ['above', 'below']);
+  assert.deepEqual(whenChoicesFor('number', 'hold').map(([id]) => id), ['while-above', 'while-below', 'while-between', 'while-outside']);
 });
 
 // One pin per sentence: the clip goes on P0, and a second control's clip on
@@ -212,4 +213,23 @@ test('the sentences do not offer the buttons, the logo, or an analog pin', () =>
   for (const id of ['btna', 'btnb', 'logo', 'p0:analog']) assert.ok(!offered(inputChoice(id), 0), `${id} is off the list`);
   for (const id of ['p0:touch', 'p0:switch', 'pitch', 'shake', 'loud']) assert.ok(offered(inputChoice(id), 0), `${id} is on it`);
   assert.ok(offered(inputChoice('btna'), 0, 'btna'), 'but a saved sentence keeps its button');
+});
+
+// A band rather than a line: held while the reading is inside it, or while
+// it is outside it, with the same hysteresis either way.
+test('is between and is not between hold inside or outside a band', () => {
+  assert.ok(usesRange('while-between') && usesRange('while-outside') && usesRange('between') && !usesRange('while-above'));
+  const inside = rulesCode([{ input: 'light', when: 'while-between', control: 'thrust', low: 50, high: 150 }], jetpack);
+  assert.ok(inside.includes('if ((lightNow >= 50 && lightNow <= 150) && r1On == 0) {'));
+  assert.ok(inside.includes('gameHold("thrust", true)'));
+  assert.ok(inside.includes('} else if ((lightNow < 42 || lightNow > 158) && r1On == 1) {'), 'eight past either edge');
+  assert.ok(inside.includes('gameHold("thrust", false)'));
+  assert.ok(inside.includes('let r1On = 0'));
+
+  const outside = rulesCode([{ input: 'light', when: 'while-outside', control: 'thrust', low: 50, high: 150 }], jetpack);
+  assert.ok(outside.includes('if ((lightNow < 50 || lightNow > 150) && r1On == 0) {'));
+  assert.ok(outside.includes('} else if ((lightNow >= 58 && lightNow <= 142) && r1On == 1) {'));
+
+  const rule = normalizeRule({ input: 'light', when: 'while-between', control: 'thrust' }, jetpack);
+  assert.deepEqual([rule.low, rule.high], [0, 255], 'a fresh band is the whole range');
 });

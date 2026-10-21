@@ -84,7 +84,7 @@ export const SECTIONS = [
       {
         id: 'acceleration',
         title: 'Acceleration',
-        intro: 'The same sensor can also feel how hard the micro:bit is moving, not just how it is held. The number is in thousandths of the pull of gravity, so a board sitting still reads about 1000, and a jolt sends it much higher. There is one number for the total jolt and one for each of the three directions. This is useful for how hard, like a punch or a stomp.',
+        intro: 'The same sensor can also feel how hard the micro:bit is moving, not just how it is held. The number is in thousandths of the pull of gravity, so a board sitting still reads about 1000, and a jolt sends it much higher. There is one number for the overall strength of the jolt and one for each of the three directions. This is useful for how hard, like a punch or a stomp.',
         steps: [
           UPLOAD,
           'Hold the micro:bit still and watch the numbers settle.',
