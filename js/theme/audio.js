@@ -181,9 +181,10 @@ export function createAudio({
      * when it finishes on its own. The game ignores both — a crash noise is
      * fire-and-forget — but the Design screen's preview button needs to know,
      * because a button that says ▶ while a sound is already playing offers to
-     * do the thing it is doing.
+     * do the thing it is doing. `onStart` gets the sound's length in seconds
+     * once it is actually playing, which is what its playhead runs against.
      */
-    play(id, event, { onEnded } = {}) {
+    play(id, event, { onEnded, onStart } = {}) {
       if (muted || !start()) return null;
       const source = sourceFor(id, event);
       if (!source) return null;
@@ -197,6 +198,7 @@ export function createAudio({
         }
         node = playBuffer(buffer, master);
         node.onended = () => onEnded?.();
+        onStart?.(buffer.duration);
       });
 
       return {
@@ -227,6 +229,26 @@ export function createAudio({
 
     stopMusic,
 
+    /**
+     * The shape of a sound, as `count` peaks between 0 and 1, or null when there
+     * is nothing to show. Decoding needs a context but not a running one, so
+     * this builds it without asking to start: the Design screen draws every
+     * row's waveform before anybody has clicked anything.
+     */
+    async peaks(id, event, count = 160) {
+      if (!ctx) {
+        if (!Context) return null;
+        try {
+          ctx = new Context();
+        } catch {
+          return null;
+        }
+      }
+      const source = sourceFor(id, event);
+      const buffer = source ? await bufferFor(source) : null;
+      return buffer ? peaksOf(buffer.getChannelData(0), count) : null;
+    },
+
     /** Drops a decoded sound so a re-recorded one isn't played from cache. */
     forget(assetId) {
       const id = asUpload(assetId);
@@ -234,6 +256,64 @@ export function createAudio({
       pending.delete(id);
     },
   };
+}
+
+/**
+ * The loudest sample in each of `count` equal stretches of a recording, scaled
+ * so the loudest stretch reaches 1. Scaled because a quiet recording drawn to
+ * its true size is a flat line, and the point of drawing it is to see its shape.
+ */
+export function peaksOf(samples, count) {
+  const peaks = new Float32Array(count);
+  if (!samples?.length) return peaks;
+  const step = samples.length / count;
+  let loudest = 0;
+  for (let i = 0; i < count; i += 1) {
+    let peak = 0;
+    const end = Math.min(samples.length, Math.floor((i + 1) * step));
+    for (let j = Math.floor(i * step); j < end; j += 1) {
+      const value = Math.abs(samples[j]);
+      if (value > peak) peak = value;
+    }
+    peaks[i] = peak;
+    if (peak > loudest) loudest = peak;
+  }
+  if (loudest > 0) for (let i = 0; i < count; i += 1) peaks[i] /= loudest;
+  return peaks;
+}
+
+/**
+ * How loud a live stream is right now, between 0 and 1, read as often as the
+ * caller likes. Its own context, so listening to the microphone never touches
+ * the one the game plays through. `close()` lets it go.
+ */
+export function listenTo(stream) {
+  const Context = globalThis.AudioContext ?? globalThis.webkitAudioContext;
+  if (!Context || !stream) return null;
+  let ctx = null;
+  try {
+    ctx = new Context();
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 1024;
+    ctx.createMediaStreamSource(stream).connect(analyser);
+    const samples = new Float32Array(analyser.fftSize);
+    return {
+      level() {
+        analyser.getFloatTimeDomainData(samples);
+        let sum = 0;
+        for (const value of samples) sum += value * value;
+        // Root mean square, lifted: speech sits around 0.05-0.2 raw, which
+        // would draw as a row of stubs.
+        return Math.min(1, Math.sqrt(sum / samples.length) * 4);
+      },
+      close() {
+        ctx.close?.().catch(() => {});
+      },
+    };
+  } catch {
+    ctx?.close?.().catch(() => {});
+    return null;
+  }
 }
 
 // --- Making the noise yourself ----------------------------------------------
@@ -245,6 +325,9 @@ const RECORDING_TYPES = [
   'audio/ogg;codecs=opus',
   'audio/mp4',
 ];
+
+/** The longest a recording runs before it stops on its own. */
+export const RECORDING_CAP_MS = 10_000;
 
 export function recordingSupported() {
   return Boolean(globalThis.MediaRecorder && navigator.mediaDevices?.getUserMedia);
@@ -273,7 +356,7 @@ function pickType() {
  * recording does rather than when the counting does. Returning false from it
  * closes the microphone and records nothing.
  */
-export async function startRecording({ maxMs = 10_000, beforeStart = null } = {}) {
+export async function startRecording({ maxMs = RECORDING_CAP_MS, beforeStart = null } = {}) {
   if (!recordingSupported()) return { error: 'This browser cannot record audio.' };
 
   let stream = null;
@@ -330,6 +413,11 @@ export async function startRecording({ maxMs = 10_000, beforeStart = null } = {}
   }, maxMs);
 
   return {
+    // The live microphone, for drawing what it hears, and the recording as it
+    // finishes — whether stopped by hand or by the cap, which is how the page
+    // finds out that the cap has been reached.
+    stream,
+    ended: finished,
     stop() {
       clearTimeout(timer);
       if (recorder.state === 'recording') recorder.stop();

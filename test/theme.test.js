@@ -12,7 +12,7 @@ import {
 } from '../js/theme/theme-store.js';
 import { createAssetStore, normalizeAsset } from '../js/theme/assets.js';
 import { bandOffset, spacedInstances } from '../js/theme/scene.js';
-import { SOUND_EVENTS, asUpload, isUpload, uploadId } from '../js/theme/audio.js';
+import { SOUND_EVENTS, asUpload, isUpload, peaksOf, uploadId } from '../js/theme/audio.js';
 import { exportBundle, readBundle, BUNDLE_KIND } from '../js/theme/portable.js';
 import { key } from '../js/storage-keys.js';
 import { RULES } from '../js/games/sidescroller.js';
@@ -358,6 +358,21 @@ test('subscribers hear what changed, and blocked storage still works', () => {
 
   assert.deepEqual(heard, ['font', 'replace']);
   assert.equal(store.get().font, 'outfit', 'reset really reset it');
+});
+
+test("a sound's shape is its loudest moments, scaled so the loudest reaches the top", () => {
+  // Quiet, then a spike, then quiet: a quiet recording still shows its shape.
+  const samples = new Float32Array(100);
+  samples[10] = -0.05;
+  samples[55] = 0.2;
+  const peaks = peaksOf(samples, 4);
+  assert.equal(peaks.length, 4);
+  assert.equal(peaks[2], 1, 'the loudest stretch reaches the top');
+  assert.ok(Math.abs(peaks[0] - 0.25) < 1e-6, 'the rest keep their size relative to it');
+  assert.equal(peaks[1], 0);
+
+  assert.deepEqual([...peaksOf(new Float32Array(10), 3)], [0, 0, 0], 'silence stays flat');
+  assert.deepEqual([...peaksOf(null, 2)], [0, 0], 'nothing at all draws as silence');
 });
 
 test('a sound reference round-trips through its asset id', () => {

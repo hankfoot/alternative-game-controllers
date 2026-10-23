@@ -1336,29 +1336,41 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
    as its own sentence — and four rows of different lengths put their buttons in
    four different places. Stretching them lines the controls up in one column. */
 #panel-design .settings-group > .sound-row { align-self: stretch; }
-/* Label left, controls right, on one line. They wrap to two only when the card
-   is too narrow to hold both — which is the point at which stacking reads
-   better than squeezing. */
-/* `nowrap` is load-bearing. Flex decides to wrap from content size before it
-   considers shrinking, so with wrapping on, a long filename sent the buttons
-   onto a second line instead of ellipsising the name. */
-.sound-head {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; flex-wrap: nowrap;
-}
+/* The sentence on top; under it the sound, drawn, with its controls beside.
+   The waveform takes whatever width the buttons leave. */
+.sound-body { display: flex; align-items: center; gap: 8px; }
 .sound-actions { display: flex; align-items: center; gap: 3px; flex: none; }
 /* A filename is any length somebody likes, so it is the one part allowed to be
-   cut short — otherwise adding four sounds puts every row back onto two lines.
-   The whole name stays available on hover, and to a screen reader. */
-.sound-head .wiring-sentence { flex: 1 1 auto; min-width: 0; }
-.sound-head .sound-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Once the card is this narrow there is no room to hold both, and squeezing the
-   sentence into a 50px column wraps it to five lines. Below here the buttons
-   take their own line instead. */
-@media (max-width: var(--component)) {
-  .sound-head { flex-wrap: wrap; }
-  .sound-head .wiring-sentence { flex: 1 1 100%; }
+   cut short. The whole name stays available on hover, and to a screen reader. */
+.sound-row .wiring-sentence { min-width: 0; }
+.sound-row .sound-name {
+  display: inline-block; max-width: 100%; vertical-align: bottom;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* Once the card is this narrow the buttons take their own line under the
+   waveform rather than squeezing it to a stub. */
+@media (max-width: 520px) {
+  .sound-body { flex-wrap: wrap; }
+  .sound-wave { flex-basis: 100%; }
+}
+
+/* The sound, as a picture of itself, and the button that plays it. */
+.sound-wave {
+  --wave-idle: var(--ink-faint);
+  --wave-played: var(--purple);
+  --wave-live: var(--red);
+  flex: 1 1 auto; min-width: 0; height: 34px;
+  display: flex; align-items: center; gap: 8px; padding: 0 10px 0 8px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--bg-soft);
+  color: var(--ink-soft); font: inherit; cursor: pointer;
+}
+.sound-wave:hover:not(:disabled) { border-color: var(--ink-faint); color: var(--ink); }
+.sound-wave:focus-visible { outline: 2px solid var(--purple); outline-offset: 1px; }
+.sound-wave:disabled { cursor: default; }
+.sound-wave canvas { flex: 1 1 auto; min-width: 0; height: 22px; display: block; }
+.sound-wave-glyph { flex: none; width: 1em; font-size: .7rem; text-align: center; }
+.sound-wave:disabled .sound-wave-glyph { visibility: hidden; }
+.sound-wave-playing { border-color: var(--purple); color: var(--purple-ink); }
 .sound-name { font-weight: 700; }
 .sound-name-empty { font-weight: 500; color: var(--ink-faint); }
 .sound-row .btn { padding: 4px 9px; font-size: .76rem; }
@@ -1366,8 +1378,20 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 .sound-actions [hidden] { display: none; }
 /* Recording is the one control here with a consequence attached, so it is the
    one that changes colour while it is doing something. */
+/* Wide enough for "Get Ready" and "■ Stop 10s", so the button doesn't change
+   size as it goes. It fills from the left while getting ready, and again as
+   a recording approaches the cap. */
+.sound-record { min-width: 10.5ch; font-variant-numeric: tabular-nums; }
+/* Registered so it can be animated: the Get Ready fill runs as a plain CSS
+   animation rather than being set frame by frame. */
+@property --fill { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+.sound-readying { animation: sound-ready var(--ready, 1s) linear forwards; }
+@keyframes sound-ready { from { --fill: 0%; } to { --fill: 100%; } }
 .sound-record[aria-pressed], .sound-recording {
-  background: var(--red-soft); border-color: var(--red); color: var(--red-ink);
+  border-color: var(--red); color: var(--red-ink);
+  background: linear-gradient(to right,
+    color-mix(in srgb, var(--red) 45%, var(--red-soft)) var(--fill, 0%),
+    var(--red-soft) var(--fill, 0%));
 }
 
 /* --- Words --- */

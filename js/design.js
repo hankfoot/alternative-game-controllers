@@ -18,8 +18,10 @@ import { audioAssetFromFile, spriteAsset } from './theme/images.js';
 import { contentBounds } from './theme/raster.js';
 import { SLOTS, sizeOf, cropsToInk } from './theme/defaults.js';
 import {
-  SOUND_EVENTS, BUILT_IN, asUpload, isUpload, startRecording, recordingSupported,
+  SOUND_EVENTS, BUILT_IN, RECORDING_CAP_MS, asUpload, isUpload, listenTo,
+  startRecording, recordingSupported,
 } from './theme/audio.js';
+import { drawLevels, drawWaveform } from './theme/waveform.js';
 import { FONTS, fontStack, cardPalette } from './theme/theme-store.js';
 import { createColourPicker } from './theme/colour-picker.js';
 import { newAssetId } from './theme/assets.js';
@@ -27,6 +29,9 @@ import { exportBundle, readBundle, downloadBundle } from './theme/portable.js';
 import { loadAllRules, saveAllRules } from './rules-store.js';
 import { MOTION, RULES, courseFrom } from './games/sidescroller.js';
 import { GAMES } from './games/index.js';
+
+// How long Record shows "Get Ready" and fills before it starts listening.
+const READY_MS = 1000;
 
 /** One choice, laid out as running prose so it reads as a statement. */
 function sentence(...parts) {
@@ -393,37 +398,91 @@ export function initDesign({
 
     const note = document.createElement('span');
     note.className = 'theme-note';
-    let recorder = null;
 
-    const record = button('● Record');
-    record.classList.add('sound-record');
-    // Whether the count is running. It sits apart from `recorder`, which is only
-    // set once the count finishes — so pressing stop mid-count has something to
-    // check that says "not yet, but on its way".
-    let counting = false;
+    // The sound itself, drawn: its shape before you hear it, a playhead while
+    // you do, and the microphone while you record over it. It is also the play
+    // button — the thing you would reach for to hear a sound is a picture of
+    // that sound — so it carries the play glyph and an accessible name.
+    const wave = document.createElement('button');
+    wave.type = 'button';
+    wave.className = 'sound-wave';
+    const glyph = document.createElement('span');
+    glyph.className = 'sound-wave-glyph';
+    glyph.setAttribute('aria-hidden', 'true');
+    const canvas = document.createElement('canvas');
+    canvas.setAttribute('aria-hidden', 'true');
+    wave.append(glyph, canvas);
 
-    // Play and remove are icons: they repeat on every row, and four labelled
-    // buttons a row was the bulk of the noise in here. Both keep an accessible
-    // name, since a glyph on its own is not one.
-    const preview = button('▶', 'icon-btn');
-    // Whatever this row is currently playing, so the same button can stop it.
-    // A ▶ that stays ▶ while a sound is running offers to do the thing it is
-    // already doing, and the only way to stop a long upload was to wait it out.
+    let peaks = null;
+    // While a preview runs: when it started and how long it is, for the playhead.
     let playing = null;
+    let playhead = null;
+    // While recording: the microphone's recent loudness, newest last.
+    let levels = null;
+
+    function redraw() {
+      if (levels) drawLevels(canvas, levels);
+      else drawWaveform(canvas, peaks, { progress: playhead });
+    }
+    // Drawn again at its new width when the card reflows, since a canvas
+    // doesn't stretch its bars, it smears them.
+    new ResizeObserver(redraw).observe(canvas);
 
     function showPlaying(on) {
-      preview.textContent = on ? '⏸' : '▶';
+      glyph.textContent = on ? '■' : '▶';
       const label = on ? 'Stop' : 'Hear it';
-      preview.title = label;
-      preview.setAttribute('aria-label', label);
+      wave.title = label;
+      wave.setAttribute('aria-label', label);
+      wave.classList.toggle('sound-wave-playing', on);
     }
     showPlaying(false);
+
+    function stopPreview() {
+      playing?.handle?.stop();
+      playing = null;
+      playhead = null;
+      showPlaying(false);
+      redraw();
+    }
+
+    function sweep() {
+      if (!playing?.duration) return;
+      playhead = Math.min(1, (performance.now() - playing.started) / (playing.duration * 1000));
+      redraw();
+      if (playhead < 1) requestAnimationFrame(sweep);
+    }
+
+    // Recording is the one control with a consequence, so it is the one that
+    // counts down and fills up rather than just changing its word: the count
+    // says when it starts listening, and the fill how long it has left.
+    const record = button('● Record');
+    record.classList.add('sound-record');
+    let recorder = null;
+    // Whether the count is running. It sits apart from `recorder`, which is only
+    // set once the count finishes — so pressing during the count has something
+    // to check that says "not yet, but on its way".
+    let counting = false;
+
+    function showRecord(text, label = text) {
+      record.textContent = text;
+      record.setAttribute('aria-label', label);
+    }
+
     const clear = button('✕', 'icon-btn');
     clear.title = 'Silence this';
     clear.setAttribute('aria-label', 'Silence this');
     const revert = button('↺', 'icon-btn');
     revert.title = 'Back to the default sound';
     revert.setAttribute('aria-label', 'Back to the default sound');
+
+    async function loadShape() {
+      const id = current();
+      const shape = id === 'none' ? null : await audio?.peaks(id, event);
+      // The row may have moved on to another sound while this one decoded.
+      if (current() !== id) return;
+      peaks = shape ?? null;
+      redraw();
+    }
 
     function sync() {
       const id = current();
@@ -436,18 +495,58 @@ export function initDesign({
       // still be read.
       name.title = mine ? name.textContent : '';
       name.classList.toggle('sound-name-empty', !mine && !built);
-      // Gone rather than greyed. A disabled play and a disabled remove on every
-      // row was a screenful of dead controls in the way of the two that do
-      // something — and which two those are depends on where the row is.
-      preview.hidden = !mine && !built;
+      wave.disabled = !mine && !built;
       clear.hidden = id === 'none';
       revert.hidden = built;
       // The row's sound just changed under a preview that is still running.
-      if (playing) {
-        playing.stop();
-        playing = null;
-        showPlaying(false);
-      }
+      if (playing) stopPreview();
+      peaks = null;
+      redraw();
+      loadShape();
+    }
+
+    // Saves what was recorded. Reached both from pressing Stop and from the
+    // recording reaching its cap on its own, so it guards against running twice.
+    async function finish(started) {
+      if (recorder !== started) return;
+      recorder = null;
+      const blob = await started.stop();
+      stopListening();
+      record.classList.remove('sound-recording');
+      record.style.removeProperty('--fill');
+      showRecord('● Record');
+      note.textContent = 'Saving…';
+      const saved = await saveSound(new File([blob], 'Recording', { type: blob.type }), 'your recording');
+      note.textContent = saved ? '' : "That recording couldn't be saved.";
+      if (saved) onPick(asUpload(saved.id));
+      sync();
+    }
+
+    let listening = null;
+    function stopListening() {
+      listening?.close();
+      listening = null;
+      levels = null;
+      redraw();
+    }
+
+    function listen(started) {
+      listening = listenTo(started.stream);
+      levels = [];
+      const begun = performance.now();
+      const tick = () => {
+        if (recorder !== started) return;
+        const elapsed = performance.now() - begun;
+        record.style.setProperty('--fill', `${Math.min(100, (elapsed / RECORDING_CAP_MS) * 100)}%`);
+        showRecord(`■ Stop ${Math.ceil(elapsed / 1000)}s`, 'Stop recording');
+        if (listening) {
+          levels.push(listening.level());
+          if (levels.length > 400) levels.shift();
+        }
+        redraw();
+        requestAnimationFrame(tick);
+      };
+      tick();
     }
 
     record.addEventListener('click', async () => {
@@ -460,36 +559,32 @@ export function initDesign({
         return;
       }
       if (recorder) {
-        const blob = await recorder.stop();
-        recorder = null;
-        record.textContent = '● Record';
-        record.classList.remove('sound-recording');
-        note.textContent = 'Saving…';
-        const saved = await saveSound(new File([blob], 'Recording', { type: blob.type }), 'your recording');
-        note.textContent = saved ? '' : "That recording couldn't be saved.";
-        if (saved) onPick(asUpload(saved.id));
-        sync();
+        finish(recorder);
         return;
       }
       note.textContent = '';
+      if (playing) stopPreview();
       // Asking for the microphone happens first and takes an unpredictable
       // moment — which is why a press of ● could seem to do nothing: by the time
       // it was listening you had already said the thing. So permission is
-      // settled first, then a count, and only then does it start recording.
+      // settled first, then a moment to get ready, and only then does it start.
       counting = true;
       record.disabled = true;
-      record.textContent = '■ Stop';
       record.classList.add('sound-recording');
-      note.textContent = 'Getting the microphone ready…';
+      showRecord('…', 'Getting the microphone ready');
 
       const started = await startRecording({
         async beforeStart() {
           record.disabled = false;
-          for (const beat of ['3', '2', '1']) {
-            if (!counting) return false;
-            note.textContent = `Recording in ${beat}…`;
-            await new Promise((wake) => setTimeout(wake, 700));
-          }
+          // A bar filling across the button rather than numbers: the end of
+          // the fill is the moment it starts listening, which a glance at a
+          // bar shows better than reading a count does. The fill is a CSS
+          // animation and the wait a timer, so neither depends on frames.
+          showRecord('Get Ready', 'Getting ready to record — press to cancel');
+          record.style.setProperty('--ready', `${READY_MS}ms`);
+          record.classList.add('sound-readying');
+          await new Promise((wake) => setTimeout(wake, READY_MS));
+          record.classList.remove('sound-readying');
           return counting;
         },
       });
@@ -499,16 +594,17 @@ export function initDesign({
       record.disabled = false;
 
       if (started.error || started.cancelled || stopped) {
-        record.textContent = '● Record';
-        record.classList.remove('sound-recording');
+        record.classList.remove('sound-recording', 'sound-readying');
+        record.style.removeProperty('--fill');
+        showRecord('● Record');
         note.textContent = started.error ?? '';
         return;
       }
 
       recorder = started;
-      // Saying the cap out loud, since it stops on its own and that would
-      // otherwise look like a fault.
-      note.textContent = 'Recording now — stops on its own after 10 seconds.';
+      listen(started);
+      // The cap stops it on its own; this is how the row hears about it.
+      started.ended.then(() => finish(started));
     });
 
     const upload = document.createElement('label');
@@ -530,21 +626,26 @@ export function initDesign({
     });
     upload.appendChild(file);
 
-    preview.addEventListener('click', () => {
+    wave.addEventListener('click', () => {
       audio?.resume();
       if (playing) {
-        playing.stop();
-        playing = null;
-        showPlaying(false);
+        stopPreview();
         return;
       }
-      playing = audio?.play(current(), event, {
+      const preview = { handle: null, started: 0, duration: 0 };
+      preview.handle = audio?.play(current(), event, {
+        onStart: (duration) => {
+          preview.started = performance.now();
+          preview.duration = duration;
+          if (playing === preview) sweep();
+        },
         onEnded: () => {
-          playing = null;
-          showPlaying(false);
+          if (playing === preview) stopPreview();
         },
       }) ?? null;
-      showPlaying(Boolean(playing));
+      if (!preview.handle) return;
+      playing = preview;
+      showPlaying(true);
     });
     clear.addEventListener('click', () => {
       onPick('none');
@@ -557,18 +658,17 @@ export function initDesign({
 
     line.append(document.createTextNode(lead), name);
 
-    // The label and its controls share one line, so four events read as four
-    // rows rather than eight. The note drops underneath, and only when there
-    // is something to say.
+    // The sentence on top, then the sound and what you can do to it side by
+    // side. The note drops underneath, and only when there is something to say.
     const actions = document.createElement('div');
     actions.className = 'sound-actions';
-    actions.append(...(canRecord ? [record] : []), upload, preview, revert, clear);
+    actions.append(...(canRecord ? [record] : []), upload, revert, clear);
 
-    const head = document.createElement('div');
-    head.className = 'sound-head';
-    head.append(line, actions);
+    const body = document.createElement('div');
+    body.className = 'sound-body';
+    body.append(wave, actions);
 
-    row.append(head, note);
+    row.append(line, body, note);
     sync();
     return row;
   }
