@@ -16,16 +16,22 @@
 
 import { CANVAS } from './raster.js';
 
-/** Slot id → file path, or null to use the built-in sketch. */
+/**
+ * Slot id → file path, or null to use the built-in sketch.
+ *
+ * The set that ships is a Flappy Bird knockoff — a bird, green pipes, a sunny
+ * sky — made at exactly these sizes from the Design screen's AI prompt. The
+ * sketches further down are still the fallback for any file that fails to load.
+ */
 export const SPRITE_FILES = {
-  player: null,
-  obstacle: null,
-  block: null,
-  ground: null,
-  backdrop: null,
-  far: null,
-  near: null,
-  decor: null,
+  player: 'assets/sprites/player.png',
+  obstacle: 'assets/sprites/obstacle.png',
+  block: 'assets/sprites/block.png',
+  ground: 'assets/sprites/ground.png',
+  backdrop: 'assets/sprites/backdrop.png',
+  far: 'assets/sprites/far.png',
+  near: 'assets/sprites/near.png',
+  decor: 'assets/sprites/decor.png',
 };
 
 /**
