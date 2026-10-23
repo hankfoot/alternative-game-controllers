@@ -34,7 +34,7 @@ export const SECTIONS = [
     id: 'touch',
     title: 'Touch',
     intro: 'Electricity only flows when it has a complete path to travel, called a circuit. Each of these examples gives your micro:bit a different way to notice when that path is completed.',
-    note: 'For the best results, stick your foil or copper tape onto something stiff, like cardboard, or fold it over on itself, so the alligator clips have something to grip.',
+    note: 'For the best results, stick your foil or copper tape onto something thick, like cardboard, or fold it over on itself, so the alligator clips have something to grip.',
     lessons: [
       {
         id: 'switch',
@@ -42,7 +42,7 @@ export const SECTIONS = [
         intro: 'A switch is two pieces of metal that let electricity through only when they touch, like the light switch on a wall. Foil works well because metal carries electricity easily. We can attach foil to two objects to detect when they come together, like a lid closing on a jar or a door shutting.',
         setup: `${clipTo('P0')} ${clipTo('3V', 'a second piece of foil')}`,
         interact: 'Touch the two foils together.',
-        image: { src: 'assets/lesson-switch.jpg', alt: 'Two pieces of foil, one clipped to P0 and one to 3V' },
+        video: { src: 'assets/lesson-switch.mp4', alt: 'Two foil pads, one clipped to P0 and one to 3V, touched together' },
         inputs: [{ id: 'p0', mode: 'switch' }],
       },
       {
@@ -51,7 +51,7 @@ export const SECTIONS = [
         intro: 'Your body carries electricity too, just not as easily as metal. The micro:bit can be set to notice even the tiny amount that passes through a person, so when you hold one foil and touch the other, you become part of the path. This is how a fruit piano works: a banana or a lump of Play-Doh carries enough electricity to become a button.',
         setup: `${clipTo('P0')} ${clipTo('GND', 'a second piece of foil, and hold that foil in one hand')}`,
         interact: 'Touch the P0 foil with your other hand.',
-        image: { src: 'assets/lesson-resistive.jpg', alt: 'A hand holding foil clipped to GND, the other hand touching foil clipped to P0' },
+        video: { src: 'assets/lesson-resistive.mp4', alt: 'A hand holding the foil clipped to GND while the other hand touches the foil on P0' },
         inputs: [{ id: 'p0', mode: 'resistive' }],
       },
       {
@@ -61,7 +61,7 @@ export const SECTIONS = [
         setup: clipTo('P0'),
         uploadNote: 'Keep your hands off the foil while it starts.',
         interact: 'Touch the foil. If it stays on after you let go, press A and B together to reset it.',
-        image: { src: 'assets/lesson-capacitive.jpg', alt: 'A piece of foil clipped to P0' },
+        video: { src: 'assets/lesson-capacitive.mp4', alt: 'A hand touching a foil pad clipped to P0' },
         inputs: [{ id: 'p0', mode: 'touch' }],
       },
     ],
@@ -77,7 +77,7 @@ export const SECTIONS = [
         intro: 'When you tilt the micro:bit, it can tell how far by feeling which way gravity is pulling on it. Tipping it forward and back is called pitch, and tipping it side to side is called roll. Both are measured in degrees. This is useful for steering, like tilting a phone in a racing game.',
         setup: BLANK,
         interact: 'Tilt the micro:bit forward and back, then side to side.',
-        image: { src: 'assets/lesson-tilt.jpg', alt: 'A micro:bit tilted forward in a hand' },
+        video: { src: 'assets/lesson-tilt.mp4', alt: 'The micro:bit tilted forward and back, then side to side' },
         inputs: [{ id: 'pitch' }, { id: 'roll' }],
       },
       {
@@ -86,7 +86,7 @@ export const SECTIONS = [
         intro: 'The same sensor can also feel how hard the micro:bit is moving, not just how it is held. The number is in thousandths of the pull of gravity, so a board sitting still reads about 1000, and a jolt sends it much higher. There is one number for the overall strength of the jolt and one for each of the three directions. This is useful for how hard, like a punch or a stomp.',
         setup: BLANK,
         interact: 'Hold the micro:bit still and watch the numbers settle. Then swing it, and jab it in each direction to see which number jumps.',
-        image: { src: 'assets/lesson-acceleration.jpg', alt: 'A micro:bit being swung in a hand' },
+        video: { src: 'assets/lesson-acceleration.mp4', alt: 'The micro:bit swung and jabbed in a hand' },
         inputs: [{ id: 'accel' }, { id: 'accelx' }, { id: 'accely' }, { id: 'accelz' }],
       },
       {
@@ -95,7 +95,7 @@ export const SECTIONS = [
         intro: 'Out of all that movement, the micro:bit also picks out particular moves, like a shake, a bump, or a moment of falling, and which way up it is being held. Each time one happens, it sends a single signal. This is useful for one-off actions, like jumping when you shake a maraca.',
         setup: BLANK,
         interact: 'Shake the micro:bit, then tap it on the table. Tip it to each side, stand it up, turn it over, and toss it gently and catch it. Watch which gesture lights up each time.',
-        image: { src: 'assets/lesson-gestures.jpg', alt: 'A micro:bit being shaken' },
+        video: { src: 'assets/lesson-gestures.mp4', alt: 'The micro:bit tipped, turned over and shaken' },
         // Every gesture the board knows. They cost the radio nothing between
         // happenings, so there is no reason to show only a few, and the point
         // of the example is to find out what each one means in your hand.
@@ -109,7 +109,7 @@ export const SECTIONS = [
         intro: 'The micro:bit can also feel the Earth’s magnetism, just like the needle of a compass. It reports which way it is facing in degrees, where 0 is north. This is useful for turning, like a steering wheel or a dial. Laptops and speakers have magnets of their own, so keep it away from them.',
         setup: BLANK,
         interact: 'Tilt the micro:bit around until every LED is lit, which calibrates the compass. Then hold it flat and turn around slowly.',
-        image: { src: 'assets/lesson-compass.jpg', alt: 'A micro:bit held flat and turned like a dial' },
+        video: { src: 'assets/lesson-compass.mp4', alt: 'The micro:bit turned flat like a dial' },
         inputs: [{ id: 'heading' }],
       },
     ],
@@ -125,7 +125,7 @@ export const SECTIONS = [
         intro: '',
         setup: BLANK,
         interact: 'Cover the LEDs with your hand, then shine a light on them. Talk near the micro:bit, clap once, then go quiet. Hold it between your thumbs and watch the temperature rise.',
-        image: { src: 'assets/lesson-ambient.jpg', alt: 'A hand cupped over the micro:bit LEDs' },
+        video: { src: 'assets/lesson-ambient.mp4', alt: 'A phone light shone on the micro:bit’s LEDs' },
         inputs: [{ id: 'light' }, { id: 'mic' }, { id: 'loud' }, { id: 'quiet' }, { id: 'temp' }],
       },
     ],
@@ -191,11 +191,13 @@ function renderExample(lesson, index, signalStore, views) {
   const body = el('div', 'substep-body');
   body.appendChild(el('h4', null, lesson.title));
 
-  // The photo straight under the title: what you are making, before any words
-  // about it.
-  const figure = el('figure', 'shot shot-slot');
-  figure.setAttribute('aria-label', lesson.image.alt);
-  figure.appendChild(document.createComment(` image slot: ${lesson.image.src} — ${lesson.image.alt} `));
+  // The video straight under the title: what you are making and what it does,
+  // before any words about it. Muted and looping, like a moving photo.
+  const figure = el('figure', 'shot');
+  const video = el('video');
+  Object.assign(video, { src: lesson.video.src, autoplay: true, loop: true, muted: true, playsInline: true });
+  video.setAttribute('aria-label', lesson.video.alt);
+  figure.appendChild(video);
   body.appendChild(figure);
 
   if (lesson.intro) body.appendChild(el('p', null, lesson.intro));

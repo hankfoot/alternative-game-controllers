@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { existsSync } from 'node:fs';
 
 import { INPUTS } from '../js/builder.js';
 import { LESSONS, SECTIONS, lessonChannels, lessonCode } from '../js/lessons.js';
@@ -28,13 +29,14 @@ test('touch walks through three ways, motion through three examples, ambient is 
   assert.deepEqual(SECTIONS[2].lessons.map((l) => l.id), ['ambient']);
 });
 
-test('every lesson says what to do, and leaves room for a photo', () => {
+test('every lesson says what to do, and shows it on video', () => {
   for (const lesson of LESSONS) {
     assert.ok(lesson.setup && lesson.interact, `${lesson.id} says how to set it up and what to do with it`);
-    assert.match(lesson.image.src, /^assets\/lesson-/);
-    assert.ok(lesson.image.alt);
+    assert.match(lesson.video.src, /^assets\/lesson-.+\.mp4$/);
+    assert.ok(existsSync(new URL(`../${lesson.video.src}`, import.meta.url)), `${lesson.video.src} is in the repo`);
+    assert.ok(lesson.video.alt);
   }
-  assert.equal(new Set(LESSONS.map((l) => l.image.src)).size, LESSONS.length, 'a photo of its own each');
+  assert.equal(new Set(LESSONS.map((l) => l.video.src)).size, LESSONS.length, 'a video of its own each');
 });
 
 // The lessons are made by the same assembler as the controller, so the fixes
