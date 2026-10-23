@@ -324,7 +324,11 @@ function paint({ state, message, retrying = false }) {
   // failed and then throwing it away — every failure read "Not Connected",
   // which is the one thing the person already knew.
   if (connectError) {
-    const explain = !connected && !connecting && message;
+    // A lost link carries the board's name, not a reason — the reason is that
+    // it went away — so it gets a sentence of its own rather than a bare name.
+    const lost = state === 'lost'
+      && `Lost the connection to ${message || 'your micro:bit'}. If you just uploaded new code, or it ran out of battery or range, click Connect to reconnect.`;
+    const explain = !connected && !connecting && (lost || message);
     connectError.textContent = explain || '';
     connectError.hidden = !explain;
   }
