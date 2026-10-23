@@ -778,9 +778,9 @@ export function initDesign({
     const parts = [];
     if (done.length) parts.push(`Brought in ${done.length}: ${done.join(', ')}.`);
     if (!files.length) parts.push('There was nothing in it to bring in.');
-    if (failed.length) parts.push(`Couldn’t keep ${failed.join(', ')} — too big, or not a picture or sound this browser can read.`);
-    if (unknown.length) parts.push(`Didn’t recognise ${unknown.join(', ')}. Rename to match the prompt, or add it to its card by hand.`);
-    if (doubled.length) parts.push(`Skipped ${doubled.join(', ')}, since another file already filled that spot.`);
+    if (failed.length) parts.push(`Couldn’t use ${failed.join(', ')}: too big, or not a picture or sound.`);
+    if (unknown.length) parts.push(`Didn’t recognise ${unknown.join(', ')}. Rename it to match the prompt, or add it to its card.`);
+    if (doubled.length) parts.push(`Skipped ${doubled.join(', ')}: another file already filled that spot.`);
     return parts.join(' ') || 'Nothing in there matched a drawing or a sound.';
   }
 

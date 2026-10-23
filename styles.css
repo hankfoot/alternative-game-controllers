@@ -233,18 +233,14 @@ code {
 /* While files are dragged over the card. */
 .design-ai[data-drop="true"] { outline: 2px dashed var(--purple); outline-offset: 2px; }
 
-/* What an example needs on the board before it starts. */
-.lesson-setup {
-  display: inline-block; margin: 2px 0 10px; padding: 3px 10px;
-  font-size: .82rem; color: var(--ink-soft);
-  background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px;
-}
-.lesson-setup strong { color: var(--ink); font-weight: 600; }
+/* Each Sensing example's three steps: the label leads, and what belongs to a
+   step — the code card, the live readings — sits inside it. */
+.lesson-steps > li > p { margin: 0; }
+.lesson-step-label { color: var(--ink); }
+.lesson-steps > li > .code-block, .lesson-steps > li > .lesson-watch { margin-top: 10px; }
 /* The controller's inputs, live, under the game. */
 .game-inputs { margin-top: 20px; }
 .game-inputs h3 { margin: 0 0 6px; font-size: 1rem; }
-.game-inputs-note { margin: 0 0 8px; font-size: .84rem; color: var(--ink-soft); }
-.game-inputs-note[hidden] { display: none; }
 
 /* Controls step 4: what to connect, one entry per control. */
 .hookup-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -253,7 +249,22 @@ code {
 }
 .hookup-head { margin: 0 0 4px; font-size: .92rem; }
 .hookup-text { margin: 0; font-size: .88rem; color: var(--ink-soft); }
-/* Controls step 5: a tuned number needs the code downloaded again. */
+/* Controls step 5: a reading beside the game control it fires. */
+.rule-pair { display: flex; align-items: stretch; gap: 8px; margin-top: 6px; }
+.rule-pair > .rule-live { flex: 1 1 60%; min-width: 0; margin: 0; }
+.rule-pair > .rule-light { flex: 1 1 40%; min-width: 0; }
+.rule-arrow { align-self: center; color: var(--ink-faint); font-size: 1.1rem; }
+.rule-light[data-heard="true"] { border-color: var(--blue); }
+.rule-level {
+  display: inline-block; width: 80px; height: 8px; border-radius: 4px;
+  background: var(--bg-soft); border: 1px solid var(--line); overflow: hidden;
+}
+.rule-level > span { display: block; height: 100%; width: 0; background: var(--blue); }
+@media (max-width: 560px) {
+  .rule-pair { flex-direction: column; }
+  .rule-arrow { transform: rotate(90deg); }
+}
+/* Controls step 2: a changed number needs the code downloaded again. */
 .rule-resend {
   margin: 6px 0 0; font-size: .82rem; font-weight: 600; color: var(--yellow-ink);
 }
@@ -1047,16 +1058,40 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
    inch below are the same number in the same type. Falls back to the mono face
    before the game has said which font it is using. */
 .game-stat strong { font-family: var(--game-font, var(--mono)); font-size: 1rem; }
-/* The active scheme is a name, not a number, so it keeps the body face. */
-#game-scheme { font-family: var(--sans); font-size: .92rem; }
-.game-reset { margin-left: auto; padding: 6px 13px; font-size: .8rem; }
+/* The scheme, as a debug override: a dropdown in the body face, labelled so
+   nobody mistakes it for where a controller's scheme is really decided. */
+.game-scheme-pick { align-items: center; }
+.game-scheme-pick label { display: inline-flex; align-items: center; gap: 6px; }
+#game-scheme {
+  font-family: var(--sans); font-size: .88rem; font-weight: 600; color: var(--ink);
+  padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg);
+}
+/* Reset and Full screen, together at the right: their own 8px apart rather
+   than the bar's 18px, which is for keeping the score and best apart. */
+.game-actions { margin-left: auto; display: flex; gap: 8px; }
+.game-reset, .game-full { padding: 6px 13px; font-size: .8rem; }
+.game-full[hidden] { display: none; }
+/* Full screen: the card fills the display and the canvas takes as much of it
+   as its 8:5 shape allows, centred, with the bar above and the keys below. */
+.game-shell:fullscreen {
+  display: flex; flex-direction: column; justify-content: center;
+  width: 100vw; height: 100vh; padding: 16px 28px; border: 0; border-radius: 0;
+  background: var(--bg-soft); box-sizing: border-box;
+}
+.game-shell:fullscreen #game-canvas {
+  width: min(100%, calc((100vh - 150px) * 8 / 5)); height: auto; margin-inline: auto;
+}
+.game-shell:fullscreen .game-bar,
+.game-shell:fullscreen .game-controls {
+  width: min(100%, calc((100vh - 150px) * 8 / 5)); margin-inline: auto;
+}
 #game-canvas {
   display: block; width: 100%; height: auto; aspect-ratio: 8 / 5;
   background: var(--blue-soft); border: 1px solid var(--line); border-radius: 12px;
   cursor: pointer; touch-action: manipulation;
 }
 #game-canvas:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
-.game-controls { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+.game-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 12px; }
 /* The keys, written out. There used to be a row of on-screen buttons here —
    a third way to play, next to the keyboard and the controller you built, that
    nobody reached for and that left the keys themselves undocumented. */
@@ -1397,6 +1432,11 @@ a.tile:hover { border-color: var(--yellow); transform: translateY(-2px); }
 }
 
 /* A file input the label opens; only the label is ever seen. */
+/* Read out, not shown. */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
 .visually-hidden-file {
   position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;
 }

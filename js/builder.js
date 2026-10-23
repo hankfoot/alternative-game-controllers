@@ -840,6 +840,6 @@ export function describeLoad({ streamed, pressed, weight }) {
   if (pressed) parts.push(`${pressed} on/off input${pressed > 1 ? 's' : ''} reporting every press and release`);
   const load = parts.join(' and ');
   return weight >= STREAM_HEAVY
-    ? { level: 'heavy', text: `You have ${load}. That's more than the micro:bit's Bluetooth can carry — expect the game to feel laggy or jerky, and presses to arrive late. Drop what you aren't using; gestures and loud sounds are free.` }
-    : { level: 'busy', text: `You have ${load}. Fine so far — but stacking on many more will start to lag over Bluetooth. Gestures and loud sounds are free.` };
+    ? { level: 'heavy', text: `You have ${load}. That's more than Bluetooth can carry, so the game will lag. Remove what you aren't using. Gestures and loud sounds cost nothing.` }
+    : { level: 'busy', text: `You have ${load}. That's fine, but many more will make the game lag. Gestures and loud sounds cost nothing.` };
 }

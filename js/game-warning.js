@@ -75,14 +75,14 @@ const controlsLink = () => tabLink('Controls', 'controls');
 function describe(found) {
   if (found.reason === 'no-rules') {
     return [
-      'Your controller has no sentences yet, so nothing it does reaches the game. Write one on ',
+      'Your controller isn’t set up yet, so nothing reaches the game. Set it up on ',
       controlsLink(),
       '.',
     ];
   }
   if (found.reason === 'nothing-steered') {
     return [
-      'Nothing on your controller steers the game yet. Write a sentence that ends in ',
+      'Nothing steers the game yet. Add a control that ends in ',
       strong(found.controls.map((control) => control.label).join(' or ')),
       ' on ',
       controlsLink(),
@@ -92,16 +92,16 @@ function describe(found) {
   if (found.reason === 'half-steered') {
     return [
       strong(found.control.label),
-      ` takes ${count(found.control.total)} controls and only ${count(found.control.done)} has a sentence,`
+      ` needs ${count(found.control.total)} controls and only ${count(found.control.done)} is set,`
       + ' so the craft can only go one way. Add the other on ',
       controlsLink(),
       '.',
     ];
   }
   return [
-    'No sentence ends in ',
+    'Nothing triggers ',
     strong(found.control.label),
-    ' yet — write one on ',
+    ' yet. Add it on ',
     controlsLink(),
     '.',
   ];

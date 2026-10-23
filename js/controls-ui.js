@@ -20,6 +20,7 @@ import { describeLoad, streamLoad, variantFor } from './builder.js';
 import { channelInfo } from './channels.js';
 import { loadRules, saveRules } from './rules-store.js';
 import { createChannelView } from './visualizer.js';
+import { onCommand } from './bus.js';
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -92,6 +93,9 @@ export function initControlsUI({ elements, gameHost, signalStore, storage, optio
   // One per control the scheme steers with — never more, never fewer.
   let rules = sentencesFor(gameHost.activeGame(), loadRules(storage, gameId));
   let views = [];
+  // The command and reset listeners step 5's control lights hold, let go on
+  // every redraw.
+  let unsubscribers = [];
 
   const targets = () => gameHost.activeGame()?.targets ?? [];
   const valid = () => rules.map((rule) => normalizeRule(rule, targets())).filter(Boolean);
@@ -159,9 +163,9 @@ export function initControlsUI({ elements, gameHost, signalStore, storage, optio
 
   /**
    * The numbers a reading's sentence carries — "above 120 lux", "from -40 to
-   * 40 °" — as fields in step 5, where they are tuned against the live
-   * reading, and as plain words in step 2, where the sentence is chosen.
-   * Returns the nodes, and a function giving the marker for the live view.
+   * 40 °" — as fields in step 2, where the sentence is written, and as plain
+   * words in step 5, where it is only being watched. Returns the nodes, and a
+   * function giving the marker for the live view.
    */
   function numbersOf(rule, editable) {
     const choice = inputChoice(rule.input);
@@ -181,7 +185,11 @@ export function initControlsUI({ elements, gameHost, signalStore, storage, optio
     return { nodes: [' ', field('threshold'), unit], marker: () => ({ threshold: rule.threshold }) };
   }
 
-  /** The sentence, with its numbers either fixed words or fields. */
+  /**
+   * The sentence. `choosing` (step 2) makes the input, the when and the
+   * numbers editable; otherwise (step 5) it is plain words, a caption for the
+   * readings under it.
+   */
   function sentenceLine(rule, { choosing }) {
     const choice = inputChoice(rule.input);
     const line = el('p', 'wiring-sentence rule-sentence');
@@ -212,7 +220,7 @@ export function initControlsUI({ elements, gameHost, signalStore, storage, optio
     } else {
       line.append(whens.find(([id]) => id === rule.when)?.[1] ?? whens[0]?.[1] ?? '');
     }
-    const numbers = numbersOf(rule, !choosing);
+    const numbers = numbersOf(rule, choosing);
     line.append(...numbers.nodes);
     line.append(', ');
     // One span for the control and the words after it, so the sentence's
@@ -224,12 +232,25 @@ export function initControlsUI({ elements, gameHost, signalStore, storage, optio
     return { line, marker: numbers.marker };
   }
 
-  // Step 2: choosing. Only the sentence — what to read, and when — since
-  // there is no code on the board yet to watch or tune.
+  // Step 2: the whole sentence — what to read, when, the numbers it turns
+  // on — and under it how the control feels, all in one place, since this is
+  // the step whose choices the code is written from.
   function renderRule(rule) {
     const row = el('div', 'rule');
     row.dataset.id = rule.id;
     row.appendChild(sentenceLine(rule, { choosing: true }).line);
+
+    // Said once a number has moved, since a number is part of the program:
+    // the board keeps running the old one until it is downloaded again.
+    const resend = el('p', 'rule-resend', 'New number: copy the code in step 3 and download it again.');
+    resend.hidden = true;
+    row.appendChild(resend);
+
+    // How the control feels — how hard a flap kicks, how the craft falls, how
+    // fast a slide moves, how closely a steer follows. These change the game,
+    // not the program, so they take effect at once with nothing to download.
+    const feel = feelFor(rule);
+    if (feel) row.appendChild(feel);
     return row;
   }
 
@@ -262,55 +283,94 @@ export function initControlsUI({ elements, gameHost, signalStore, storage, optio
     hookup.appendChild(listEl);
   }
 
-  // Step 5: the sentence again, its numbers now fields, under it the input
-  // live with those numbers drawn on it, and how the control feels. This is
-  // the part that is tuned once the code is on the board and running.
+  // Step 5: watching it work. For each sentence, the raw reading with the
+  // numbers it turns on drawn across it, beside the game control it drives
+  // lighting up as the game receives it — so a clip that isn't making
+  // contact, and a number set too high, look different. Nothing here is
+  // edited: the numbers are in step 2.
   function renderTune(rule) {
-    const row = el('div', 'rule');
+    const row = el('div', 'rule rule-watch');
     row.dataset.id = rule.id;
     const { line, marker } = sentenceLine(rule, { choosing: false });
     row.appendChild(line);
 
     const choice = inputChoice(rule.input);
     const channel = choice.catalogue;
-    // The input, live: a number with the line it has to cross drawn on it, a
-    // press as its on/off pill, a gesture as a flash and a count. Every
-    // sentence gets one, so a clip that is not making contact shows up here
-    // and not as a mystery on the Game screen.
-    const meter = el('div', 'rule-meter');
+    const pair = el('div', 'rule-pair');
     const live = el('div', 'live-rows rule-live');
-    meter.appendChild(live);
-    const view = createChannelView(live, { signalStore, channels: [{ channel, kind: choice.family }], markers: marker });
-    views.push(view);
-    const note = el('span', 'rule-note', 'The live reading appears here once the micro:bit is connected.');
-    meter.appendChild(note);
-    signalStore.subscribe(({ type, signal }) => {
-      if (type === 'value' && signal.channel === channel) note.hidden = true;
-      if (type === 'reset') note.hidden = false;
-    });
-    row.appendChild(meter);
-
-    // Said once a number has moved, since a number is part of the program:
-    // the board keeps running the old one until it is downloaded again.
-    const resend = el('p', 'rule-resend', 'New number: copy the code in step 3 and download it again.');
-    resend.hidden = true;
-    row.appendChild(resend);
-
-    // How the control feels — how hard a flap kicks, how the craft falls, how
-    // fast a slide moves, how closely a steer follows — right under the
-    // reading that drives it. These change the game, not the program, so
-    // they take effect at once.
-    const feel = feelFor(rule);
-    if (feel) row.appendChild(feel);
+    views.push(createChannelView(live, { signalStore, channels: [{ channel, kind: choice.family }], markers: marker }));
+    pair.append(live, el('span', 'rule-arrow', '→'), controlLight(rule));
+    row.appendChild(pair);
     return row;
   }
 
-  // A number tuned in step 5: the program changes, so step 2's words and
-  // step 3's code follow, and the row says the board needs the new code.
+  /**
+   * The game control a sentence drives, lit as the board's commands for it
+   * arrive: a press flashes and counts, a hold is on while held, a steer
+   * shows its level. Read off the board's own `game:` lines, so it lights only
+   * when the program on the board actually fires — which is the thing to see.
+   */
+  function controlLight(rule) {
+    const kind = kindOf(rule);
+    const box = el('div', 'chan rule-light');
+    box.dataset.kind = kind === 'press' ? 'event' : kind === 'hold' ? 'binary' : 'level';
+    box.dataset.heard = 'false';
+    const id = el('span', 'chan-id');
+    id.append(el('span', 'chan-emoji', '🎮'), el('code', null, rule.control), el('span', 'chan-label', 'in the game'));
+    const viz = el('div', 'chan-viz');
+    box.append(id, viz);
+
+    let count = 0;
+    let flashOff = null;
+    function reset() {
+      count = 0;
+      box.dataset.heard = 'false';
+      if (kind === 'press') {
+        viz.innerHTML = '<span class="chan-flash"></span><span class="chan-count">×<b>0</b></span>';
+      } else if (kind === 'hold') {
+        viz.innerHTML = '<span class="chan-pill" data-on="false">off</span>';
+      } else {
+        viz.innerHTML = '<span class="rule-level"><span></span></span><span class="chan-num">–</span>';
+      }
+    }
+    reset();
+
+    const matches = (command) => (rule.control === 'advance'
+      ? command.verb === 'start' || (command.verb === 'press' && command.control === 'advance')
+      : command.control === rule.control);
+    unsubscribers.push(onCommand((command) => {
+      if (!matches(command)) return;
+      box.dataset.heard = 'true';
+      if (kind === 'press') {
+        count += 1;
+        viz.querySelector('.chan-count b').textContent = String(count);
+        const flash = viz.querySelector('.chan-flash');
+        flash.classList.add('flash');
+        clearTimeout(flashOff);
+        flashOff = setTimeout(() => flash.classList.remove('flash'), 150);
+      } else if (kind === 'hold') {
+        const on = command.value > 0;
+        const pill = viz.querySelector('.chan-pill');
+        pill.dataset.on = String(on);
+        pill.textContent = on ? 'on' : 'off';
+      } else {
+        const level = Math.max(0, Math.min(1, Number(command.value) || 0));
+        viz.querySelector('.rule-level span').style.width = `${level * 100}%`;
+        viz.querySelector('.chan-num').textContent = level.toFixed(2);
+      }
+    }));
+    unsubscribers.push(signalStore.subscribe(({ type }) => { if (type === 'reset') reset(); }));
+    return box;
+  }
+
+  // A number changed in step 2: the program changes, so step 3's code
+  // follows, and the row says the board needs the new code.
   function changed(rule) {
     persist();
-    renderChoosing();
-    tune?.querySelector(`.rule[data-id="${CSS.escape(rule.id)}"] .rule-resend`)?.removeAttribute('hidden');
+    list.querySelector(`.rule[data-id="${CSS.escape(rule.id)}"] .rule-resend`)?.removeAttribute('hidden');
+    // The marker on step 5's reading reads the rule as it draws, so it moves
+    // on its own; the caption above it is words, and is redrawn.
+    renderWatch();
   }
 
   /** The control's options as sentences, or null if it carries none. */
@@ -349,15 +409,20 @@ export function initControlsUI({ elements, gameHost, signalStore, storage, optio
     for (const rule of rules) list.appendChild(renderRule(rule));
   }
 
-  function render() {
+  function renderWatch() {
+    if (!tune) return;
     views.forEach((view) => view.destroy());
     views = [];
+    unsubscribers.forEach((off) => off());
+    unsubscribers = [];
+    tune.textContent = '';
+    for (const rule of rules) tune.appendChild(renderTune(rule));
+  }
+
+  function render() {
     renderChoosing();
     renderHookup();
-    if (tune) {
-      tune.textContent = '';
-      for (const rule of rules) tune.appendChild(renderTune(rule));
-    }
+    renderWatch();
   }
 
   // --- The program ----------------------------------------------------------

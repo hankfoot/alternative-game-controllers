@@ -30,7 +30,7 @@ test('touch walks through three ways, motion through three examples, ambient is 
 
 test('every lesson says what to do, and leaves room for a photo', () => {
   for (const lesson of LESSONS) {
-    assert.ok(lesson.steps.length >= 2, `${lesson.id} has steps`);
+    assert.ok(lesson.setup && lesson.interact, `${lesson.id} says how to set it up and what to do with it`);
     assert.match(lesson.image.src, /^assets\/lesson-/);
     assert.ok(lesson.image.alt);
   }

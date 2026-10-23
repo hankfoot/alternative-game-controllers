@@ -63,7 +63,7 @@
     </div>
 
     <div class="live-rows" id="live-rows">
-      <p class="live-empty">No input yet — every channel your controller sends will get a row here.</p>
+      <p class="live-empty">Nothing yet. Each reading your micro:bit sends gets a row here.</p>
     </div>
   </div>
 
@@ -96,27 +96,27 @@
         <p class="eyebrow">Workshop</p>
         <h1>Alternative Game Controllers</h1>
         <p class="byline">
-          originally designed by Avi Romanoff
+          Originally designed by Avi Romanoff
           (<a href="https://www.instagram.com/aviromanoff/" target="_blank" rel="noopener">@aviromanoff</a>)
           and Hank Duhaime
-          (<a href="https://www.instagram.com/schmardware/" target="_blank" rel="noopener">@schmardware</a>)
+          (<a href="https://www.instagram.com/hankware.d/" target="_blank" rel="noopener">@hankware.d</a>)
         </p>
         <p class="home-lede">
-          What if a pair of scissors, a stuffed animal, or your own voice could control a video
-          game? In this hands-on workshop, you'll work in teams to build delightfully ridiculous
-          new ways to play a classic video game.
+          What if a pair of scissors, a stuffed animal or your own voice could control a video game? In this workshop, you’ll work in teams to build ridiculous new ways to play a classic game.
         </p>
         <div class="home-actions">
           <button class="btn btn-lg" data-tab-target="setup">Get started &rarr;</button>
-          <a class="btn btn-soft btn-lg" id="slides-link" href="https://docs.google.com/presentation/d/1aG_TYwTnf5ykXEjPiB-F1syKZAWkMWPhGqWRq1tN1R0/edit" target="_blank" rel="noopener">Workshop slides &#8599;</a>
         </div>
       </section>
     </div>
 
     <!-- SCREEN: Set up -->
     <div class="panel screen" role="tabpanel" id="panel-setup" aria-labelledby="tab-setup" hidden>
-      <section class="block" id="setup-guide">
-        <div class="block-head"><h2>Set up your micro:bit</h2></div>
+      <section class="block" id="setup-materials">
+        <div class="block-head"><h2>Gather your materials</h2></div>
+        <p class="lead">
+          Everything you need before you start.
+        </p>
 
         <ol class="steps">
           <li class="step">
@@ -135,10 +135,25 @@
           <li class="step">
             <span class="step-num">2</span>
             <div class="step-body">
-              <h3>Gather your materials</h3>
+              <h3>Get to know the pins</h3>
               <p>
-                Your controller is built from everyday things. Grab a few from each group, and
-                pick objects you can open, squeeze, swing or shout at. The stranger the better.
+                The gold strips along the bottom edge of the micro:bit are called <strong>pins</strong>. You connect things to them with alligator clips. The micro:bit reads from <strong>P0</strong>, <strong>P1</strong> and <strong>P2</strong>. <strong>3V</strong> supplies power, and <strong>GND</strong> (ground) is where the electricity returns.
+              </p>
+              <p>
+                Never let a clip on 3V touch a clip on GND, or the micro:bit will restart.
+              </p>
+              <figure class="shot shot-slot" aria-label="Photo of foil squares and alligator clips">
+                <!-- image slot: assets/setup-clips.jpg -->
+              </figure>
+            </div>
+          </li>
+
+          <li class="step">
+            <span class="step-num">3</span>
+            <div class="step-body">
+              <h3>Collect things to build with</h3>
+              <p>
+                Grab a few things from each group. Pick objects you can open, squeeze, swing or shout at. The stranger the better.
               </p>
               <div class="materials">
                 <div class="material-group">
@@ -156,11 +171,11 @@
                   <h4>✂️ Things to build with</h4>
                   <p>For holding it all together.</p>
                   <ul>
-                    <li>Alligator clips, at least three</li>
+                    <li>Alligator clips</li>
                     <li>Cardboard</li>
                     <li>Tape, string and rubber bands</li>
                     <li>Scissors</li>
-                    <li>A battery pack for the micro:bit</li>
+                    <li>A hot glue gun</li>
                   </ul>
                 </div>
                 <div class="material-group">
@@ -177,29 +192,19 @@
               </div>
             </div>
           </li>
+        </ol>
+      </section>
 
-          <li class="step">
-            <span class="step-num">3</span>
-            <div class="step-body">
-              <h3>Get to know the pins</h3>
-              <p>
-                The gold strips along the bottom edge of the micro:bit are called <strong>pins</strong>. You connect things to them with alligator clips. The micro:bit reads from <strong>P0</strong>, <strong>P1</strong> and <strong>P2</strong>. <strong>3V</strong> supplies power, and <strong>GND</strong>, short for ground, is where the electricity returns.
-              </p>
-              <p>
-                Never let a clip on 3V touch a clip on GND. That makes the micro:bit restart.
-              </p>
-              <figure class="shot shot-slot" aria-label="Photo of foil squares and alligator clips">
-                <!-- image slot: assets/setup-clips.jpg -->
-              </figure>
-            </div>
-          </li>
+      <section class="block" id="setup-guide">
+        <div class="block-head"><h2>Set up your micro:bit</h2></div>
 
+        <ol class="steps">
           <li class="step">
-            <span class="step-num">4</span>
+            <span class="step-num">1</span>
             <div class="step-body">
               <h3>Open MakeCode</h3>
               <p>
-                MakeCode is the website where you write code for the micro:bit. Open the <a href="https://makecode.microbit.org/_JguX2x325Wva" target="_blank" rel="noopener">starter project</a>, then click <strong>Edit Code</strong> in the top right. It opens with no code in it, and that is expected. What it does have is Bluetooth already switched on, which is why you always start from this project.
+                MakeCode is the website where you write code for the micro:bit. Open the <a href="https://makecode.microbit.org/_JguX2x325Wva" target="_blank" rel="noopener">starter project</a> and click <strong>Edit Code</strong> in the top right. It starts empty, but Bluetooth is already turned on, so always start from this project.
               </p>
               <figure class="shot">
                 <img src="assets/setup-project.png" alt="The MakeCode editor with the starter project open, showing the micro:bit simulator on the left" />
@@ -208,11 +213,11 @@
           </li>
 
           <li class="step">
-            <span class="step-num">5</span>
+            <span class="step-num">2</span>
             <div class="step-body">
               <h3>Copy the starter code</h3>
               <p>
-                Click <strong>JavaScript</strong> at the top of the editor, click into the empty editor, and paste in this code (<span class="keys"><kbd>⌘</kbd> <kbd>V</kbd></span> on a Mac, <span class="keys"><kbd>Ctrl</kbd> <kbd>V</kbd></span> on Windows or a Chromebook). It turns on Bluetooth and uses the micro:bit’s lights to show whether it is connected.
+                Click <strong>JavaScript</strong> at the top of the editor and paste in this code (<span class="keys"><kbd>⌘</kbd> <kbd>V</kbd></span>, or <span class="keys"><kbd>Ctrl</kbd> <kbd>V</kbd></span> on Windows). It turns on Bluetooth and uses the lights to show whether the micro:bit is connected.
               </p>
               <div class="code-block">
                 <button class="code-copy" type="button">Copy</button>
@@ -222,30 +227,30 @@
           </li>
 
           <li class="step">
-            <span class="step-num">6</span>
+            <span class="step-num">3</span>
             <div class="step-body">
               <h3>Upload the code</h3>
               <p>
-                Plug the micro:bit into your computer with the USB cable, then click <strong>Download</strong> in the bottom left of MakeCode. The first time, a window asks to pair with the micro:bit, so follow its steps.
+                Plug the micro:bit into your computer and click <strong>Download</strong> in the bottom left of MakeCode. The first time, follow the steps to pair it.
               </p>
               <p class="note">
-                <strong>On a Mac,</strong> a box may pop up asking <strong>“Allow accessory to connect?”</strong> when you plug the micro:bit in. Click <strong>Allow</strong>, or the micro:bit won’t show up.
+                <strong>On a Mac,</strong> you may see <strong>“Allow accessory to connect?”</strong> when you plug it in. Click <strong>Allow</strong>.
               </p>
               <figure class="shot">
                 <img src="assets/setup-pair.png" alt="The browser's pop-up for pairing the micro:bit during the first download" />
               </figure>
               <p>
-                A light on the back of the micro:bit blinks while the code copies over, and stops when it is done.
+                A light on the back blinks while the code copies, and stops when it’s done.
               </p>
             </div>
           </li>
 
           <li class="step">
-            <span class="step-num">7</span>
+            <span class="step-num">4</span>
             <div class="step-body">
               <h3>Connect to your micro:bit</h3>
               <p>
-                While the micro:bit waits to connect, it shows an X, a Bluetooth symbol, and its name, which is five letters long. Every micro:bit has a different name, so make a note of yours.
+                While it waits to connect, the micro:bit shows an X, a Bluetooth symbol and its five-letter name. Every micro:bit has its own name, so note yours.
               </p>
               <figure class="shot">
                 <video src="assets/setup-name.mp4" autoplay loop muted playsinline aria-label="The five-letter name scrolling across the micro:bit LEDs"></video>
@@ -257,7 +262,7 @@
                 <img src="assets/setup-chooser.png" alt="The browser's Bluetooth chooser listing BBC micro:bit devices" />
               </figure>
               <p>
-                You use this Connect button for every example from now on. If you reload this page, you need to connect again.
+                You’ll use this Connect button for every example. If you reload the page, connect again.
               </p>
             </div>
           </li>
@@ -267,7 +272,7 @@
             <div class="step-body">
               <h3>Go cordless <span class="opt-badge">Optional</span></h3>
               <p>
-                The code stays on the micro:bit after you unplug it. Plug in a battery pack instead of the USB cable and you can move your controller around freely.
+                The code stays on the micro:bit after you unplug it. Plug in a battery pack instead of the USB cable to move around freely.
               </p>
               <figure class="shot">
                 <img src="assets/setup-battery.jpg" alt="A micro:bit running off an attached battery pack" />
@@ -306,9 +311,7 @@
       <section class="block" id="controls-board">
         <div class="block-head"><h2>Build your controller</h2></div>
         <p class="lead">
-          Now you decide how your micro:bit controls the game. Choose how the character moves
-          and what makes it move, and this page writes the code. Then put the code on your
-          micro:bit, hook it up, and watch it work, tweaking the numbers if it needs it.
+          Choose how the character moves and what makes it move. This page writes the code for you.
         </p>
 
         <ol class="steps">
@@ -331,7 +334,7 @@
             <div class="step-body">
               <h3>Choose what triggers each control</h3>
               <p>
-                Pick an input for each control. Any numbers start at a sensible guess, and you can tweak them in step 5 once you can see the readings.
+                Pick an input for each control. Numbers start at a sensible guess, and you can change them if they need it.
               </p>
               <div class="rule-list" id="rule-list"><!-- written by js/controls-ui.js --></div>
             </div>
@@ -342,7 +345,7 @@
             <div class="step-body">
               <h3>Copy the code to your micro:bit</h3>
               <p>
-                Copy the code. In MakeCode’s <strong>JavaScript</strong> tab, select everything (<span class="keys"><kbd>⌘</kbd> <kbd>A</kbd></span>, or <span class="keys"><kbd>Ctrl</kbd> <kbd>A</kbd></span> on Windows), paste over it (<span class="keys"><kbd>⌘</kbd> <kbd>V</kbd></span> or <span class="keys"><kbd>Ctrl</kbd> <kbd>V</kbd></span>), and click <strong>Download</strong>. Any time you change a control or a number, copy and download again.
+                Copy the code. In MakeCode’s <strong>JavaScript</strong> tab, select everything (<span class="keys"><kbd>⌘</kbd> <kbd>A</kbd></span>, or <span class="keys"><kbd>Ctrl</kbd> <kbd>A</kbd></span>), paste over it (<span class="keys"><kbd>⌘</kbd> <kbd>V</kbd></span> or <span class="keys"><kbd>Ctrl</kbd> <kbd>V</kbd></span>) and click <strong>Download</strong>. Do this again whenever you change a control or a number.
               </p>
               <div class="code-block code-block-folded">
                 <details class="code-details">
@@ -362,7 +365,7 @@
             <div class="step-body">
               <h3>Hook up your controller</h3>
               <p>
-                What to connect for the controls you chose, and how to use each one.
+                What to connect for the controls you chose.
               </p>
               <div class="hookup" id="controls-hookup"><!-- written by js/controls-ui.js --></div>
             </div>
@@ -371,9 +374,9 @@
           <li class="step">
             <span class="step-num">5</span>
             <div class="step-body">
-              <h3>Test it and tweak it</h3>
+              <h3>Test it</h3>
               <p>
-                Connect the micro:bit and try each control. Its reading appears live, with the number it has to cross drawn on it. If it triggers too easily or not at all, change the number, then copy and download the code again.
+                Connect the micro:bit and try each control. You’ll see its reading, and the game control light up when it fires. If it fires too easily or not at all, change the number in step 2 and download again.
               </p>
               <div class="rule-list" id="rule-tune"><!-- written by js/controls-ui.js --></div>
             </div>
@@ -384,9 +387,7 @@
       <section class="block" id="controls-codeit">
         <div class="block-head"><h2>Code it</h2></div>
         <p class="lead">
-          If you want something these controls can’t do, like flapping every third clap, you can
-          ask an AI chatbot to write the code. It still runs on the micro:bit, just like the code
-          above.
+          Want something these controls can’t do, like flapping every third clap? Ask an AI chatbot to write the code.
         </p>
 
         <ol class="steps">
@@ -395,7 +396,7 @@
             <div class="step-body">
               <h3>Describe what you want</h3>
               <p>
-                Write one sentence about what should happen, then click the button. It copies your sentence along with instructions that explain this game to the AI. Paste it into any AI chatbot.
+                Write one sentence about what should happen, then click the button. It copies your sentence with instructions for the AI. Paste it into any chatbot.
               </p>
               <!-- The same card as every code block: the sentence to write in
                    its top band, then the fold's label and the copy button on
@@ -420,7 +421,7 @@
             <div class="step-body">
               <h3>Add the code to MakeCode</h3>
               <p>
-                In MakeCode’s <strong>JavaScript</strong> tab, paste the AI’s code at the very bottom, below the code from step 3 above, and click <strong>Download</strong>. Then wire it up the way the AI’s <strong>Hookup guide</strong> says. If MakeCode shows an error in red, copy it back into the chatbot and ask it to fix the code.
+                In MakeCode’s <strong>JavaScript</strong> tab, paste the AI’s code at the very bottom and click <strong>Download</strong>. Wire it up the way the AI’s <strong>Hookup guide</strong> says. If MakeCode shows a red error, paste it back into the chatbot and ask it to fix it.
               </p>
             </div>
           </li>
@@ -429,7 +430,7 @@
             <div class="step-body">
               <h3>Connect and play</h3>
               <p>
-                Click <strong>Connect</strong> at the top of this page. Everything your micro:bit tells the game appears below.
+                Click <strong>Connect</strong> at the top of this page. Everything your micro:bit sends appears below.
               </p>
               <p class="code-status" id="code-status" role="status"></p>
               <pre class="code-log" id="code-log" role="log" aria-live="polite"></pre>
@@ -468,9 +469,7 @@
           </div>
         </div>
         <p class="lead">
-          Controls is where you decide what you fly <em>with</em>. This is where you decide
-          what you are flying through, what it looks like, what it sounds like, and what it
-          says.
+          Choose what you fly through, and how it looks, sounds and reads.
         </p>
 
         <ol class="steps">
@@ -479,8 +478,7 @@
             <div class="step-body">
               <h3>Shape the course</h3>
               <p>
-                How fast the world comes at you, and what you fly past. The same course under
-                every way of moving.
+                How fast the game moves, and what you fly past.
               </p>
               <div id="design-settings" class="settings-grid"></div>
             </div>
@@ -491,13 +489,12 @@
             <div class="step-body">
               <h3>Design sprites</h3>
               <p>
-                Every one of these already has a picture. Open it and draw over it, or bring in a
-                photo and draw on that. The preview above shows the game as you go.
+                Each of these already has a picture. Draw over it, or bring in a photo and draw on that. The preview shows the game as you go.
               </p>
               <div class="theme-preview" id="design-preview" aria-label="Game preview"></div>
               <div id="design-sprites" class="sprite-grid"></div>
               <p>
-                To make them with an AI image tool instead, say what your game is about, copy the prompt, and bring each picture into its card above.
+                Or make them with an AI image tool: say what your game is about, copy the prompt, then import the pictures it makes.
               </p>
               <!-- For making them in an AI tool instead: a few words about the
                    game in the top band, and under the fold the prompt they fill
@@ -537,12 +534,11 @@
             <div class="step-body">
               <h3>Record sounds</h3>
               <p>
-                Every one of these already makes a noise. Record over it into the microphone, or
-                bring in a file you already have.
+                Each of these already makes a sound. Record over it, or bring in a file.
               </p>
               <div id="design-sound" class="settings-grid"></div>
               <p>
-                To make them with an AI sound tool instead, say what your game is about, copy the prompt, and bring each file in above with <strong>Use file</strong>.
+                Or make them with an AI sound tool: say what your game is about, copy the prompt, then import the files it makes.
               </p>
               <!-- For making them in an AI tool instead: a few words about the
                    game in the top band, and under the fold the prompt they fill
@@ -582,8 +578,7 @@
             <div class="step-body">
               <h3>Customize UI</h3>
               <p>
-                What the card in the middle of the canvas says, before a round and after a crash.
-                Click any line on it to rewrite that line.
+                The card in the middle of the game, before a round and after a crash. Click any line to change it.
               </p>
               <div id="design-text"></div>
             </div>
@@ -603,9 +598,7 @@
       <section class="block" id="game-playground">
         <div class="block-head"><h2>Play</h2></div>
         <p class="lead">
-          Fly the craft through the gaps. It answers to the controller you built in
-          <button class="link-btn" type="button" data-tab-target="controls">Controls</button>,
-          over Bluetooth, and to the keys and buttons below either way.
+          Fly through the gaps. Your controller from <button class="link-btn" type="button" data-tab-target="controls">Controls</button> steers over Bluetooth, and so do the keys below.
         </p>
 
         <!-- Says what is missing between the controller you built and the game:
@@ -615,14 +608,28 @@
 
         <div class="game-shell">
           <div class="game-bar" aria-label="Game score">
-            <div class="game-stat"><span>Scheme</span><strong id="game-scheme">—</strong></div>
             <div class="game-stat"><span>Score</span><strong id="game-score">0</strong></div>
             <div class="game-stat"><span>Best</span><strong id="game-best">0</strong></div>
-            <button class="btn btn-soft game-reset" id="game-reset" type="button">Reset</button>
+            <div class="game-actions">
+              <button class="btn btn-soft game-reset" id="game-reset" type="button">Reset</button>
+              <!-- Hidden where the browser can't put an element full screen
+                   (an iPhone, for one); js/game.js shows it where it can. -->
+              <button class="btn btn-soft game-full" id="game-fullscreen" type="button" hidden>Full screen</button>
+            </div>
           </div>
           <canvas id="game-canvas" width="960" height="600" tabindex="0"
                   aria-label="Game canvas"></canvas>
           <div class="game-controls">
+            <!-- For testing without a controller. The controller's code is
+                 what really decides the scheme — it sends the presses, holds
+                 and levels its sentences were written for — so this is an
+                 override for trying the game from the keyboard, and says so. -->
+            <div class="game-stat game-scheme-pick">
+              <label for="game-scheme"><span>Debug controls</span></label>
+              <select id="game-scheme" aria-describedby="game-scheme-note"
+                title="For testing. Your micro:bit’s code decides the real controls."></select>
+              <span class="visually-hidden" id="game-scheme-note">For testing. Your micro:bit’s code decides the real controls; this lets you try the game from the keyboard.</span>
+            </div>
             <p class="game-keys" id="game-buttons"></p>
             <p id="game-status" role="status" aria-live="polite">Loading game…</p>
           </div>
@@ -630,12 +637,14 @@
 
         <!-- What the controller is sending, live, under the game it is
              steering: so a craft that won't move can be told apart from a
-             clip that isn't touching. Written by js/main.js from the
-             sentences on Controls. -->
+             clip that isn't touching. The same view as the one in the top
+             bar — a row for each channel that actually arrives, and nothing
+             until the micro:bit is connected. Drawn by js/main.js. -->
         <div class="game-inputs">
           <h3>Your controller</h3>
-          <p class="game-inputs-note" id="game-live-note">Readings appear here once the micro:bit is connected.</p>
-          <div class="live-rows game-live" id="game-live"></div>
+          <div class="live-rows game-live" id="game-live">
+            <p class="live-empty">Nothing yet. Each reading your micro:bit sends gets a row here.</p>
+          </div>
         </div>
       </section>
 

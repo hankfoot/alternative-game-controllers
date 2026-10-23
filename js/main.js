@@ -134,29 +134,10 @@ if (bridge && controls) {
   });
 }
 // --- The controller, live, under the game ------------------------------------
-// One row per input the sentences on Controls read, drawn again whenever they
-// change, since a new sentence may read something else.
-if (controls) {
-  const host = document.getElementById('game-live');
-  const note = document.getElementById('game-live-note');
-  let view = null;
-  const drawInputs = () => {
-    view?.destroy();
-    host.textContent = '';
-    const channels = controls.parts().flatMap((part) =>
-      part.channels.map((channel) => ({ channel, kind: part.kind })));
-    view = channels.length ? createChannelView(host, { signalStore, channels }) : null;
-    note.textContent = channels.length
-      ? 'Readings appear here once the micro:bit is connected.'
-      : 'Choose what triggers each control on the Controls page, and its inputs appear here.';
-  };
-  controls.subscribe(drawInputs);
-  drawInputs();
-  signalStore.subscribe(({ type }) => {
-    if (type === 'value') note.hidden = true;
-    if (type === 'reset') note.hidden = false;
-  });
-}
+// The same view as the one in the top bar, behaving the same way: a row for
+// each channel as it arrives, emptied on every new connection.
+const gameLive = document.getElementById('game-live');
+if (gameLive) createChannelView(gameLive, { signalStore, empty: gameLive.querySelector('.live-empty') });
 
 if (controls) {
   initGameWarning({

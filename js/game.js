@@ -37,6 +37,7 @@ export function initGame({ look = null, audio = null, musicWhen = null } = {}) {
     picker: byId('game-picker'),
     buttons: byId('game-buttons'),
     reset: byId('game-reset'),
+    fullscreen: byId('game-fullscreen'),
     scheme: byId('game-scheme'),
     score: byId('game-score'),
     best: byId('game-best'),
@@ -217,7 +218,11 @@ export function initGame({ look = null, audio = null, musicWhen = null } = {}) {
   function resize() {
     if (!current) return;
     const { width, height } = current.game.rules;
-    const scale = Math.min(window.devicePixelRatio || 1, 2);
+    // Drawn at the size it is shown, so full screen on a big display is as
+    // sharp as the card is on the page — capped, since every pixel is redrawn
+    // every frame.
+    const shown = (ui.canvas.clientWidth || width) * (window.devicePixelRatio || 1);
+    const scale = Math.min(3, Math.max(1, shown / width));
     ui.canvas.width = width * scale;
     ui.canvas.height = height * scale;
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
@@ -408,6 +413,34 @@ export function initGame({ look = null, audio = null, musicWhen = null } = {}) {
     current.engine.steer(Math.max(0, Math.min(1, at)));
   });
 
+  // --- Full screen ------------------------------------------------------------
+  // The whole card goes full screen, not just the canvas: the score above it and
+  // the keys and scheme under it are part of playing. Safari still wants its
+  // prefixed names.
+  const shell = ui.canvas.closest('.game-shell');
+  const fullscreenElement = () => document.fullscreenElement ?? document.webkitFullscreenElement ?? null;
+  if (ui.fullscreen && shell && (document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
+    ui.fullscreen.hidden = false;
+    ui.fullscreen.addEventListener('click', () => {
+      if (fullscreenElement() === shell) {
+        (document.exitFullscreen ?? document.webkitExitFullscreen)?.call(document);
+      } else {
+        const request = shell.requestFullscreen ?? shell.webkitRequestFullscreen;
+        Promise.resolve(request?.call(shell)).catch(() => {});
+      }
+    });
+    const changed = () => {
+      const on = fullscreenElement() === shell;
+      ui.fullscreen.textContent = on ? 'Exit full screen' : 'Full screen';
+      // The keys go to the canvas, and leaving the button focused would send
+      // the first Space to it instead of to the game.
+      if (on) ui.canvas.focus();
+      requestAnimationFrame(resize);
+    };
+    document.addEventListener('fullscreenchange', changed);
+    document.addEventListener('webkitfullscreenchange', changed);
+  }
+
   ui.reset.addEventListener('click', () => {
     releaseAll();
     current.engine.reset();
@@ -442,7 +475,7 @@ export function initGame({ look = null, audio = null, musicWhen = null } = {}) {
     heard = null;
 
     ui.canvas.setAttribute('aria-label', `Sidescroller. ${game.scheme} controls — ${game.label}.`);
-    ui.scheme.textContent = game.scheme;
+    if (ui.scheme) ui.scheme.value = game.id;
     renderPicker();
     renderControls();
     resize();
@@ -548,6 +581,18 @@ export function initGame({ look = null, audio = null, musicWhen = null } = {}) {
   } catch {
     saved = null;
   }
+  // The debug override on the Game screen: every scheme, by the name it
+  // goes by in play. Picking one is the same as picking its card on Controls.
+  if (ui.scheme) {
+    ui.scheme.replaceChildren(...GAMES.map((game) => {
+      const option = document.createElement('option');
+      option.value = game.id;
+      option.textContent = game.scheme;
+      return option;
+    }));
+    ui.scheme.addEventListener('change', () => selectGame(ui.scheme.value));
+  }
+
   selectGame(findGame(saved) ? saved : DEFAULT_GAME_ID, { persist: false });
   requestAnimationFrame(frame);
 
