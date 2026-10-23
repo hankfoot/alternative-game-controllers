@@ -25,7 +25,7 @@ import { createColourPicker } from './theme/colour-picker.js';
 import { newAssetId } from './theme/assets.js';
 import { exportBundle, readBundle, downloadBundle } from './theme/portable.js';
 import { loadAllRules, saveAllRules } from './rules-store.js';
-import { RULES, courseFrom } from './games/sidescroller.js';
+import { MOTION, RULES, courseFrom } from './games/sidescroller.js';
 import { GAMES } from './games/index.js';
 
 /** One choice, laid out as running prose so it reads as a statement. */
@@ -925,6 +925,16 @@ export function initDesign({
       ...options.get('world', 'obstacles'),
     }, PRETEND_SCORE);
 
+    // How an obstacle moves, at the middle of the setting's range, each one
+    // out of step with its neighbours.
+    const swingFor = (index, seconds) => {
+      const motion = MOTION[course().motion];
+      if (!motion) return 0;
+      const amp = (motion.amp[0] + motion.amp[1]) / 2;
+      const period = (motion.period[0] + motion.period[1]) / 2;
+      return amp * Math.sin((seconds * Math.PI * 2) / period + index * 2.1);
+    };
+
     let distance = 0;
     let last = performance.now();
 
@@ -974,7 +984,7 @@ export function initDesign({
             // the game alternates them.
             ? ((passed + i) % 2 ? 'floor' : 'ceiling')
             : shaped.shape,
-          gapY: heightFor(passed + i),
+          gapY: heightFor(passed + i) + swingFor(passed + i, seconds),
           scored: false,
         })),
       }, now);

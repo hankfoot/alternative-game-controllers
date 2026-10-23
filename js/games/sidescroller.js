@@ -70,7 +70,7 @@ export const RULES = Object.freeze({
  * has its own.
  */
 export const gateSpan = (gate) =>
-  (gate?.kind === 'floating' ? RULES.blockWidth : RULES.gateWidth);
+  (gate?.kind === 'floating' ? gate.size ?? RULES.blockWidth : RULES.gateWidth);
 
 // How much of the bottom of the pillar drawing is "shaft": the strip that is
 // repeated, stretched, to carry a pillar on past the end of its drawing when
@@ -105,6 +105,14 @@ const SPACING = Object.freeze({ tight: 0.74, normal: 1, wide: 1.34 });
 const PACE = Object.freeze({ calm: 0.72, normal: 1, quick: 1.34 });
 const RAMP = Object.freeze({ none: 0, gentle: 1, steep: 2.5 });
 const WEIGHT = Object.freeze({ floaty: 0.68, normal: 1, heavy: 1.4 });
+// How obstacles move: pixels either way, and seconds per swing, each picked
+// per obstacle from the range. A bar moves its gap and nothing else, so its far
+// end stays anchored past the edge of the field and no end of a drawing shows.
+export const MOTION = Object.freeze({
+  still: null,
+  gentle: { amp: [10, 18], period: [2, 3.5] },
+  lively: { amp: [30, 48], period: [1.4, 2.4] },
+});
 
 
 // The motions that are subject to gravity, and so the only ones that can fly
@@ -137,6 +145,7 @@ export function courseFrom(options = {}, score = 0) {
     gap: RULES.gateGap * (GAP[options.gap] ?? 1),
     spacing: RULES.gateSpacing * (SPACING[options.spacing] ?? 1),
     shape: options.shape ?? 'columns',
+    motion: options.motion ?? 'gentle',
   };
 }
 
@@ -156,10 +165,11 @@ export const trackY = (value) => lerp(
  * block, or the open end of a bar that only comes from one side.
  */
 export function gateBars(gate) {
-  const { groundY, barSkirt, blockHeight } = RULES;
+  const { groundY, barSkirt } = RULES;
   const gap = gate.gap ?? RULES.gateGap;
   if (gate.kind === 'floating') {
-    return [{ top: gate.gapY - blockHeight / 2, bottom: gate.gapY + blockHeight / 2 }];
+    const half = (gate.size ?? RULES.blockHeight) / 2;
+    return [{ top: gate.gapY - half, bottom: gate.gapY + half }];
   }
   if (gate.kind === 'ceiling') return [{ top: -barSkirt, bottom: gate.gapY }];
   if (gate.kind === 'floor') return [{ top: gate.gapY, bottom: groundY + barSkirt }];
@@ -425,7 +435,11 @@ export class SidescrollerGame extends BaseGame {
     let collided = false;
     for (const gate of this.state.gates) {
       gate.x -= travel;
-      if (!gate.scored && gate.x + RULES.gateWidth < RULES.playerX) {
+      if (gate.bob) {
+        gate.bob.age += frameTime;
+        gate.gapY = gate.bob.base + gate.bob.amp * Math.sin(gate.bob.phase + gate.bob.age * gate.bob.rate);
+      }
+      if (!gate.scored && gate.x + gateSpan(gate) < RULES.playerX) {
         gate.scored = true;
         this.addScore();
       }
@@ -438,7 +452,7 @@ export class SidescrollerGame extends BaseGame {
       this.spawnGate(RULES.width + 20 + this.state.distanceUntilGate);
       this.state.distanceUntilGate += this.spacing() * this.spacingJitter();
     }
-    this.state.gates = this.state.gates.filter((gate) => gate.x + RULES.gateWidth > -10);
+    this.state.gates = this.state.gates.filter((gate) => gate.x + gateSpan(gate) > -10);
 
     if (collided || this.outsideField()) this.end();
   }
@@ -460,7 +474,11 @@ export class SidescrollerGame extends BaseGame {
    */
   spacingJitter() {
     if (this.option('world', 'obstacles', 'shape', 'columns') !== 'floating') return 1;
-    return 0.88 + this.random() * 0.24;
+    // Wide enough to break the beat. The low end still leaves a craft's width
+    // clear between blocks at the tightest spacing: 250 x 0.74 x 0.8 is 148
+    // against a 108px block. Larger blocks and staggered pairs push the next
+    // one back by their excess, so this holds for them too.
+    return 0.8 + this.random() * 0.6;
   }
 
   spacing() {
@@ -493,40 +511,82 @@ export class SidescrollerGame extends BaseGame {
       ? (this.state.gateCount % 2 ? 'floor' : 'ceiling')
       : shape;
     const gap = this.gapSize();
+    const swing = this.swing();
+    const gate = kind === 'floating'
+      ? this.spawnBlock(x, gap, swing?.amp ?? 0)
+      : this.addGate(x, gap, kind, this.gapLine(kind, gap, swing?.amp ?? 0));
+    if (swing) gate.bob = { ...swing, base: gate.gapY };
+  }
+
+  addGate(x, gap, kind, gapY) {
     const record = this.recordGate > 0 && this.state.gateCount === this.recordGate;
     this.state.gateCount += 1;
-    this.state.gates.push({
-      x, gap, kind, record, scored: false, gapY: this.gapLine(kind, gap),
-    });
+    const gate = { x, gap, kind, record, scored: false, gapY };
+    this.state.gates.push(gate);
+    return gate;
+  }
+
+  /**
+   * The next floating block.
+   *
+   * Blocks used to take strict turns between the top and bottom halves of the
+   * field, which guaranteed movement but read as a zigzag you could fly with
+   * your eyes shut. Now a block can land anywhere except within a block's
+   * height of the last one, so it can come from the same side twice or make a
+   * big jump across the field.
+   *
+   * No two are quite alike either: each is its own size. A row of identical
+   * squares is what read as machined.
+   *
+   * `amp` is how far it will swing either way, which it keeps clear of the
+   * ceiling and the floor on top of its own 8px.
+   */
+  spawnBlock(x, gap, amp) {
+    const { groundY, blockWidth } = RULES;
+    const last = this.state.lastBlockY ?? groundY / 2;
+    const size = blockWidth * lerp(0.75, 1.25, this.random());
+    const edge = size / 2 + 8 + amp;
+    // Anywhere at least a standard block's height from the last line, on
+    // either side. At least one side always has room: the largest block at the
+    // liveliest bob still leaves 283px of centres, and the excluded window is
+    // 216px.
+    const shift = RULES.blockHeight;
+    const below = Math.max(0, last - shift - edge);
+    const above = Math.max(0, groundY - edge - (last + shift));
+    const pick = this.random() * (below + above);
+    const y = pick < below || above === 0 ? edge + pick : last + shift + (pick - below);
+    const gate = this.addGate(x, gap, 'floating', y);
+    gate.size = size;
+    // A larger block pushes the next one back by what it grew, so the clear
+    // stretch between them is never less than the spacing allows for.
+    this.state.distanceUntilGate += Math.max(0, size - blockWidth);
+    this.state.lastBlockY = y;
+    return gate;
+  }
+
+  // How far either way an obstacle swings and how long one swing takes, as the
+  // course's motion setting has it, starting anywhere in its swing. Null when
+  // obstacles hold still.
+  swing() {
+    const picked = this.option('world', 'obstacles', 'motion', 'gentle');
+    const motion = picked in MOTION ? MOTION[picked] : MOTION.gentle;
+    if (!motion) return null;
+    return {
+      amp: lerp(...motion.amp, this.random()),
+      rate: (Math.PI * 2) / lerp(...motion.period, this.random()),
+      phase: this.random() * Math.PI * 2,
+      age: 0,
+    };
   }
 
   /**
    * Where to build the next obstacle, kept far enough from the edges that the
-   * way past it is always at least `gap` wide — whichever side that way is on.
+   * way past it is always at least `gap` wide — whichever side that way is on —
+   * at both ends of an `amp` swing either way.
    */
-  gapLine(kind, gap) {
-    const { groundY, gateMargin, blockHeight } = RULES;
-    const span = (low, high) => lerp(low, high, this.random());
-    if (kind === 'floating') {
-      // A block leaves sky above *and* below, so only one of the two has to be
-      // comfortable — which means the generous clearance this used to keep on
-      // both sides was buying nothing and costing everything. It pinned every
-      // block into a 211px band down the middle of a 530px field, and a run of
-      // them read as one obstacle repeated.
-      //
-      // The whole field is fair here: both sides are too tight only when
-      // 2 x (gap x 0.6) + blockHeight exceeds groundY, which even at the
-      // roomiest setting is 383 against 530. The 8px is only to keep a block
-      // off the ceiling and the floor.
-      const edge = blockHeight / 2 + 8;
-      // Alternating halves the way the slalom alternates its bars. Widening
-      // alone still lets two blocks land side by side by chance; alternating is
-      // what guarantees the craft has to move between them.
-      const middle = groundY / 2;
-      return this.state.gateCount % 2
-        ? span(middle, groundY - edge)
-        : span(edge, middle);
-    }
+  gapLine(kind, gap, amp = 0) {
+    const { groundY, gateMargin } = RULES;
+    const span = (low, high) => lerp(low + amp, high - amp, this.random());
     // A one-sided bar stops short of the far wall by the gap, and pokes out from
     // its own by enough to be worth flying around.
     if (kind === 'ceiling') return span(gap * 0.4, groundY - gap);
@@ -628,7 +688,7 @@ export function createRenderer(ctx, helpers, scheme = {}, look = null) {
     if (gate.kind === 'floating') {
       if (!block) return;
       const [bar] = gateBars(gate);
-      drawCovering(block, gate.x, bar.top, RULES.blockWidth, bar.bottom - bar.top);
+      drawCovering(block, gate.x, bar.top, gateSpan(gate), bar.bottom - bar.top);
       return;
     }
     if (!pillar) return;
@@ -870,6 +930,13 @@ export function courseSettings() {
             ['slalom', 'alternating high and low bars'],
           ],
           value: 'columns',
+        },
+        {
+          id: 'motion',
+          lead: 'that',
+          trail: '',
+          choices: [['still', 'hold perfectly still'], ['gentle', 'bob gently'], ['lively', 'swing up and down']],
+          value: 'gentle',
         },
         {
           id: 'gap',

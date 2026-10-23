@@ -562,22 +562,39 @@ const freeRuns = (gate) => {
   return runs;
 };
 
-test('every obstacle shape leaves a way past it, at every gap setting', () => {
+test('every obstacle shape leaves a way past it, at every gap setting and either end of its swing', () => {
   for (const shape of ['columns', 'floating', 'ceiling', 'slalom']) {
-    for (const gap of ['tight', 'normal', 'roomy']) {
-      for (const at of [0, 0.25, 0.5, 0.75, 1]) {
-        const game = engineFor('flappy', () => at);
-        game.setControlOptions('world', 'obstacles', { shape, gap, spacing: 'normal' });
-        game.restart();
-        game.spawnGate(RULES.width);
-        game.spawnGate(RULES.width); // the slalom's other half
+    for (const motion of ['still', 'gentle', 'lively']) {
+      for (const gap of ['tight', 'normal', 'roomy']) {
+        for (const at of [0, 0.25, 0.5, 0.75, 1]) {
+          const game = engineFor('flappy', () => at);
+          game.setControlOptions('world', 'obstacles', { shape, gap, spacing: 'normal', motion });
+          game.restart();
+          game.spawnGate(RULES.width);
+          game.spawnGate(RULES.width); // the slalom's other half
 
-        for (const gate of game.state.gates) {
-          const widest = Math.max(...freeRuns(gate));
-          assert.ok(
-            widest >= gate.gap * 0.6 - 1,
-            `${shape} at ${gap}/${at} left only ${Math.round(widest)}px to fly through`,
-          );
+          for (const gate of game.state.gates) {
+            const amp = gate.bob?.amp ?? 0;
+            for (const gapY of [gate.gapY - amp, gate.gapY + amp]) {
+              const swung = { ...gate, gapY };
+              const widest = Math.max(...freeRuns(swung));
+              const label = `${shape} ${motion} at ${gap}/${at}`;
+              assert.ok(
+                widest >= gate.gap * 0.6 - 1,
+                `${label} left only ${Math.round(widest)}px to fly through`,
+              );
+              // A bar's far end stays past the edge of the field, so no end
+              // of its drawing ever shows; a block stays inside it.
+              for (const bar of gateBars(swung)) {
+                assert.ok(bar.bottom > bar.top, `${label} turned a bar inside out`);
+                if (gate.kind === 'floating') {
+                  assert.ok(bar.top >= 0 && bar.bottom <= RULES.groundY, `${label} swung a block out of the field`);
+                } else {
+                  assert.ok(bar.top < 0 || bar.bottom > RULES.groundY, `${label} pulled a bar off its edge`);
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -604,6 +621,66 @@ test('a floating block leaves both the ceiling and the floor open', () => {
   const [gate] = game.state.gates;
   assert.equal(gateBars(gate).length, 1);
   for (const run of freeRuns(gate)) assert.ok(run > RULES.playerRadius * 2, 'both ways past must fit');
+});
+
+const seeded = (seed = 7) => () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+
+const floatingRun = (motion) => {
+  const game = engineFor('flappy', seeded());
+  game.setControlOptions('world', 'obstacles', { shape: 'floating', gap: 'normal', spacing: 'normal', motion });
+  game.restart();
+  for (let i = 0; i < 200; i += 1) game.spawnGate(RULES.width + i * 300);
+  return game.state.gates;
+};
+
+test('floating blocks move the craft without falling into a zigzag', () => {
+  const gates = floatingRun('gentle');
+  assert.equal(gates.length, 200, 'one block per obstacle');
+  let sameSide = 0;
+  for (let i = 1; i < gates.length; i += 1) {
+    assert.ok(Math.abs(gates[i].gapY - gates[i - 1].gapY) >= RULES.blockHeight - 1,
+      'each block is at least a block away from the one before');
+    const middle = RULES.groundY / 2;
+    if ((gates[i].gapY < middle) === (gates[i - 1].gapY < middle)) sameSide += 1;
+  }
+  assert.ok(sameSide > 0, 'a block can come from the same side as the one before');
+});
+
+test('how obstacles move is a course setting, for every shape', () => {
+  for (const shape of ['columns', 'ceiling', 'slalom']) {
+    const game = engineFor('flappy', seeded());
+    game.setControlOptions('world', 'obstacles', { shape, gap: 'normal', spacing: 'normal', motion: 'lively' });
+    game.restart();
+    game.spawnGate(RULES.width);
+    const [gate] = game.state.gates;
+    const before = gate.gapY;
+    game.state.phase = 'playing';
+    game.scroll(0.3);
+    assert.notEqual(gate.gapY, before, `${shape} should move`);
+  }
+
+  assert.ok(floatingRun('still').every((gate) => !gate.bob), 'still blocks never move');
+  const gentle = Math.max(...floatingRun('gentle').map((gate) => gate.bob.amp));
+  const lively = Math.min(...floatingRun('lively').map((gate) => gate.bob.amp));
+  assert.ok(lively > gentle, 'lively blocks swing further than gentle ones ever do');
+
+  // However far it swings, a block never leaves the field.
+  for (const gate of floatingRun('lively')) {
+    const half = gate.size / 2;
+    assert.ok(gate.bob.base - gate.bob.amp - half >= 0);
+    assert.ok(gate.bob.base + gate.bob.amp + half <= RULES.groundY);
+  }
+});
+
+test('a block stays until all of it has left the field', () => {
+  const game = engineFor('flappy');
+  game.setControlOptions('world', 'obstacles', { shape: 'floating', gap: 'normal', spacing: 'normal' });
+  game.restart();
+  // Past the edge by more than a column is wide, but not by a whole block.
+  const gate = { kind: 'floating', x: -90, gapY: 100, gap: RULES.gateGap, scored: true };
+  game.state.gates = [gate];
+  game.scroll(0);
+  assert.deepEqual(game.state.gates, [gate]);
 });
 
 // A pillar is one drawing, cap at the gap, running off the edge of the field —
