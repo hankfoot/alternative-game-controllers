@@ -721,9 +721,10 @@ test('the AI prompts give every drawing its size and every sound its moment', as
   const sprites = spritePrompt();
   for (const slot of SLOTS) {
     const { width, height } = sizeOf(slot.id);
-    assert.ok(sprites.includes(`**${slot.label}** — ${width} × ${height} pixels`), `${slot.id} has its size`);
+    assert.ok(sprites.includes(`\`${slot.id}.png\` — **${slot.label}**, ${width} × ${height} pixels`), `${slot.id} has its name and size`);
   }
   const sounds = soundPrompt();
-  for (const [event] of SOUND_EVENTS) assert.ok(sounds.includes(`**${event}**`), `${event} is described`);
-  assert.match(sounds, /\*\*music\*\*/);
+  for (const [event] of SOUND_EVENTS) assert.ok(sounds.includes(`\`${event}.mp3\``), `${event} is named`);
+  assert.match(sounds, /`music\.mp3`/);
+  assert.match(sprites, /\.zip/, 'one download is asked for where the tool can');
 });

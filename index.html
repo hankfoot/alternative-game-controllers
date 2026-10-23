@@ -135,6 +135,52 @@
           <li class="step">
             <span class="step-num">2</span>
             <div class="step-body">
+              <h3>Gather your materials</h3>
+              <p>
+                Your controller is built from everyday things. Grab a few from each group, and
+                pick objects you can open, squeeze, swing or shout at. The stranger the better.
+              </p>
+              <div class="materials">
+                <div class="material-group">
+                  <h4>🧲 Things that conduct electricity</h4>
+                  <p>For buttons, switches and touch pads.</p>
+                  <ul>
+                    <li>Aluminium foil or copper tape</li>
+                    <li>Coins, keys, spoons or paper clips</li>
+                    <li>Fruit and vegetables, like bananas</li>
+                    <li>Play-Doh or a damp sponge</li>
+                    <li>A thick pencil line on paper</li>
+                  </ul>
+                </div>
+                <div class="material-group">
+                  <h4>✂️ Things to build with</h4>
+                  <p>For holding it all together.</p>
+                  <ul>
+                    <li>Alligator clips, at least three</li>
+                    <li>Cardboard</li>
+                    <li>Tape, string and rubber bands</li>
+                    <li>Scissors</li>
+                    <li>A battery pack for the micro:bit</li>
+                  </ul>
+                </div>
+                <div class="material-group">
+                  <h4>🧸 Something to turn into a controller</h4>
+                  <p>Anything you can move, open or make noise with.</p>
+                  <ul>
+                    <li>A stuffed animal or a hat</li>
+                    <li>A jar with a lid, or a box</li>
+                    <li>A pair of scissors or tongs</li>
+                    <li>A maraca, a cup of beans, a drum</li>
+                    <li>A chair, a door or a drawer</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </li>
+
+          <li class="step">
+            <span class="step-num">3</span>
+            <div class="step-body">
               <h3>Get to know the pins</h3>
               <p>
                 The gold strips along the bottom edge of the micro:bit are called <strong>pins</strong>. You connect things to them with alligator clips. The micro:bit reads from <strong>P0</strong>, <strong>P1</strong> and <strong>P2</strong>. <strong>3V</strong> supplies power, and <strong>GND</strong>, short for ground, is where the electricity returns.
@@ -149,7 +195,7 @@
           </li>
 
           <li class="step">
-            <span class="step-num">3</span>
+            <span class="step-num">4</span>
             <div class="step-body">
               <h3>Open MakeCode</h3>
               <p>
@@ -162,7 +208,7 @@
           </li>
 
           <li class="step">
-            <span class="step-num">4</span>
+            <span class="step-num">5</span>
             <div class="step-body">
               <h3>Copy the starter code</h3>
               <p>
@@ -176,7 +222,7 @@
           </li>
 
           <li class="step">
-            <span class="step-num">5</span>
+            <span class="step-num">6</span>
             <div class="step-body">
               <h3>Upload the code</h3>
               <p>
@@ -195,7 +241,7 @@
           </li>
 
           <li class="step">
-            <span class="step-num">6</span>
+            <span class="step-num">7</span>
             <div class="step-body">
               <h3>Connect to your micro:bit</h3>
               <p>
@@ -448,23 +494,41 @@
                 Every one of these already has a picture. Open it and draw over it, or bring in a
                 photo and draw on that. The preview above shows the game as you go.
               </p>
+              <div class="theme-preview" id="design-preview" aria-label="Game preview"></div>
+              <div id="design-sprites" class="sprite-grid"></div>
               <p>
-                To make them with an AI image tool instead, copy this prompt, fill in your theme, and bring each picture in here.
+                To make them with an AI image tool instead, say what your game is about, copy the prompt, and bring each picture into its card above.
               </p>
-              <!-- For making them in an AI tool instead: what each piece is for and
-                   the exact shape it has to be. Written by js/main.js from
-                   js/theme/ai-prompts.js. -->
-              <div class="code-block code-block-folded design-ai">
+              <!-- For making them in an AI tool instead: a few words about the
+                   game in the top band, and under the fold the prompt they fill
+                   in, saying what each piece is for and the shape it has to be.
+                   The same card as Code it's on Controls. Written by
+                   js/theme/prompt-ui.js from js/theme/ai-prompts.js. -->
+              <div class="code-block code-block-folded code-ask design-ai">
+                <div class="code-request">
+                  <input class="design-idea" type="text" autocomplete="off"
+                    placeholder="an underwater game where a jellyfish dodges coral"
+                    aria-label="What your game is about" />
+                </div>
                 <details class="code-details">
                   <summary>
-                    <span class="code-fold-label">See the prompt</span>
-                    <button class="code-copy btn" type="button">Copy the prompt</button>
+                    <span class="code-fold-label">See what gets copied</span>
+                    <button class="btn design-ai-copy" type="button">Copy for your AI</button>
                   </summary>
                   <pre class="code-prompt"><code id="design-sprite-prompt"></code></pre>
                 </details>
+                <!-- And back again: the files the AI made, or the zip it put
+                     them in, each sorted to its slot by name. Drop them on
+                     the card, or pick them. -->
+                <div class="design-import">
+                  <span class="design-import-label">Got the files back?</span>
+                  <label class="btn btn-soft">Import files or a .zip
+                    <input type="file" multiple class="visually-hidden-file design-import-file"
+                      accept="image/*,audio/*,.zip,application/zip" />
+                  </label>
+                  <p class="theme-note design-import-note" role="status"></p>
+                </div>
               </div>
-              <div class="theme-preview" id="design-preview" aria-label="Game preview"></div>
-              <div id="design-sprites" class="sprite-grid"></div>
             </div>
           </li>
 
@@ -476,22 +540,40 @@
                 Every one of these already makes a noise. Record over it into the microphone, or
                 bring in a file you already have.
               </p>
+              <div id="design-sound" class="settings-grid"></div>
               <p>
-                To make them with an AI sound tool instead, copy this prompt, fill in your theme, and bring each file in with <strong>Use file</strong>.
+                To make them with an AI sound tool instead, say what your game is about, copy the prompt, and bring each file in above with <strong>Use file</strong>.
               </p>
-              <!-- For making them in an AI tool instead: what each piece is for and
-                   the exact shape it has to be. Written by js/main.js from
-                   js/theme/ai-prompts.js. -->
-              <div class="code-block code-block-folded design-ai">
+              <!-- For making them in an AI tool instead: a few words about the
+                   game in the top band, and under the fold the prompt they fill
+                   in, saying what each piece is for and the shape it has to be.
+                   The same card as Code it's on Controls. Written by
+                   js/theme/prompt-ui.js from js/theme/ai-prompts.js. -->
+              <div class="code-block code-block-folded code-ask design-ai">
+                <div class="code-request">
+                  <input class="design-idea" type="text" autocomplete="off"
+                    placeholder="an underwater game where a jellyfish dodges coral"
+                    aria-label="What your game is about" />
+                </div>
                 <details class="code-details">
                   <summary>
-                    <span class="code-fold-label">See the prompt</span>
-                    <button class="code-copy btn" type="button">Copy the prompt</button>
+                    <span class="code-fold-label">See what gets copied</span>
+                    <button class="btn design-ai-copy" type="button">Copy for your AI</button>
                   </summary>
                   <pre class="code-prompt"><code id="design-sound-prompt"></code></pre>
                 </details>
+                <!-- And back again: the files the AI made, or the zip it put
+                     them in, each sorted to its slot by name. Drop them on
+                     the card, or pick them. -->
+                <div class="design-import">
+                  <span class="design-import-label">Got the files back?</span>
+                  <label class="btn btn-soft">Import files or a .zip
+                    <input type="file" multiple class="visually-hidden-file design-import-file"
+                      accept="image/*,audio/*,.zip,application/zip" />
+                  </label>
+                  <p class="theme-note design-import-note" role="status"></p>
+                </div>
               </div>
-              <div id="design-sound" class="settings-grid"></div>
             </div>
           </li>
 

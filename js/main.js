@@ -21,7 +21,7 @@ import { createAssetStore } from './theme/assets.js';
 import { createImageCache, assetBytes } from './theme/images.js';
 import { createAudio } from './theme/audio.js';
 import { SOUND_FILES } from './theme/defaults.js';
-import { soundPrompt, spritePrompt } from './theme/ai-prompts.js';
+import { designPromptCards, initPromptUI } from './theme/prompt-ui.js';
 import { migrateStorage } from './storage-migrate.js';
 
 // --- Tabs, and the sidebar that lists the screen -------------------------------
@@ -197,13 +197,14 @@ if (gameOptions && controls) {
     onRulesImported: () => controls.reload(),
   });
   drawingsReady.then(() => design?.refreshPreviews());
+  // The AI prompts on Design, and bringing back what the AI made.
+  initPromptUI({
+    cards: designPromptCards(byId),
+    storage,
+    onImport: (files) => design.importFiles(files),
+  });
 }
 
-// --- Prompts for making the drawings and sounds with an AI tool ---------------
-for (const [id, write] of [['design-sprite-prompt', spritePrompt], ['design-sound-prompt', soundPrompt]]) {
-  const host = document.getElementById(id);
-  if (host) host.textContent = write();
-}
 
 // --- Copy buttons on code blocks -------------------------------------------
 document.querySelectorAll('.code-copy').forEach((btn) => {

@@ -210,6 +210,29 @@ code {
   border-radius: var(--radius); font-size: .9rem; color: var(--yellow-ink);
 }
 .note strong { color: var(--ink); }
+/* Setup step 2: what to gather, in three groups side by side. */
+.materials {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px; margin-top: 12px;
+}
+.material-group {
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-soft);
+}
+.material-group h4 { margin: 0 0 2px; font-size: .95rem; }
+.material-group p { margin: 0 0 8px; font-size: .84rem; color: var(--ink-soft); }
+.material-group ul { margin: 0; padding-left: 18px; font-size: .88rem; line-height: 1.55; }
+
+/* Under a Design prompt: bringing the AI's files back in. */
+.design-import {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+  padding: 10px; border-top: 1px solid var(--line);
+}
+.design-import-label { font-size: .84rem; font-weight: 600; color: var(--ink-soft); }
+.design-import .btn { padding: 5px 12px; font-size: .8rem; cursor: pointer; }
+.design-import-note { flex-basis: 100%; }
+/* While files are dragged over the card. */
+.design-ai[data-drop="true"] { outline: 2px dashed var(--purple); outline-offset: 2px; }
+
 /* What an example needs on the board before it starts. */
 .lesson-setup {
   display: inline-block; margin: 2px 0 10px; padding: 3px 10px;

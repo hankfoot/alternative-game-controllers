@@ -14,7 +14,9 @@
 // something no enumerated dropdown could hold.
 
 import { createPaintEditor } from './theme/paint-editor.js';
-import { audioAssetFromFile, spriteAsset } from './theme/images.js';
+import { audioAssetFromFile, imageFromFile, spriteAsset } from './theme/images.js';
+import { planImport } from './theme/import-match.js';
+import { isZip, readZip } from './theme/zip.js';
 import { contentBounds } from './theme/raster.js';
 import { SLOTS, sizeOf, cropsToInk } from './theme/defaults.js';
 import {
@@ -673,6 +675,115 @@ export function initDesign({
     return row;
   }
 
+  // --- Importing a set of files --------------------------------------------
+  // Drawings and sounds made somewhere else — an AI tool, most likely — and
+  // brought in at once, each to the slot its name says. Zips are opened, so
+  // one download is one import.
+
+  // How each drawing is fitted to its frame. Whatever size a picture arrives
+  // at, it is stored at its slot's: the sky, the ground and a pillar fill their
+  // frame, since an edge showing would be a gap in the game; scenery stands on
+  // the bottom edge; everything else sits whole in the middle.
+  const FIT = { backdrop: 'cover', ground: 'cover', obstacle: 'cover', far: 'bottom', near: 'bottom' };
+
+  function fitted(image, slotId) {
+    const { width, height } = sizeOf(slotId);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    const mode = FIT[slotId] ?? 'centre';
+    const scale = mode === 'cover'
+      ? Math.max(width / image.width, height / image.height)
+      : Math.min(width / image.width, height / image.height);
+    const w = image.width * scale;
+    const h = image.height * scale;
+    // A pillar keeps its top, which is the end at the gap; the rest centre.
+    const x = (width - w) / 2;
+    const y = slotId === 'obstacle' ? 0 : mode === 'bottom' ? height - h : (height - h) / 2;
+    ctx.drawImage(image, x, y, w, h);
+    return canvas;
+  }
+
+  const TYPES = {
+    png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif',
+    svg: 'image/svg+xml', avif: 'image/avif',
+    mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', oga: 'audio/ogg', m4a: 'audio/mp4',
+    aac: 'audio/aac', webm: 'audio/webm', flac: 'audio/flac',
+  };
+  const typeOf = (name) => TYPES[name.split('.').pop().toLowerCase()] ?? '';
+
+  /** Every file picked, with zips opened into the files inside them. */
+  async function unpack(files) {
+    const out = [];
+    for (const file of files) {
+      if (!isZip(file)) {
+        out.push(file);
+        continue;
+      }
+      for (const entry of await readZip(await file.arrayBuffer())) {
+        out.push(new File([entry.bytes], entry.name, { type: typeOf(entry.name) }));
+      }
+    }
+    return out;
+  }
+
+  async function placeSprite(file, slotId) {
+    const image = await imageFromFile(file);
+    const canvas = image ? fitted(image, slotId) : null;
+    const slot = SLOTS.find((s) => s.id === slotId);
+    const asset = canvas ? spriteAsset(canvas, { id: newAssetId('sprite'), name: slot?.label ?? slotId }) : null;
+    const saved = asset ? await assets.put(asset) : null;
+    if (!saved) return false;
+    theme.set(`scene.${slotId}.sprite`, saved.id);
+    await images.refresh(saved.id);
+    return true;
+  }
+
+  async function placeSound(file, event) {
+    const saved = await saveSound(file, file.name.split('/').pop());
+    if (!saved) return false;
+    theme.set(event === 'music' ? 'music.track' : `sound.${event}`, asUpload(saved.id));
+    return true;
+  }
+
+  /**
+   * Brings in a set of files and says what happened, as one sentence. Never
+   * throws: a zip it can't open, or a file too big to keep, is something to
+   * report, not a broken button.
+   */
+  async function importFiles(picked) {
+    let files;
+    try {
+      files = await unpack([...picked]);
+    } catch (error) {
+      return error?.message || 'That file couldn’t be opened.';
+    }
+    const { placed, unknown, doubled } = planImport(files);
+    const done = [];
+    const failed = [];
+    for (const { file, target } of placed) {
+      const label = target.kind === 'sprite'
+        ? SLOTS.find((s) => s.id === target.slot)?.label ?? target.slot
+        : (target.event === 'music' ? 'the music' : `the ${target.event} sound`);
+      const ok = await (target.kind === 'sprite' ? placeSprite(file, target.slot) : placeSound(file, target.event))
+        .catch(() => false);
+      (ok ? done : failed).push(label);
+    }
+    renderTheme();
+    refreshAllPreviews();
+    onThemeApplied?.();
+
+    const parts = [];
+    if (done.length) parts.push(`Brought in ${done.length}: ${done.join(', ')}.`);
+    if (!files.length) parts.push('There was nothing in it to bring in.');
+    if (failed.length) parts.push(`Couldn’t keep ${failed.join(', ')} — too big, or not a picture or sound this browser can read.`);
+    if (unknown.length) parts.push(`Didn’t recognise ${unknown.join(', ')}. Rename to match the prompt, or add it to its card by hand.`);
+    if (doubled.length) parts.push(`Skipped ${doubled.join(', ')}, since another file already filled that spot.`);
+    return parts.join(' ') || 'Nothing in there matched a drawing or a sound.';
+  }
+
   /** Stores a recording or an uploaded file, and refreshes the known list. */
   async function saveSound(file, name) {
     const asset = await audioAssetFromFile(file, name);
@@ -1104,6 +1215,10 @@ export function initDesign({
     requestAnimationFrame(frame);
   }
 
+  function refreshAllPreviews() {
+    previews.forEach((redraw) => redraw());
+  }
+
   function renderTheme() {
     renderSprites();
     renderSound();
@@ -1135,7 +1250,8 @@ export function initDesign({
      * go on showing it, because nothing else here ever looks at the cache again.
      */
     refreshPreviews() {
-      previews.forEach((redraw) => redraw());
+      refreshAllPreviews();
     },
+    importFiles,
   };
 }

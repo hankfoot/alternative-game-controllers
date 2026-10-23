@@ -21,23 +21,30 @@ const SPRITE_NOTES = {
   decor: 'One small thing that drifts through the air, like a cloud or a bird.',
 };
 
-const THEME = '[describe your game here, for example: an underwater game where a jellyfish dodges coral]';
+// What fills the blank when nobody has described their game yet.
+// Asked for whenever the tool can manage it: one download, imported in one go.
+const BUNDLE = 'If you can, put all of the files together in one .zip file for me to download. If you can only make one at a time, that is fine: give each one its file name.';
 
-/** The prompt for a whole set of drawings, one per slot. */
-export function spritePrompt() {
+const THEME = '[describe your game here, for example: an underwater game where a jellyfish dodges coral]';
+const themeOf = (idea) => idea?.trim() || THEME;
+
+/** The prompt for a whole set of drawings, one per slot, for the game `idea` describes. */
+export function spritePrompt(idea = '') {
   const lines = SLOTS.map((slot) => {
     const { width, height } = sizeOf(slot.id);
     const note = SPRITE_NOTES[slot.id] ?? slot.help;
     const clear = slot.id === 'backdrop' ? 'Opaque PNG.' : 'PNG with a transparent background.';
-    return `- **${slot.label}** — ${width} × ${height} pixels. ${clear} ${note}`;
+    return `- \`${slot.id}.png\` — **${slot.label}**, ${width} × ${height} pixels. ${clear} ${note}`;
   });
   return `Make a set of images for a simple side-scrolling browser game, like Flappy Bird.
 
-The theme: ${THEME}
+The theme: ${themeOf(idea)}
 
-Keep all of them in one consistent art style, with bold shapes and clear outlines, because they are shown small on a screen. Make each one a separate image at exactly the size given.
+Keep all of them in one consistent art style, with bold shapes and clear outlines, because they are shown small on a screen. Make each one a separate image at exactly the size given, and name each file exactly as shown, because the game reads the names to know where each picture goes.
 
 ${lines.join('\n')}
+
+${BUNDLE}
 `;
 }
 
@@ -49,17 +56,19 @@ const SOUND_NOTES = {
   thrust: 'Plays over and over while the player is steering, so it must be very short and not tiring to hear repeated. Under half a second.',
 };
 
-/** The prompt for a set of sound effects and a music loop. */
-export function soundPrompt() {
+/** The prompt for a set of sound effects and a music loop, for the game `idea` describes. */
+export function soundPrompt(idea = '') {
   const lines = SOUND_EVENTS.map(([event, lead]) =>
-    `- **${event}** (“${lead.replace(/, play$/, '')}”): ${SOUND_NOTES[event] ?? ''}`.trimEnd());
+    `- \`${event}.mp3\` — ${SOUND_NOTES[event] ?? `${lead.replace(/, play$/, '')}.`}`);
   return `Make sound effects and a music loop for a simple side-scrolling browser game, like Flappy Bird.
 
-The theme: ${THEME}
+The theme: ${themeOf(idea)}
 
-Give each one as its own short MP3 or WAV file, with no silence at the start, so it plays the instant it is triggered. Keep them in one consistent style.
+Give each one as its own MP3 or WAV file, with no silence at the start, so it plays the instant it is triggered. Keep them in one consistent style. Name each file exactly as shown, because the game reads the names to know where each sound goes.
 
 ${lines.join('\n')}
-- **music**: Background music that loops for as long as the game is played. 20 to 60 seconds long, and it must loop seamlessly, with the end flowing straight back into the start. Keep it in the background: no vocals, nothing too busy.
+- \`music.mp3\` — Background music that loops for as long as the game is played. 20 to 60 seconds long, and it must loop seamlessly, with the end flowing straight back into the start. Keep it in the background: no vocals, nothing too busy.
+
+${BUNDLE}
 `;
 }
