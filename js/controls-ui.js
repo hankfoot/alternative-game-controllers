@@ -84,7 +84,7 @@ const PHRASES = {
 const controlPhrase = (rule) => PHRASES[rule.control] ?? rule.control;
 
 export function initControlsUI({ elements, gameHost, signalStore, storage, options = null }) {
-  const { list, code, warn } = elements;
+  const { list, code, warn, hookup = null, tune = null } = elements;
   if (!list || !code || !gameHost || !signalStore) return null;
 
   const listeners = new Set();
@@ -157,53 +157,63 @@ export function initControlsUI({ elements, gameHost, signalStore, storage, optio
     if (normalized) Object.assign(rule, normalized, { id: rule.id });
   }
 
-  function renderRule(rule) {
-    const row = el('div', 'rule');
-    row.dataset.id = rule.id;
+  /**
+   * The numbers a reading's sentence carries — "above 120 lux", "from -40 to
+   * 40 °" — as fields in step 5, where they are tuned against the live
+   * reading, and as plain words in step 2, where the sentence is chosen.
+   * Returns the nodes, and a function giving the marker for the live view.
+   */
+  function numbersOf(rule, editable) {
+    const choice = inputChoice(rule.input);
+    if (choice.family !== 'number') return { nodes: [], marker: () => null };
+    const info = channelInfo(choice.catalogue);
+    const unit = info.unit ? ` ${info.unit}` : '';
+    const span = { min: info.min ?? 0, max: info.max ?? 1 };
+    const field = (key) => (editable
+      ? numberInput(rule[key], span, (value) => { rule[key] = value; changed(rule); })
+      : el('strong', 'rule-number', String(rule[key])));
+    if (usesRange(rule.when)) {
+      return {
+        nodes: [' ', field('low'), ' to ', field('high'), unit],
+        marker: () => ({ low: rule.low, high: rule.high }),
+      };
+    }
+    return { nodes: [' ', field('threshold'), unit], marker: () => ({ threshold: rule.threshold }) };
+  }
+
+  /** The sentence, with its numbers either fixed words or fields. */
+  function sentenceLine(rule, { choosing }) {
     const choice = inputChoice(rule.input);
     const line = el('p', 'wiring-sentence rule-sentence');
     // A steer reads "Pitch, from -40 to 40 °, sets how high the craft flies";
     // everything else reads "When Button A is pressed, flap."
     const steering = kindOf(rule) === 'level';
     if (!steering) line.append('When ');
-    line.appendChild(groupedSelect(inputGroupsFor(rule), rule.input, (value) => {
-      setInput(rule, value);
-      persist();
-      render();
-    }));
+    if (choosing) {
+      line.appendChild(groupedSelect(inputGroupsFor(rule), rule.input, (value) => {
+        setInput(rule, value);
+        persist();
+        render();
+      }));
+    } else {
+      line.appendChild(el('strong', null, channelInfo(choice.catalogue).label ?? rule.input));
+    }
     line.append(steering ? ', from' : ' ');
     const whens = whenChoicesFor(choice.family, kindOf(rule));
     // A choice of one is not a choice; it reads as words instead.
     if (steering) {
       // nothing: "from … to …" says it
-    } else if (whens.length > 1) {
+    } else if (choosing && whens.length > 1) {
       line.appendChild(select(whens, rule.when, (value) => {
         setWhen(rule, value);
         persist();
         render();
       }));
     } else {
-      line.append(whens[0]?.[1] ?? '');
+      line.append(whens.find(([id]) => id === rule.when)?.[1] ?? whens[0]?.[1] ?? '');
     }
-
-    const channel = choice.catalogue;
-    let marker = () => null;
-    if (choice.family === 'number') {
-      const info = channelInfo(channel);
-      const unit = info.unit ? ` ${info.unit}` : '';
-      const span = { min: info.min ?? 0, max: info.max ?? 1 };
-      if (usesRange(rule.when)) {
-        const low = numberInput(rule.low, span, (value) => { rule.low = value; persist(); });
-        const high = numberInput(rule.high, span, (value) => { rule.high = value; persist(); });
-        line.append(' ', low, ' to ', high, unit);
-        marker = () => ({ low: rule.low, high: rule.high });
-      } else {
-        const threshold = numberInput(rule.threshold, span, (value) => { rule.threshold = value; persist(); });
-        line.append(' ', threshold, unit);
-        marker = () => ({ threshold: rule.threshold });
-      }
-    }
-
+    const numbers = numbersOf(rule, !choosing);
+    line.append(...numbers.nodes);
     line.append(', ');
     // One span for the control and the words after it, so the sentence's
     // spacing between parts does not land in front of the full stop.
@@ -211,33 +221,58 @@ export function initControlsUI({ elements, gameHost, signalStore, storage, optio
     ending.appendChild(el('strong', 'rule-control', controlPhrase(rule)));
     ending.append(kindOf(rule) === 'hold' ? ' for as long as it lasts.' : '.');
     line.appendChild(ending);
+    return { line, marker: numbers.marker };
+  }
+
+  // Step 2: choosing. Only the sentence — what to read, and when — since
+  // there is no code on the board yet to watch or tune.
+  function renderRule(rule) {
+    const row = el('div', 'rule');
+    row.dataset.id = rule.id;
+    row.appendChild(sentenceLine(rule, { choosing: true }).line);
+    return row;
+  }
+
+  // Step 4: what to clip where, for the sentences as they stand. It sat
+  // under each sentence while it was being chosen, which is before there
+  // is anything on the board to wire up.
+  function renderHookup() {
+    if (!hookup) return;
+    hookup.textContent = '';
+    const items = rules.map((rule) => {
+      const choice = inputChoice(rule.input);
+      const variant = choice && variantFor(choice.catalogue, choice.mode);
+      if (!variant?.build) return null;
+      const info = channelInfo(choice.catalogue);
+      const item = el('li', 'hookup-item');
+      const head = el('p', 'hookup-head');
+      head.append(el('strong', null, `${info.emoji} ${info.label}${variant.label ? ` · ${variant.label}` : ''}`),
+        ` — to ${controlPhrase(rule)}`);
+      const text = el('p', 'hookup-text');
+      text.innerHTML = variant.build;
+      item.append(head, text);
+      return item;
+    }).filter(Boolean);
+    if (!items.length) {
+      hookup.appendChild(el('p', 'rule-empty', 'Nothing to wire: these controls use the micro:bit’s own sensors.'));
+      return;
+    }
+    const listEl = el('ul', 'hookup-list');
+    listEl.append(...items);
+    hookup.appendChild(listEl);
+  }
+
+  // Step 5: the sentence again, its numbers now fields, under it the input
+  // live with those numbers drawn on it, and how the control feels. This is
+  // the part that is tuned once the code is on the board and running.
+  function renderTune(rule) {
+    const row = el('div', 'rule');
+    row.dataset.id = rule.id;
+    const { line, marker } = sentenceLine(rule, { choosing: false });
     row.appendChild(line);
 
-    // How to build this input and what its numbers mean, under the sentence
-    // that uses it. It sat in step 3 under the code, a list for every input
-    // at once; the moment it is wanted is while the sentence is being
-    // written, with the numbers right there to fill in.
-    const variant = variantFor(choice.catalogue, choice.mode);
-    if (variant?.build) {
-      const info = channelInfo(choice.catalogue);
-      const tip = el('div', 'rule-tip');
-      tip.appendChild(el('strong', null, `${info.emoji} ${info.label}${variant.label ? ` · ${variant.label}` : ''}: `));
-      const text = el('span');
-      text.innerHTML = variant.build;
-      tip.appendChild(text);
-      row.appendChild(tip);
-    }
-
-    // How the control feels — how hard a flap kicks, how the craft falls, how
-    // fast a slide moves — right under the sentence that drives it. The game
-    // declares these on the control's own port, and the options store keeps
-    // the picks per scheme; this is only where they are edited. They sat on
-    // Design under a heading about the course, two screens from the sentence
-    // they modify, and the moment anyone wants them is when the craft feels
-    // floaty or heavy while a sentence is being tuned.
-    const feel = feelFor(rule);
-    if (feel) row.appendChild(feel);
-
+    const choice = inputChoice(rule.input);
+    const channel = choice.catalogue;
     // The input, live: a number with the line it has to cross drawn on it, a
     // press as its on/off pill, a gesture as a flash and a count. Every
     // sentence gets one, so a clip that is not making contact shows up here
@@ -251,9 +286,31 @@ export function initControlsUI({ elements, gameHost, signalStore, storage, optio
     meter.appendChild(note);
     signalStore.subscribe(({ type, signal }) => {
       if (type === 'value' && signal.channel === channel) note.hidden = true;
+      if (type === 'reset') note.hidden = false;
     });
     row.appendChild(meter);
+
+    // Said once a number has moved, since a number is part of the program:
+    // the board keeps running the old one until it is downloaded again.
+    const resend = el('p', 'rule-resend', 'New number: copy the code in step 3 and download it again.');
+    resend.hidden = true;
+    row.appendChild(resend);
+
+    // How the control feels — how hard a flap kicks, how the craft falls, how
+    // fast a slide moves, how closely a steer follows — right under the
+    // reading that drives it. These change the game, not the program, so
+    // they take effect at once.
+    const feel = feelFor(rule);
+    if (feel) row.appendChild(feel);
     return row;
+  }
+
+  // A number tuned in step 5: the program changes, so step 2's words and
+  // step 3's code follow, and the row says the board needs the new code.
+  function changed(rule) {
+    persist();
+    renderChoosing();
+    tune?.querySelector(`.rule[data-id="${CSS.escape(rule.id)}"] .rule-resend`)?.removeAttribute('hidden');
   }
 
   /** The control's options as sentences, or null if it carries none. */
@@ -284,14 +341,23 @@ export function initControlsUI({ elements, gameHost, signalStore, storage, optio
   let settingFeel = false;
   options?.subscribe?.(() => { if (!settingFeel) render(); });
 
-  function render() {
-    views.forEach((view) => view.destroy());
-    views = [];
+  function renderChoosing() {
     list.textContent = '';
     if (!rules.length) {
       list.appendChild(el('p', 'rule-empty', 'This scheme has nothing to steer.'));
     }
     for (const rule of rules) list.appendChild(renderRule(rule));
+  }
+
+  function render() {
+    views.forEach((view) => view.destroy());
+    views = [];
+    renderChoosing();
+    renderHookup();
+    if (tune) {
+      tune.textContent = '';
+      for (const rule of rules) tune.appendChild(renderTune(rule));
+    }
   }
 
   // --- The program ----------------------------------------------------------

@@ -45,7 +45,7 @@ export const INPUT_CHOICES = INPUTS.flatMap((input) => {
 // kind of thing, not its name.
 export const INPUT_GROUPS = [
   ['Buttons & touch', ['btna', 'btnb', 'logo']],
-  ['Pins — crocodile clips', ['p0', 'p1', 'p2']],
+  ['Pins — alligator clips', ['p0', 'p1', 'p2']],
   ['Tilt & direction', ['pitch', 'roll', 'heading', 'accel', 'accelx', 'accely', 'accelz']],
   ['Gestures', ['shake', 'tiltleft', 'tiltright', 'logoup', 'logodown', 'faceup', 'facedown', 'freefall', 'g3', 'g6', 'g8']],
   ['Sound, light & heat', ['loud', 'quiet', 'mic', 'light', 'temp']],

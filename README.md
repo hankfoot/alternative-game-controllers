@@ -59,7 +59,7 @@ deployment branch is needed.
 
 ## The workshop, screen by screen
 
-1. **Setup** — MakeCode, the starter project, flashing, and preparing foil and crocodile clips.
+1. **Setup** — MakeCode, the starter project, flashing, and preparing foil and alligator clips.
 2. **Sensing** — three steps, each walking through examples; every example is a small program to
    download and a live view of what it sends. **Touch** goes through a switch (two foils that
    meet), resistive touch (you hold GND and close the circuit through your body) and capacitive

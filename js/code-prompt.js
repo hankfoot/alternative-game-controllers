@@ -68,7 +68,7 @@ You are helping someone program a BBC micro:bit V2 in MakeCode — the JavaScrip
 \`\`\`ts
 gamePress("flap")          // fire a press control once
 gameHold("thrust", true)   // hold a hold control down; gameHold("thrust", false) lets go
-gameSet("paddle", 0.5)     // set a level control to a value from 0 to 1
+gameSet("paddle", 0.5)     // set a level control from 0 to 1 (for a height: 0 is the bottom, 1 the top)
 gameStart()                // start a round, or retry after a crash
 \`\`\`
 
@@ -97,7 +97,10 @@ MakeCode's Blocks view allows only one handler per event. Where a handler is nam
 - Put every number the person might want to tweak in an UPPER_CASE \`let\` at the top, with a comment saying what it does.
 - Declare every variable at the top level, above the handlers that use it.
 - To show a reading of your own on the game's Controls page, \`send("name:" + value)\` with a lowercase name; it appears there as an input.
-- Reply with one code block to paste at the very END of their program, below everything already there, then one or two sentences on what to tune.
+- Reply in three parts, in this order:
+  1. One code block to paste at the very END of their program, below everything already there.
+  2. A **Hookup guide**: a short bulleted list of exactly what to connect where, one line per connection, naming the pin and what goes on each end of the alligator clip — for example "Clip P0 to a strip of foil on the jar's lid" and "Clip GND to a strip of foil on the jar's rim". If the code only uses the micro:bit's built-in sensors and buttons, say "Nothing to wire" and say how to hold or mount the micro:bit instead.
+  3. One or two sentences on which UPPER_CASE number to tune first, and which way.
 
 ## Example 1: flap every third clap
 

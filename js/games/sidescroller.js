@@ -96,6 +96,10 @@ const KICK = Object.freeze({ soft: 0.72, normal: 1, hard: 1.32 });
 const PUSH = Object.freeze({ soft: 0.78, normal: 1, hard: 1.24 });
 // A slide has no momentum to build, so its ends are the speed itself.
 const SLIDE = Object.freeze({ slow: 0.65, normal: 1, fast: 1.45 });
+// How fast a steered craft closes on its reading, per second. At 18 it settles
+// in about 55ms, which copies every flicker of a noisy sensor; at 6 it glides
+// over them in about 170ms; at 2.5 it drifts, for the noisiest inputs.
+const SMOOTHING = Object.freeze({ close: 18, smooth: 6, calm: 2.5 });
 
 // What the course settings multiply the built-in numbers by. Every one of them
 // is a plain multiplier on a RULES value, and every default is 1 — so a game
@@ -145,13 +149,16 @@ export function courseFrom(options = {}, score = 0) {
     gap: RULES.gateGap * (GAP[options.gap] ?? 1),
     spacing: RULES.gateSpacing * (SPACING[options.spacing] ?? 1),
     shape: options.shape ?? 'columns',
-    motion: options.motion ?? 'gentle',
+    motion: options.motion ?? 'still',
   };
 }
 
+// A higher reading flies higher: 0 is the floor and 1 the ceiling. It was the
+// other way up, screen-style, so a quiet room held the craft at the top and
+// shouting sank it.
 export const trackY = (value) => lerp(
-  RULES.playerRadius,
   RULES.groundY - RULES.playerRadius,
+  RULES.playerRadius,
   value,
 );
 
@@ -382,14 +389,14 @@ export class SidescrollerGame extends BaseGame {
     // nudge that same height whether or not a dial is wired to it: a wired
     // reading overwrites it on its next sample, so the wire wins whenever it has
     // anything to say, and the keys work in the gaps when it doesn't.
-    const direction = (this.manual.down ? 1 : 0) - (this.manual.up ? 1 : 0);
+    const direction = (this.manual.up ? 1 : 0) - (this.manual.down ? 1 : 0);
     if (direction) {
       player.value = clamp01(player.value + direction * RULES.manualSpeed * frameTime);
     }
-    // How loosely the craft chases the reading is smoothing, and smoothing
-    // belongs to the wire — a twitchy input is a fact about the object you
-    // built, so damping it there fixes it for every control at once.
-    const blend = 1 - Math.exp(-frameTime * RULES.trackBlend);
+    // How loosely the craft chases the reading is the smoothing, set under the
+    // sentence that drives it.
+    const rate = SMOOTHING[this.option('paddle', 'y', 'smoothing', 'smooth')] ?? RULES.trackBlend;
+    const blend = 1 - Math.exp(-frameTime * rate);
     player.y += (trackY(player.value) - player.y) * blend;
   }
 
@@ -568,8 +575,8 @@ export class SidescrollerGame extends BaseGame {
   // course's motion setting has it, starting anywhere in its swing. Null when
   // obstacles hold still.
   swing() {
-    const picked = this.option('world', 'obstacles', 'motion', 'gentle');
-    const motion = picked in MOTION ? MOTION[picked] : MOTION.gentle;
+    const picked = this.option('world', 'obstacles', 'motion', 'still');
+    const motion = picked in MOTION ? MOTION[picked] : MOTION.still;
     if (!motion) return null;
     return {
       amp: lerp(...motion.amp, this.random()),
@@ -936,7 +943,9 @@ export function courseSettings() {
           lead: 'that',
           trail: '',
           choices: [['still', 'hold perfectly still'], ['gentle', 'bob gently'], ['lively', 'swing up and down']],
-          value: 'gentle',
+          // Still until somebody asks otherwise: a first game should be about
+          // learning the controller, not about obstacles that won't keep still.
+          value: 'still',
         },
         {
           id: 'gap',
@@ -1185,17 +1194,25 @@ const CONTROL_SCHEMES = [
         id: 'paddle',
         label: 'Height',
         emoji: '🎚️',
-        description: 'Steer the craft from top to bottom across the input range.',
-        // No options: which way up a steered height reads is already a property
-        // of the level wired into it, and says so in the wire's own sentence.
-        // `phrase` is what this port sets, in the words the game would use for
-        // it — "Level" is the connector, and a sentence wants the thing.
+        description: 'Steer the craft up and down: the low end of the input range flies low, the high end flies high.',
+        // Which way up a steered height reads is already a property of the
+        // level wired into it, and says so in the wire's own sentence. How
+        // closely the craft follows it is the one thing here to tune: a
+        // microphone or a light sensor is jittery, and a craft that copies
+        // every jitter looks broken. `phrase` is what this port sets, in the
+        // words the game would use for it — "Level" is the connector, and a
+        // sentence wants the thing.
         ports: [{
           id: 'y',
           label: 'Level',
           type: 'level',
           phrase: 'the vertical position',
           defaultValue: 0.5,
+          options: [{
+            id: 'smoothing', lead: 'The craft follows the reading', trail: '',
+            choices: [['close', 'closely'], ['smooth', 'smoothly'], ['calm', 'very smoothly']],
+            value: 'smooth',
+          }],
         }],
       },
     ],

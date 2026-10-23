@@ -78,3 +78,9 @@ test('nothing missing leaks into the text as a word', () => {
     assert.ok(!text.includes(leak), `no "${leak}" in the prompt`);
   }
 });
+
+test('the AI is asked for a hookup guide alongside its code', () => {
+  const text = buildPrompt({ controls, request: 'flap when the jar lid closes' });
+  assert.match(text, /Hookup guide/);
+  assert.match(text, /Nothing to wire/, 'and told what to say when there is nothing to wire');
+});

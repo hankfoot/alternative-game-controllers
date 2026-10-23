@@ -182,7 +182,7 @@ test('a saved sentence is kept when it fits, and a stray one is not added', () =
 test('the input list comes in groups, holding only what can drive the control', () => {
   const groups = groupedInputChoices();
   assert.deepEqual(groups.map(([label]) => label),
-    ['Buttons & touch', 'Pins — crocodile clips', 'Tilt & direction', 'Gestures', 'Sound, light & heat']);
+    ['Buttons & touch', 'Pins — alligator clips', 'Tilt & direction', 'Gestures', 'Sound, light & heat']);
   assert.equal(groups.flatMap(([, c]) => c).length, INPUT_CHOICES.length, 'every input is in a group');
   const forLevel = groupedInputChoices((choice) => canDrive(choice, 'level'));
   assert.ok(!forLevel.some(([label]) => label === 'Gestures' || label === 'Buttons & touch'), 'a steer needs a number');

@@ -715,3 +715,15 @@ test('a bundle carries the look, the sounds, the course and the sentences', asyn
   assert.deepEqual(old.game.rules, {});
   assert.equal(old.game.selected, 'jetpack');
 });
+
+test('the AI prompts give every drawing its size and every sound its moment', async () => {
+  const { spritePrompt, soundPrompt } = await import('../js/theme/ai-prompts.js');
+  const sprites = spritePrompt();
+  for (const slot of SLOTS) {
+    const { width, height } = sizeOf(slot.id);
+    assert.ok(sprites.includes(`**${slot.label}** — ${width} × ${height} pixels`), `${slot.id} has its size`);
+  }
+  const sounds = soundPrompt();
+  for (const [event] of SOUND_EVENTS) assert.ok(sounds.includes(`**${event}**`), `${event} is described`);
+  assert.match(sounds, /\*\*music\*\*/);
+});

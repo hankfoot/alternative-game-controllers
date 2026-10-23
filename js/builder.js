@@ -331,7 +331,7 @@ function pinInput(n) {
         handlers: buttonEdges(ch, `MICROBIT_ID_IO_P${n}`),
         connect: binary(ch, `input.pinIsPressed(TouchPin.P${n})`),
         build:
-          `Clip a piece of foil to pin P${n}. Keep your hands off it while the micro:bit starts. If it stays on after you let go, press <strong>A and B together</strong> to reset it.`,
+          `Clip one end of an alligator clip to pin P${n} and the other end to a piece of foil, or anything else that conducts electricity. Keep your hands off it while the micro:bit starts. If it stays on after you let go, press <strong>A and B together</strong> to reset it.`,
       },
       resistive: {
         label: 'Touch pad (resistive)',
@@ -348,7 +348,7 @@ function pinInput(n) {
         handlers: buttonEdges(ch, `MICROBIT_ID_IO_P${n}`),
         connect: binary(ch, `input.pinIsPressed(TouchPin.P${n})`),
         build:
-          `Clip a piece of foil, or a banana, to pin P${n}. Clip another piece of foil to the GND pin and hold it while you touch the first one.`,
+          `Clip one end of an alligator clip to pin P${n} and the other end to a piece of foil, a banana, or anything else that conducts electricity. Clip a second alligator clip from the GND pin to another piece of foil, and hold that one while you touch the first.`,
       },
       switch: {
         label: 'Switch',
@@ -379,7 +379,7 @@ function pinInput(n) {
           `}`,
         ],
         build:
-          `Clip one piece of foil to pin P${n} and another to the 3V pin. Mount them so they touch when your controller is used, like the jaws of a puppet or a door closing.`,
+          `Clip one alligator clip from pin P${n} to a piece of foil, and another from the 3V pin to a second piece of foil. Mount the two foils so they touch when your controller is used, like the jaws of a puppet or a door closing.`,
       },
       analog: {
         label: 'Analog',

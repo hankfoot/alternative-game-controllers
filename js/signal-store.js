@@ -137,6 +137,31 @@ export function createSignalStore({ subscribeInput = onInput, now = () => perfor
     setPlannedChannels(descriptors) {
       reconcileFlag('planned', descriptors, { ordered: true });
     },
+    /**
+     * Forgets everything heard so far, for a new connection: the last board's
+     * readings, or the last program's, are not what this one will send. What
+     * the controller is planned to send stays known, just not heard yet.
+     */
+    reset() {
+      for (const [channel, signal] of signals) {
+        if (!signal.planned) {
+          signals.delete(channel);
+          continue;
+        }
+        const info = channelInfo(channel);
+        Object.assign(signal, {
+          value: null,
+          live: false,
+          lastSeen: 0,
+          observedMin: null,
+          observedMax: null,
+          min: info.min ?? 0,
+          max: info.max ?? 1,
+        });
+      }
+      notify('reset');
+      notify('catalog');
+    },
     destroy() {
       unsubscribeInput();
       listeners.clear();

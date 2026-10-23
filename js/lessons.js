@@ -15,25 +15,37 @@ import { INPUTS, assemble, variantFor } from './builder.js';
 const GESTURE_INPUTS = INPUTS.filter((input) => input.kind === 'event' && !['loud', 'quiet'].includes(input.id));
 import { createChannelView } from './visualizer.js';
 
-const UPLOAD = 'Copy and upload the code to your micro:bit.';
+// Steps are written as HTML, for the keys. They are this file's own strings,
+// never anything typed into the page.
+const UPLOAD = 'Click <strong>Copy the code</strong>. In MakeCode’s JavaScript tab, select everything that is there (<span class="keys"><kbd>⌘</kbd> <kbd>A</kbd></span> on a Mac, <span class="keys"><kbd>Ctrl</kbd> <kbd>A</kbd></span> on Windows), paste over it (<span class="keys"><kbd>⌘</kbd> <kbd>V</kbd></span> or <span class="keys"><kbd>Ctrl</kbd> <kbd>V</kbd></span>), and click <strong>Download</strong>.';
+
+// One end of a clip on the pin, the other on the thing you touch. "Clip the
+// foil to P0" left people holding a clip and a piece of foil and no pin.
+const clipTo = (pin, what = 'a piece of foil, or anything else that conducts electricity') =>
+  `Clip one end of an alligator clip to pin <strong>${pin}</strong>, and the other end to ${what}.`;
+
+// What each example needs on the board before it starts, said at the top of
+// it, so nobody reads three steps in before finding out they needed foil.
+const BLANK = 'A micro:bit with nothing attached';
 
 export const SECTIONS = [
   {
     id: 'touch',
     title: 'Touch',
     intro: 'Electricity only flows when it has a complete path to travel, called a circuit. Each of these examples gives your micro:bit a different way to notice when that path is completed.',
-    note: 'For the best results, stick your foil or copper tape onto something stiff, like cardboard, or fold it over on itself, so the crocodile clips have something to grip.',
+    note: 'For the best results, stick your foil or copper tape onto something stiff, like cardboard, or fold it over on itself, so the alligator clips have something to grip.',
     lessons: [
       {
         id: 'switch',
         title: 'Switch',
         intro: 'A switch is two pieces of metal that let electricity through only when they touch, like the light switch on a wall. Foil works well because metal carries electricity easily. We can attach foil to two objects to detect when they come together, like a lid closing on a jar or a door shutting.',
         steps: [
-          'Clip one piece of foil to pin P0.',
-          'Clip another piece of foil to the 3V pin.',
+          clipTo('P0'),
+          clipTo('3V', 'a second piece of foil'),
           UPLOAD,
           'Touch the foils together.',
         ],
+        setup: 'Conductive material clipped to P0 and 3V',
         image: { src: 'assets/lesson-switch.jpg', alt: 'Two pieces of foil, one clipped to P0 and one to 3V' },
         inputs: [{ id: 'p0', mode: 'switch' }],
       },
@@ -42,11 +54,12 @@ export const SECTIONS = [
         title: 'Resistive touch',
         intro: 'Your body carries electricity too, just not as easily as metal. The micro:bit can be set to notice even the tiny amount that passes through a person, so when you hold one foil and touch the other, you become part of the path. This is how a fruit piano works: a banana or a lump of Play-Doh carries enough electricity to become a button.',
         steps: [
-          'Clip one piece of foil to pin P0.',
-          'Clip another piece of foil to the GND pin and hold it in one hand.',
+          clipTo('P0'),
+          clipTo('GND', 'a second piece of foil, and hold that foil in one hand'),
           UPLOAD,
           'Touch the P0 foil with your other hand.',
         ],
+        setup: 'Conductive material clipped to P0 and GND',
         image: { src: 'assets/lesson-resistive.jpg', alt: 'A hand holding foil clipped to GND, the other hand touching foil clipped to P0' },
         inputs: [{ id: 'p0', mode: 'resistive' }],
       },
@@ -55,11 +68,12 @@ export const SECTIONS = [
         title: 'Capacitive touch',
         intro: 'Your body also holds a small amount of electric charge, a bit like a sponge holds water. With just one piece of foil, the micro:bit can feel that charge when your finger touches it, so you don’t need to hold anything else. This is how a phone’s touchscreen works, and it is useful for buttons that should feel like nothing at all.',
         steps: [
-          'Clip one piece of foil to pin P0.',
-          UPLOAD + ' Keep your hands off the foil while it starts.',
+          clipTo('P0'),
+          `${UPLOAD} Keep your hands off the foil while it starts.`,
           'Touch the foil.',
           'If it stays on after you let go, press A and B together to reset it.',
         ],
+        setup: 'Conductive material clipped to P0',
         image: { src: 'assets/lesson-capacitive.jpg', alt: 'A piece of foil clipped to P0' },
         inputs: [{ id: 'p0', mode: 'touch' }],
       },
@@ -78,6 +92,7 @@ export const SECTIONS = [
           UPLOAD,
           'Tilt the micro:bit forward and back, then side to side.',
         ],
+        setup: BLANK,
         image: { src: 'assets/lesson-tilt.jpg', alt: 'A micro:bit tilted forward in a hand' },
         inputs: [{ id: 'pitch' }, { id: 'roll' }],
       },
@@ -90,6 +105,7 @@ export const SECTIONS = [
           'Hold the micro:bit still and watch the numbers settle.',
           'Swing it, then jab it in each direction, and see which number jumps.',
         ],
+        setup: BLANK,
         image: { src: 'assets/lesson-acceleration.jpg', alt: 'A micro:bit being swung in a hand' },
         inputs: [{ id: 'accel' }, { id: 'accelx' }, { id: 'accely' }, { id: 'accelz' }],
       },
@@ -102,6 +118,7 @@ export const SECTIONS = [
           'Shake the micro:bit, then tap it on the table.',
           'Tip it to each side, stand it up, turn it over, and toss it gently and catch it. Watch which gesture lights up each time.',
         ],
+        setup: BLANK,
         image: { src: 'assets/lesson-gestures.jpg', alt: 'A micro:bit being shaken' },
         // Every gesture the board knows. They cost the radio nothing between
         // happenings, so there is no reason to show only a few, and the point
@@ -119,6 +136,7 @@ export const SECTIONS = [
           'Tilt the micro:bit around until every LED is lit. This calibrates the compass.',
           'Hold it flat and turn around slowly.',
         ],
+        setup: BLANK,
         image: { src: 'assets/lesson-compass.jpg', alt: 'A micro:bit held flat and turned like a dial' },
         inputs: [{ id: 'heading' }],
       },
@@ -139,6 +157,7 @@ export const SECTIONS = [
           'Talk near the micro:bit, then clap once, then go quiet.',
           'Hold the micro:bit between your thumbs and watch the temperature rise.',
         ],
+        setup: BLANK,
         image: { src: 'assets/lesson-ambient.jpg', alt: 'A hand cupped over the micro:bit LEDs' },
         inputs: [{ id: 'light' }, { id: 'mic' }, { id: 'loud' }, { id: 'quiet' }, { id: 'temp' }],
       },
@@ -204,6 +223,11 @@ function renderExample(lesson, index, signalStore, views) {
   letter.setAttribute('aria-hidden', 'true');
   const body = el('div', 'substep-body');
   body.appendChild(el('h4', null, lesson.title));
+  if (lesson.setup) {
+    const setup = el('p', 'lesson-setup');
+    setup.append(el('strong', null, 'Setup: '), lesson.setup);
+    body.appendChild(setup);
+  }
 
   // The photo straight under the title: what you are making, before any words
   // about it.
@@ -215,7 +239,11 @@ function renderExample(lesson, index, signalStore, views) {
   if (lesson.intro) body.appendChild(el('p', null, lesson.intro));
 
   const steps = el('ol', 'lesson-steps');
-  for (const step of lesson.steps) steps.appendChild(el('li', null, step));
+  for (const step of lesson.steps) {
+    const item = el('li');
+    item.innerHTML = step;
+    steps.appendChild(item);
+  }
   body.appendChild(steps);
 
   // The code is copied, not read: what the lesson teaches is the sensor,
@@ -283,8 +311,9 @@ export function initLessons({ host, signalStore }) {
       if (section.lessons[0].intro) inner.querySelector(':scope > p').remove();
       // Its photo goes under the step's own title, ahead of the step's intro.
       const figure = inner.querySelector(':scope > figure');
+      const setup = inner.querySelector(':scope > .lesson-setup');
       const title = body.querySelector('h3');
-      title.after(figure);
+      title.after(...[setup, figure].filter(Boolean));
       body.append(...inner.childNodes);
     }
     item.append(el('span', 'step-num', String(index + 1)), body);

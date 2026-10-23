@@ -103,7 +103,28 @@ export function createChannelView(host, { signalStore, channels = null, markers 
     makeRow(name, known?.kind ?? kind ?? channelInfo(name).kind ?? 'binary');
   }
 
+  // A new connection. A view of particular channels keeps its rows and empties
+  // them; the open-ended one up top drops them, since the next board may send
+  // something else entirely.
+  function clearRows() {
+    if (!wanted) {
+      for (const row of rows.values()) row.el?.remove();
+      rows.clear();
+      if (empty) empty.hidden = false;
+      return;
+    }
+    for (const row of rows.values()) {
+      Object.assign(row, { current: 0, count: 0, flashUntil: 0, samples: [], heard: false });
+      if (row.el) row.el.dataset.heard = 'false';
+      fillViz(row);
+    }
+  }
+
   const unsubscribe = signalStore.subscribe(({ type, signal }) => {
+    if (type === 'reset') {
+      clearRows();
+      return;
+    }
     if (type !== 'value') return;
     const { channel, value, kind } = signal;
     if (wanted && !wanted.some((entry) => entry.channel === channel)) return;

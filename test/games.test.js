@@ -633,6 +633,15 @@ const floatingRun = (motion) => {
   return game.state.gates;
 };
 
+test('a steered height reads the right way up: a higher reading flies higher', () => {
+  assert.ok(trackY(1) < trackY(0), 'the top of the range is nearer the top of the screen');
+  const game = engineFor('brickbreaker');
+  game.setWiredPorts(['paddle.y']);
+  game.setValue('paddle', 'y', 1);
+  run(game, 120);
+  assert.ok(game.state.player.y < RULES.groundY / 2, 'a loud, bright or tilted-up reading holds the craft high');
+});
+
 test('floating blocks move the craft without falling into a zigzag', () => {
   const gates = floatingRun('gentle');
   assert.equal(gates.length, 200, 'one block per obstacle');

@@ -403,7 +403,8 @@ export function initGame({ look = null, audio = null, musicWhen = null } = {}) {
     // window puts it at the top of its travel rather than somewhere short of it.
     const top = (playerRadius / current.game.rules.height) * box.height;
     const bottom = (groundY - playerRadius) / current.game.rules.height * box.height;
-    const at = (event.clientY - box.top - top) / Math.max(1, bottom - top);
+    // Up the window is up the range: 1 at the top of the craft's travel.
+    const at = 1 - (event.clientY - box.top - top) / Math.max(1, bottom - top);
     current.engine.steer(Math.max(0, Math.min(1, at)));
   });
 

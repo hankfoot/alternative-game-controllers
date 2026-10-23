@@ -3,7 +3,7 @@
 import { onStatus, onInput } from './bus.js';
 // One way to reach a board: Bluetooth, from the browser.
 import { connect, disconnect, isSupported } from './bluetooth.js';
-import { initVisualizer } from './visualizer.js';
+import { createChannelView, initVisualizer } from './visualizer.js';
 import { initLessons } from './lessons.js';
 import { starterCode } from './builder.js';
 import { initGame } from './game.js';
@@ -21,6 +21,7 @@ import { createAssetStore } from './theme/assets.js';
 import { createImageCache, assetBytes } from './theme/images.js';
 import { createAudio } from './theme/audio.js';
 import { SOUND_FILES } from './theme/defaults.js';
+import { soundPrompt, spritePrompt } from './theme/ai-prompts.js';
 import { migrateStorage } from './storage-migrate.js';
 
 // --- Tabs, and the sidebar that lists the screen -------------------------------
@@ -32,7 +33,9 @@ initTabs({ onActivate: (panel) => toc?.show(panel) });
 // behind it. Its height changes when the tabs wrap onto their own row.
 const topbar = document.querySelector('.topbar');
 if (topbar) {
-  const measure = () => document.documentElement.style.setProperty('--topbar-h', `${topbar.offsetHeight}px`);
+  // Rounded up: offsetHeight rounds a 107.5px bar down, and the home screen,
+  // sized to exactly what is left under it, then overflowed by the half pixel.
+  const measure = () => document.documentElement.style.setProperty('--topbar-h', `${Math.ceil(topbar.getBoundingClientRect().height)}px`);
   if (typeof ResizeObserver === 'function') new ResizeObserver(measure).observe(topbar);
   measure();
 }
@@ -106,6 +109,8 @@ const controls = gameHost
       list: document.getElementById('rule-list'),
       code: document.getElementById('controls-code'),
       warn: document.getElementById('controls-warning'),
+      hookup: document.getElementById('controls-hookup'),
+      tune: document.getElementById('rule-tune'),
     },
     gameHost,
     signalStore,
@@ -128,6 +133,31 @@ if (bridge && controls) {
     storage,
   });
 }
+// --- The controller, live, under the game ------------------------------------
+// One row per input the sentences on Controls read, drawn again whenever they
+// change, since a new sentence may read something else.
+if (controls) {
+  const host = document.getElementById('game-live');
+  const note = document.getElementById('game-live-note');
+  let view = null;
+  const drawInputs = () => {
+    view?.destroy();
+    host.textContent = '';
+    const channels = controls.parts().flatMap((part) =>
+      part.channels.map((channel) => ({ channel, kind: part.kind })));
+    view = channels.length ? createChannelView(host, { signalStore, channels }) : null;
+    note.textContent = channels.length
+      ? 'Readings appear here once the micro:bit is connected.'
+      : 'Choose what triggers each control on the Controls page, and its inputs appear here.';
+  };
+  controls.subscribe(drawInputs);
+  drawInputs();
+  signalStore.subscribe(({ type }) => {
+    if (type === 'value') note.hidden = true;
+    if (type === 'reset') note.hidden = false;
+  });
+}
+
 if (controls) {
   initGameWarning({
     element: document.getElementById('game-warning'),
@@ -167,6 +197,12 @@ if (gameOptions && controls) {
     onRulesImported: () => controls.reload(),
   });
   drawingsReady.then(() => design?.refreshPreviews());
+}
+
+// --- Prompts for making the drawings and sounds with an AI tool ---------------
+for (const [id, write] of [['design-sprite-prompt', spritePrompt], ['design-sound-prompt', soundPrompt]]) {
+  const host = document.getElementById(id);
+  if (host) host.textContent = write();
 }
 
 // --- Copy buttons on code blocks -------------------------------------------
@@ -284,9 +320,12 @@ function paint({ state, message, retrying = false }) {
   connectBtn.hidden = connected;
   connectBtn.disabled = connecting;
   connectBtn.textContent = connecting ? 'Connecting…' : 'Connect';
-  // Offered whenever there is something to give up on, which during a reconnect
-  // there is — that is the one moment somebody most wants to stop waiting.
-  disconnectBtn.hidden = !connected && !retrying;
+  // Offered whenever there is something to give up on, which while connecting
+  // there always is — a first attempt as much as a reconnect. That is the one
+  // moment somebody most wants to stop waiting, and a "Connecting…" with
+  // nothing to press beside it is the loop people got stuck in.
+  disconnectBtn.hidden = !connected && !connecting;
+  disconnectBtn.textContent = connecting ? 'Cancel' : 'Disconnect';
 
   if (state === 'connected') {
     // e.g. "BBC micro:bit [gapeg]" — the board's own name, which is what tells
@@ -312,6 +351,9 @@ function paint({ state, message, retrying = false }) {
 }
 
 onStatus((status) => {
+  // A fresh link starts with a clean slate: the readings from the last board,
+  // or the last program on this one, are not what it is about to send.
+  if (status.state === 'connected' && live?.state !== 'connected') signalStore.reset();
   live = status;
   lastHeard = performance.now();
   paint(status);

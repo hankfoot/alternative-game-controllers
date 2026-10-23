@@ -5,7 +5,7 @@
 // and parse each line into a protocol message, then push it onto the shared bus.
 //
 // The link drops. Batteries sag, someone walks their controller out of range,
-// someone else stands between the two, the board resets when a crocodile clip
+// someone else stands between the two, the board resets when an alligator clip
 // shorts something. None of that is worth a person's attention, so a drop is
 // picked back up here rather than reported: the browser is allowed to reconnect
 // to a device it has already been given without asking again, and the retries
@@ -26,6 +26,17 @@ const UART_TX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // micro:bit -> browser 
 // after four because by then it is something a person has to go and fix.
 const RETRY_DELAYS = [400, 1200, 3000, 6000];
 
+// A first connection gets a couple of quick second tries too. A board that has
+// just been let go — by a Disconnect, by MakeCode, by a reset — often refuses
+// the very next attempt and takes the one after, which is most of why
+// reconnecting "didn't always work".
+const FIRST_TRY_DELAYS = [500, 1500];
+
+// How long one attempt may take before it counts as failed. `gatt.connect()`
+// can otherwise wait forever on a board that is half there, and a page saying
+// "Connecting…" with nothing to press is the loop people got stuck in.
+const ATTEMPT_TIMEOUT_MS = 8000;
+
 let device = null;
 // Whether we have already hooked this device's disconnect event. Chrome hands
 // back the same BluetoothDevice object for the same board, so connecting twice
@@ -33,6 +44,10 @@ let device = null;
 let watching = null;
 let retryTimer = null;
 let attempt = 0;
+// The board a first connection is being made to. Its drops along the way are
+// that attempt's business — the quick retries let it go on purpose — and
+// must not also start the reconnect loop meant for a link that was up.
+let opening = null;
 // What the last status said, so a failure with nothing to report — the chooser
 // being dismissed, most of all — can put it back rather than inventing one.
 let state = { state: 'disconnected' };
@@ -92,8 +107,32 @@ export function isSupported() {
   return typeof navigator !== 'undefined' && !!navigator.bluetooth;
 }
 
-/** Opens the UART stream on an already-chosen device. */
-async function openStream(target) {
+class Cancelled extends Error {
+  constructor() {
+    super('Connection cancelled.');
+    this.name = 'Cancelled';
+  }
+}
+
+/** Rejects if `work` takes longer than `ms`. */
+function withTimeout(work, ms) {
+  let timer = null;
+  const late = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      const error = new Error('The board took too long to answer.');
+      error.name = 'NetworkError';
+      reject(error);
+    }, ms);
+  });
+  return Promise.race([work, late]).finally(() => clearTimeout(timer));
+}
+
+/** Opens the UART stream on an already-chosen device, or gives up after a while. */
+function openStream(target) {
+  return withTimeout(openStreamNow(target), ATTEMPT_TIMEOUT_MS);
+}
+
+async function openStreamNow(target) {
   const server = await target.gatt.connect();
   const service = await server.getPrimaryService(UART_SERVICE);
   const txChar = await service.getCharacteristic(UART_TX);
@@ -145,17 +184,19 @@ export async function connect() {
     watching = chosen;
   }
 
+  // From here a Disconnect press cancels: it clears `device`, which every await
+  // below checks on its way back.
   try {
-    await openStream(chosen);
+    await firstConnect(chosen);
   } catch (err) {
     // The link can be up while the service handshake fails — the board is still
     // booting, or the UART service isn't running in what was flashed. Left half
     // open, the OS keeps holding the connection and the next attempt hangs on it.
-    try {
-      chosen.gatt?.disconnect();
-    } catch {
-      /* already down, which is the state we were asking for */
-    }
+    // Let go of before released, so the drop that follows is not mistaken for
+    // a link that was up and fell over.
+    if (device === chosen) device = null;
+    release(chosen);
+    if (err instanceof Cancelled) return;
     announce({ state: 'disconnected', message: describeFailure(err) });
     throw err;
   }
@@ -164,16 +205,57 @@ export async function connect() {
   announce({ state: 'connected', message: chosen.name || 'micro:bit' });
 }
 
+/** The first attempt and its quick second tries, cancelled by a Disconnect. */
+async function firstConnect(chosen) {
+  opening = chosen;
+  try {
+    await tryUntilConnected(chosen);
+  } finally {
+    opening = null;
+  }
+}
+
+async function tryUntilConnected(chosen) {
+  for (let tries = 0; ; tries += 1) {
+    if (device !== chosen) throw new Cancelled();
+    try {
+      await openStream(chosen);
+      if (device !== chosen) throw new Cancelled();
+      return;
+    } catch (err) {
+      if (device !== chosen || err instanceof Cancelled) throw new Cancelled();
+      // Wrong program on the board, or a blocked page: trying again won't help.
+      if (err?.name === 'NotSupportedError' || err?.name === 'SecurityError') throw err;
+      const wait = FIRST_TRY_DELAYS[tries];
+      if (wait == null) throw err;
+      release(chosen);
+      await new Promise((wake) => { retryTimer = setTimeout(wake, wait); });
+      retryTimer = null;
+    }
+  }
+}
+
+function release(target) {
+  try {
+    target?.gatt?.disconnect();
+  } catch {
+    /* already down, which is the state we were asking for */
+  }
+}
+
 /** Disconnect the current device, if any. Stops us trying to get it back. */
 export function disconnect() {
-  // Nothing held and nothing pending means nothing to say.
-  if (!device && !retryTimer) return;
+  // Nothing held and nothing pending means nothing to say — unless a
+  // connection is mid-way, which is exactly when somebody wants out.
+  if (!device && !retryTimer && state.state !== 'connecting') return;
   cancelRetry();
   const target = device;
   device = null;
   attempt = 0;
   lines.reset();
-  if (target?.gatt?.connected) target.gatt.disconnect();
+  // Whether or not it has finished connecting: disconnecting a link that is
+  // still being made is what makes the pending connect give up.
+  release(target);
   announce({ state: 'disconnected' });
 }
 
@@ -189,6 +271,7 @@ function onDisconnected(event) {
   // arriving from the board that is actually plugged in.
   if (event?.target && event.target !== device) return;
   if (!device) return; // we asked for this one
+  if (opening && event?.target === opening) return; // a first attempt's own business
   lines.reset();
   retry();
 }
@@ -216,6 +299,11 @@ function retry() {
       // Still down. `gattserverdisconnected` does not fire for an attempt that
       // never landed, so the next try is booked here rather than waited for.
       if (device === target) retry();
+      return;
+    }
+    // Disconnected while this attempt was on its way: it landed for nobody.
+    if (device !== target) {
+      release(target);
       return;
     }
     attempt = 0;

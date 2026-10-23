@@ -210,6 +210,43 @@ code {
   border-radius: var(--radius); font-size: .9rem; color: var(--yellow-ink);
 }
 .note strong { color: var(--ink); }
+/* What an example needs on the board before it starts. */
+.lesson-setup {
+  display: inline-block; margin: 2px 0 10px; padding: 3px 10px;
+  font-size: .82rem; color: var(--ink-soft);
+  background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px;
+}
+.lesson-setup strong { color: var(--ink); font-weight: 600; }
+/* The controller's inputs, live, under the game. */
+.game-inputs { margin-top: 20px; }
+.game-inputs h3 { margin: 0 0 6px; font-size: 1rem; }
+.game-inputs-note { margin: 0 0 8px; font-size: .84rem; color: var(--ink-soft); }
+.game-inputs-note[hidden] { display: none; }
+
+/* Controls step 4: what to connect, one entry per control. */
+.hookup-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.hookup-item {
+  padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-soft);
+}
+.hookup-head { margin: 0 0 4px; font-size: .92rem; }
+.hookup-text { margin: 0; font-size: .88rem; color: var(--ink-soft); }
+/* Controls step 5: a tuned number needs the code downloaded again. */
+.rule-resend {
+  margin: 6px 0 0; font-size: .82rem; font-weight: 600; color: var(--yellow-ink);
+}
+.rule-resend[hidden] { display: none; }
+.rule-number { font-weight: 700; }
+
+/* A shortcut stays on one line: "⌘" at the end of one line and "A" at the
+   start of the next reads as two instructions. */
+.keys { white-space: nowrap; }
+/* A key to press, drawn as a key. */
+kbd {
+  display: inline-block; min-width: 1.6em; padding: 0 .35em;
+  font-family: var(--sans); font-size: .82em; font-weight: 600; line-height: 1.5;
+  text-align: center; color: var(--ink);
+  background: var(--bg); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px;
+}
 .note a { color: var(--yellow-ink); }
 /* A failed connection, which is a louder thing than a note: red rather than
    yellow, because it is reporting that the thing you just asked for did not
@@ -248,7 +285,19 @@ code {
 /* ---------- Home (centered "Google treatment") ---------- */
 main { padding-block: 12px 64px; }
 
-.home-hero { text-align: center; max-width: 660px; margin: 0 auto; padding-top: 56px; }
+.home-hero { text-align: center; max-width: 660px; margin: 0 auto; }
+/* The home screen is one screen: the hero centred in whatever the window
+   leaves under the top bar, and nothing below it to scroll to. The footer is
+   on every other screen. */
+/* Clipped, so the fade-in that starts the panel a few pixels low can't flash
+   a scrollbar on the way in. */
+body:has(#panel-home:not([hidden])) main { padding-block: 0; overflow-y: clip; }
+body:has(#panel-home:not([hidden])) .foot { display: none; }
+#panel-home:not([hidden]) {
+  min-height: calc(100svh - var(--topbar-h, 0px));
+  margin-block: 0; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; padding-block: 24px;
+}
 /* Same diamond geometry as the navbar .mark and favicon, just scaled up */
 .home-mark { display: block; width: 60px; height: 60px; margin: 0 auto 22px; }
 
@@ -267,6 +316,15 @@ h1 {
 .home-lede { font-size: 1.14rem; color: var(--ink-soft); max-width: 52ch; margin: 0 auto; }
 
 .home-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin: 30px 0 0; }
+/* A short window — a laptop with its browser chrome, a projector — tightens
+   the spacing rather than spilling the buttons off the bottom. */
+@media (max-height: 720px) {
+  .home-mark { width: 44px; height: 44px; margin-bottom: 14px; }
+  .home-hero h1 { font-size: clamp(1.9rem, 4.6vw, 2.7rem); }
+  .byline { margin-bottom: 12px; }
+  .home-lede { font-size: 1.04rem; }
+  .home-actions { margin-top: 20px; }
+}
 
 /* ---------- Blocks ---------- */
 .block { margin-top: 8px; }

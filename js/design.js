@@ -876,7 +876,7 @@ export function initDesign({
 
   // --- Taking it with you ---------------------------------------------------
   /**
-   * Saving and opening a whole look, from the top bar.
+   * Saving and opening a whole look, from the head of the Design screen.
    *
    * Bound once rather than rendered, because these controls are not part of any
    * screen — they sit above all of them and are about everything you have made.
