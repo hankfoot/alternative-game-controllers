@@ -847,6 +847,10 @@ export function initDesign({
       theme.replace(bundle.theme);
       await refreshUploads();
       await applied();
+      // Drawn again now the file's drawings are decoded. The replace above
+      // already redrew, but before they were, so every card showed the
+      // built-in art until the page was reloaded.
+      renderTheme();
       renderSettings();
       report(refused
         ? `Loaded, but ${refused} ${refused === 1 ? 'drawing was' : 'drawings were'}`
@@ -855,25 +859,33 @@ export function initDesign({
     });
   }
 
-  /** The one destructive control, kept where you can see what it destroys. */
-  function renderReset() {
+  /**
+   * The one destructive control, in the head of everything it undoes. It asks
+   * first, saying what goes, since there is no getting any of it back.
+   */
+  function renderReset(said = '') {
     const host = hosts.share;
     if (!host) return;
-    host.textContent = '';
     const note = document.createElement('span');
     note.className = 'theme-note';
+    note.textContent = said;
 
     const reset = button('Start over');
-    reset.addEventListener('click', async () => {
-      theme.reset();
-      await applied();
-      note.textContent = 'Back to the original look.';
+    reset.addEventListener('click', () => {
+      note.textContent = 'Clear every drawing, sound and line of text?';
+      const confirm = button('Clear them', 'btn btn-danger');
+      const keep = button('Keep them');
+      confirm.addEventListener('click', async () => {
+        theme.reset();
+        await applied();
+        renderReset('Back to the original look.');
+      });
+      keep.addEventListener('click', () => renderReset());
+      host.replaceChildren(note, keep, confirm);
+      keep.focus();
     });
 
-    const row = document.createElement('p');
-    row.className = 'wiring-sentence';
-    row.append(reset, note);
-    host.appendChild(row);
+    host.replaceChildren(note, reset);
   }
 
   function mountPreview() {

@@ -87,18 +87,21 @@ code {
    full-width row below. This is fixed at every width so connecting/disconnecting
    (which widens the status block) never reflows the header. */
 .topbar-right { display: flex; align-items: center; gap: 12px; order: 2; margin-left: auto; }
-/* Saving and opening. Quiet, because they are always there and are used once a
-   session at most — the Connect pair beside them is the loud one. */
-.theme-io {
-  padding: 6px 12px; font-size: .8rem; font-weight: 600;
-  color: var(--ink-soft); cursor: pointer;
+/* Save, Load and Start over, in the head of the Design screen. The heading
+   keeps its line; the buttons drop below it when the two don't fit. */
+.block-head:has(.design-actions) { flex-wrap: wrap; }
+.block-head:has(.design-actions) h2 { flex-shrink: 0; }
+.design-actions, .design-reset {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px;
 }
-.theme-io:hover { color: var(--ink); }
-.theme-io-note { font-size: .76rem; max-width: 26ch; text-align: right; }
+.design-actions { margin-left: auto; }
+/* One line height for all of them: Load is a label wrapping the file input,
+   and a label takes the page's body leading where a button doesn't. */
+.design-actions .btn { line-height: 1.3; }
+#theme-import { cursor: pointer; }
+.design-actions .theme-note { text-align: right; }
+.theme-io-note { font-size: .76rem; max-width: 26ch; }
 .theme-io-note:empty { display: none; }
-
-/* Set apart from the steps above it: this one takes things away. */
-.design-reset { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line); }
 
 /* ---------- Status chip (the live-input button) ----------
    Always shown, sitting left of Connect; its label is the connection state
@@ -198,6 +201,7 @@ code {
 .btn-soft:hover { background: var(--bg-soft); }
 .btn-soft[data-on="true"] { background: var(--green-soft); border-color: var(--green); color: var(--green-ink); }
 .btn-lg { padding: 12px 22px; font-size: 1rem; border-radius: 11px; }
+.btn-danger { color: #fff; background: var(--red-ink); border-color: var(--red-ink); }
 
 /* ---------- Note ---------- */
 .note {
